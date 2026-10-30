@@ -137,7 +137,7 @@
      top edge. In dark, tint leans blue and the rim dims a touch to avoid a
      cold blink. */
   --glass-tint: oklch(99.3% 0.004 95);
-  --glass-rim: oklch(100% 0 0 / 90%);
+  --glass-rim: oklch(100% 0 0 / 95%);
   --glass-ink: oklch(24% 0.012 264);
 
   /* Card sizes step by viewport; 21" 1920x1080 is the reference at 17rem.
@@ -215,7 +215,7 @@
   /* Glass: night tint follows the paper hue; rim stays faint, never a
      bright stripe. */
   --glass-tint: oklch(25.5% 0.014 262);
-  --glass-rim: oklch(60% 0.02 262 / 22%);
+  --glass-rim: oklch(72% 0.03 262 / 30%);
   --glass-ink: oklch(94.5% 0.004 262);
 }
 
@@ -396,22 +396,23 @@
    * Wifi of cards: a card over busy content carries more tint.
    * ---------------------------------------------------------------------- */
   .glass-chrome {
-    background: color-mix(in srgb, var(--glass-tint) 55%, transparent);
-    backdrop-filter: blur(20px) saturate(150%);
-    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    background: color-mix(in srgb, var(--glass-tint) 32%, transparent);
+    backdrop-filter: blur(36px) saturate(160%);
+    -webkit-backdrop-filter: blur(36px) saturate(160%);
   }
   .glass-card {
-    background: color-mix(in srgb, var(--glass-tint) 72%, transparent);
-    backdrop-filter: blur(28px) saturate(140%);
-    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    background: color-mix(in srgb, var(--glass-tint) 48%, transparent);
+    backdrop-filter: blur(44px) saturate(150%);
+    -webkit-backdrop-filter: blur(44px) saturate(150%);
   }
   /* Where text is dense and the backdrop busy: same tint, no window. */
   .glass-solid {
-    background: color-mix(in srgb, var(--glass-tint) 88%, var(--glass-ink) 4%);
+    background: color-mix(in srgb, var(--glass-tint) 85%, var(--glass-ink) 5%);
   }
 
-  /* The highlight: a 1px light stroke at the rim - the lit edge every
-     liquid-glass panel carries. Drawn inside so borders still apply. */
+  /* The macOS edge: a bright 1px rim that blooms slightly at the top and a
+     faint dark under-edge, so a floating panel catches light off its own
+     corner. Drawn inside so borders still apply. */
   .glass-edge {
     position: relative;
   }
@@ -423,7 +424,9 @@
     pointer-events: none;
     box-shadow:
       inset 0 1px 0 0 var(--glass-rim),
-      inset 0 -1px 0 0 color-mix(in srgb, var(--glass-ink) 6%, transparent);
+      inset 1px 0 0 0 color-mix(in srgb, var(--glass-rim) 35%, transparent),
+      inset -1px 0 0 0 color-mix(in srgb, var(--glass-rim) 35%, transparent),
+      inset 0 -1px 0 0 color-mix(in srgb, var(--glass-ink) 10%, transparent);
   }
 
 
