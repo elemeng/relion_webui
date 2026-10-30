@@ -799,37 +799,37 @@ export function App() {
   const counts = countStatuses(graph);
 
   return (
-    <div className="grid h-svh grid-cols-[2.875rem_minmax(0,1fr)] overflow-hidden">
-      <Rail
-        mode={mode}
-        onMode={setMode}
+    <div className="grid h-svh grid-rows-[2.25rem_minmax(0,1fr)_1.5rem] overflow-hidden">
+      <TopBar
+        project={activeProject}
         onProjects={() => setMode("projects")}
-        onShortcuts={() => setShortcutsOpen(true)}
-        onToggleTheme={toggle}
-        assistantAvailable={assistantAvailable}
-        assistantOpen={assistantOpen}
-        onAssistant={() => setAssistantOpen((value) => !value)}
-        theme={theme}
-        username={session?.username ?? null}
-        onSignOut={() => {
-          api
-            .post("/api/logout")
-            .catch(() => undefined)
-            .finally(() => window.location.replace("/"));
-        }}
+        onSchedule={() => setScheduleOpen(true)}
+        onNewJob={() =>
+          window.dispatchEvent(new CustomEvent("relion:pick-job"))
+        }
+        mode={mode}
+        layout={layout}
+        onLayout={setLayout}
       />
 
-      <div className="grid min-w-0 grid-rows-[2.875rem_minmax(0,1fr)_1.75rem] overflow-hidden">
-        <TopBar
-          project={activeProject}
-          onProjects={() => setMode("projects")}
-          onSchedule={() => setScheduleOpen(true)}
-          onNewJob={() =>
-            window.dispatchEvent(new CustomEvent("relion:pick-job"))
-          }
+      <div className="grid min-h-0 grid-cols-[2.5rem_minmax(0,1fr)] overflow-hidden">
+        <Rail
           mode={mode}
-          layout={layout}
-          onLayout={setLayout}
+          onMode={setMode}
+          onProjects={() => setMode("projects")}
+          onShortcuts={() => setShortcutsOpen(true)}
+          onToggleTheme={toggle}
+          assistantAvailable={assistantAvailable}
+          assistantOpen={assistantOpen}
+          onAssistant={() => setAssistantOpen((value) => !value)}
+          theme={theme}
+          username={session?.username ?? null}
+          onSignOut={() => {
+            api
+              .post("/api/logout")
+              .catch(() => undefined)
+              .finally(() => window.location.replace("/"));
+          }}
         />
 
         <main className="relative min-h-0 overflow-hidden">
@@ -1129,17 +1129,17 @@ export function App() {
             />
           )}
         </main>
-
-        <StatusBar
-          jobs={graph?.processes.length ?? 0}
-          types={counts.types}
-          running={counts.running}
-          failed={counts.failed}
-          projectPath={activeProject?.project_directory ?? null}
-          mode={mode}
-          projects={projects.length}
-        />
       </div>
+
+      <StatusBar
+        jobs={graph?.processes.length ?? 0}
+        types={counts.types}
+        running={counts.running}
+        failed={counts.failed}
+        projectPath={activeProject?.project_directory ?? null}
+        mode={mode}
+        projects={projects.length}
+      />
 
       <NotificationStack items={notifications} onDismiss={dismiss} />
 
@@ -1179,7 +1179,7 @@ function Rail({
 }) {
   const item = (active: boolean) =>
     cn(
-      "relative grid size-9 place-items-center rounded-field transition-colors",
+      "relative grid size-7 place-items-center rounded-field transition-colors",
       active
         ? "bg-frame-raise text-frame-ink"
         : "text-frame-muted hover:bg-frame-raise hover:text-frame-ink",
@@ -1187,10 +1187,10 @@ function Rail({
 
   return (
     <nav
-      className="flex flex-col items-center gap-1 border-r border-frame-rule bg-frame py-1.5"
+      className="flex flex-col items-center gap-0.5 border-r border-frame-rule bg-frame py-1"
       aria-label="Sections"
     >
-      {/* Projects is the level above a pipeline, so it sits first. */}
+
       <RailButton
         active={mode === "projects"}
         onClick={onProjects}
@@ -1328,7 +1328,7 @@ function TopBar({
   const onPipeline = mode === "pipeline";
 
   return (
-    <header className="flex items-center gap-2 border-b border-frame-rule bg-frame px-3">
+    <header className="flex items-center gap-1.5 border-b border-frame-rule bg-frame px-2.5">
       <button
         type="button"
         onClick={onProjects}
@@ -1337,7 +1337,7 @@ function TopBar({
       >
         RELION cryo-ET
       </button>
-      <Separator orientation="vertical" className="h-4 bg-frame-rule" />
+      <Separator orientation="vertical" className="h-3 bg-frame-rule" />
 
       {/* Breadcrumb: projects / <project>. The first crumb is the way back up. */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-1">
@@ -1422,7 +1422,7 @@ function TopBarButton({
       onClick={onClick}
       title={title}
       className={cn(
-        "rounded-field border px-2 py-1 t-label",
+        "rounded-field border px-2 py-0.5 t-label",
         primary
           ? "border-transparent bg-signal font-medium text-white hover:bg-[oklch(34%_0.09_255)]"
           : "border-frame-rule text-frame-muted hover:border-frame-muted hover:text-frame-ink",
