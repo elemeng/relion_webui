@@ -63,7 +63,7 @@ export function JobCard({
     <div
       data-node
       className={cn(
-        "group/card relative flex flex-col overflow-hidden rounded-box border bg-base-100",
+        "glass-card glass-edge group/card relative flex flex-col overflow-hidden rounded-box border",
         "transition-[border-color,box-shadow] duration-150",
         selected
           ? "border-signal shadow-[0_0_0_1px_var(--signal)]"
@@ -198,7 +198,7 @@ export function MiniJobCard({
     <div
       data-node
       className={cn(
-        "relative flex flex-col gap-1 overflow-hidden rounded-box border bg-base-100 px-1.5 py-1",
+        "glass-card relative flex flex-col gap-1 overflow-hidden rounded-box border px-1.5 py-1",
         selected
           ? "border-signal shadow-[0_0_0_1px_var(--signal)]"
           : "border-rule",

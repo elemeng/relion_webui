@@ -1045,7 +1045,7 @@ export function App() {
               aria-modal
               aria-label="Scheduler and data transfer"
             >
-              <div className="flex max-h-full w-[37.5rem] flex-col overflow-hidden rounded-box border border-rule-strong bg-base-100 shadow-[0_24px_64px_-16px_rgb(0_0_0/0.45)]">
+              <div className="glass-card glass-edge flex max-h-full w-[37.5rem] flex-col overflow-hidden rounded-box border border-rule-strong shadow-[0_24px_64px_-16px_rgb(0_0_0/0.45)]">
                 <div className="flex shrink-0 items-center gap-2 border-b border-rule px-4 py-2.5">
                   <h2 className="flex-1 t-head font-semibold">
                     Scheduler and data transfer
@@ -1187,7 +1187,7 @@ function Rail({
 
   return (
     <nav
-      className="flex flex-col items-center gap-0.5 border-r border-frame-rule bg-frame py-1"
+      className="glass-chrome flex flex-col items-center gap-0.5 border-r border-frame-rule py-1"
       aria-label="Sections"
     >
 
@@ -1328,7 +1328,7 @@ function TopBar({
   const onPipeline = mode === "pipeline";
 
   return (
-    <header className="flex items-center gap-1.5 border-b border-frame-rule bg-frame px-2.5">
+    <header className="glass-chrome flex items-center gap-1.5 border-b border-frame-rule px-2.5">
       <button
         type="button"
         onClick={onProjects}
@@ -1451,7 +1451,7 @@ function StatusBar({
   projects: number;
 }) {
   return (
-    <footer className="flex items-center gap-3 border-t border-rule bg-base-200 px-3 t-meta text-ink-faint">
+    <footer className="glass-chrome flex items-center gap-3 border-t border-rule px-3 t-meta text-ink-faint">
       {mode === "pipeline" ? (
         <>
           <Stat value={jobs} label="jobs" />
