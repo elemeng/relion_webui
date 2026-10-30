@@ -13,10 +13,10 @@ from pathlib import Path
 
 import pytest
 
-from recryo import job_queue, pipeline as pipeline_module
-from recryo.jobs import JobManager
-from recryo.paths import PathGuard
-from recryo import pipeline as pl
+from relion_webui import job_queue, pipeline as pipeline_module
+from relion_webui.jobs import JobManager
+from relion_webui.paths import PathGuard
+from relion_webui import pipeline as pl
 
 
 # ------------------------------------------------------------------ helpers
@@ -203,7 +203,7 @@ def test_submitted_job_is_queued_not_finished(tmp_path, template):
         {**RECON_ARGS, 'do_queue': True, 'qsubscript': str(template)},
         tmp_path / 'job',
     )
-    from recryo.jobs import Job
+    from relion_webui.jobs import Job
 
     job = Job(
         id='x',
@@ -229,7 +229,7 @@ def test_failed_submission_is_reported(tmp_path, template):
         {**RECON_ARGS, 'do_queue': True, 'qsubscript': str(template)},
         tmp_path / 'job',
     )
-    from recryo.jobs import Job
+    from relion_webui.jobs import Job
 
     job = Job(
         id='x',

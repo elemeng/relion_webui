@@ -13,8 +13,8 @@ from pathlib import Path
 
 import pytest
 
-from recryo import job_actions, job_artifacts
-from recryo import pipeline as pipeline_module
+from relion_webui import job_actions, job_artifacts
+from relion_webui import pipeline as pipeline_module
 
 
 @pytest.fixture
@@ -248,7 +248,7 @@ def client(tmp_path):
     pytest.importorskip('fastapi')
     from fastapi.testclient import TestClient
 
-    from recryo.app import create_app
+    from relion_webui.app import create_app
 
     app = create_app(roots=[tmp_path])
     with TestClient(app) as test_client:

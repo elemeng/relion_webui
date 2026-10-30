@@ -422,7 +422,7 @@ export function AssistantPanel({
         {!ready && config && (
           <p className="mb-1.5 px-1 t-meta leading-relaxed text-ink-muted">
             No API key for {config.provider}. Open settings to add one, or set{" "}
-            <code className="font-mono">RECRYO_LLM_API_KEY</code> on the
+            <code className="font-mono">RELION_WEB_LLM_API_KEY</code> on the
             server.
           </p>
         )}

@@ -18,7 +18,7 @@ than hanging on a password prompt nobody can answer.
 
 A node is declared once and referred to by name thereafter:
 
-    recryo --host-node gpu1=gpu1.lab --host-node gpu2=gpu2.lab:2222
+    relion_webui --host-node gpu1=gpu1.lab --host-node gpu2=gpu2.lab:2222
 
 `local` is always available and is the default, so an existing single-machine
 install is unchanged.
@@ -310,7 +310,7 @@ def registry_from_specs(specs: Sequence[str]) -> HostRegistry:
 # `StrictHostKeyChecking=accept-new` is trust-on-first-use: an unknown node is
 # accepted once, and a *changed* key is still refused. That is the right default
 # for a lab network where blocking a first submission on a prompt is worse than
-# the risk; a site that pins keys can set RECRYO_SSH_STRICTNESS=yes.
+# the risk; a site that pins keys can set RELION_WEB_SSH_STRICTNESS=yes.
 _SSH_OPTIONS = (
     'BatchMode=yes',
     # Short: a node card must appear quickly, and a card that says "not
@@ -324,7 +324,7 @@ _SSH_OPTIONS = (
 def _strictness_option() -> str:
     import os
 
-    value = os.environ.get('RECRYO_SSH_STRICTNESS', '').strip().lower()
+    value = os.environ.get('RELION_WEB_SSH_STRICTNESS', '').strip().lower()
     if value in ('yes', 'strict', 'true', '1'):
         return 'StrictHostKeyChecking=yes'
     return 'StrictHostKeyChecking=accept-new'

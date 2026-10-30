@@ -69,9 +69,9 @@ import asyncio
 import sys
 from pathlib import Path
 
-from recryo.jobs import JobManager
-from recryo.paths import PathGuard
-from recryo import pipeline as pipeline_module
+from relion_webui.jobs import JobManager
+from relion_webui.paths import PathGuard
+from relion_webui import pipeline as pipeline_module
 
 work = Path(sys.argv[1])
 project = work / 'proj'
@@ -161,9 +161,9 @@ PYTHONPATH="$BACKEND" "$PYTHON" - "$WORK" <<'PY'
 import sys
 from pathlib import Path
 
-from recryo import queue_system, pipeline as pipeline_module
-from recryo.hosts import HostRegistry
-from recryo.paths import PathGuard
+from relion_webui import queue_system, pipeline as pipeline_module
+from relion_webui.hosts import HostRegistry
+from relion_webui.paths import PathGuard
 
 
 class _NullManager:
@@ -229,7 +229,7 @@ PYTHONPATH="$BACKEND" "$PYTHON" - "$WORK" <<'PY'
 import sys
 from pathlib import Path
 
-from recryo import pipeline as pipeline_module
+from relion_webui import pipeline as pipeline_module
 
 work = Path(sys.argv[1])
 expected = {

@@ -21,10 +21,10 @@ contract the programs' own argument parsers enforce.
 
 import pytest
 
-from recryo import job_commands
-from recryo import job_specs
-from recryo import pipeline as pipeline_module
-from recryo.generated_schema import JOBS
+from relion_webui import job_commands
+from relion_webui import job_specs
+from relion_webui import pipeline as pipeline_module
+from relion_webui.generated_schema import JOBS
 
 # A valid-looking value for every required option, so each builder can run.
 REQUIRED_VALUES = {
@@ -51,7 +51,7 @@ def client(tmp_path):
     pytest.importorskip('fastapi')
     from fastapi.testclient import TestClient
 
-    from recryo.app import create_app
+    from relion_webui.app import create_app
 
     app = create_app(roots=[tmp_path])
     with TestClient(app) as test_client:
@@ -174,8 +174,8 @@ def test_flag_style_is_consistent(job_type):
 
 def test_pipeline_control_is_underscored():
     """The C++ parser checks for the literal string ``--pipeline_control``."""
-    from recryo.jobs import JobManager
-    from recryo.paths import PathGuard
+    from relion_webui.jobs import JobManager
+    from relion_webui.paths import PathGuard
     from pathlib import Path
 
     manager = JobManager(PathGuard([Path('/tmp')]))
@@ -773,14 +773,14 @@ def test_variant_job_star_carries_the_branch_and_full_option_set(tmp_path):
     window would otherwise show mostly blanks) and then forces the variant's
     switch, which is what this checks end to end through the real writer.
     """
-    from recryo import job_artifacts
+    from relion_webui import job_artifacts
     import starfile
 
     arguments = {'fn_data': 'particles.star', 'nr_split': '4', 'split_size': '-1'}
     arguments = job_commands._merged(
         job_commands.COMMAND_SPECS['select_split'], arguments
     )
-    from recryo.jobs import JobManager
+    from relion_webui.jobs import JobManager
     options = JobManager._gui_options('select_split', arguments)
 
     assert options['do_split'] is True
@@ -820,7 +820,7 @@ def test_api_alias_builds_the_same_command_as_its_target():
 
 
 def test_api_alias_is_hidden_from_the_picker_but_accepted():
-    from recryo import jobs
+    from relion_webui import jobs
 
     assert 'select' in jobs.SUPPORTED_JOBS
     assert 'select' not in jobs.SELECTABLE_JOBS
@@ -957,7 +957,7 @@ def test_every_selectable_job_is_in_exactly_one_category():
     JOB_CATEGORIES is hand-written, so a job type added later would silently
     vanish from the picker if nothing checked coverage.
     """
-    from recryo import job_commands as jc
+    from relion_webui import job_commands as jc
 
     seen: list[str] = []
     for group in jc.job_categories():
@@ -968,7 +968,7 @@ def test_every_selectable_job_is_in_exactly_one_category():
 
 
 def test_variants_sit_under_their_base_job():
-    from recryo import job_commands as jc
+    from relion_webui import job_commands as jc
 
     groups = {g['title']: g['job_types'] for g in jc.job_categories()}
     # Denoise train/predict are the two modes of one job.
@@ -983,7 +983,7 @@ def test_variants_sit_under_their_base_job():
 
 def test_categories_keep_the_pickers_order():
     """Variants follow the job they belong to, as in the flat list."""
-    from recryo import job_commands as jc
+    from relion_webui import job_commands as jc
 
     for group in jc.job_categories():
         order = [jc.selectable_job_types().index(t) for t in group['job_types']]
@@ -992,9 +992,9 @@ def test_categories_keep_the_pickers_order():
 
 def test_job_schema_endpoint_returns_categories():
     from fastapi.testclient import TestClient
-    from recryo.app import create_app
+    from relion_webui.app import create_app
 
-    app = create_app(roots=['.'], projects=__import__('recryo.projects', fromlist=['ProjectRegistry']).ProjectRegistry(config_directory='/tmp/relion-cat-test'))
+    app = create_app(roots=['.'], projects=__import__('relion_webui.projects', fromlist=['ProjectRegistry']).ProjectRegistry(config_directory='/tmp/relion-cat-test'))
     with TestClient(app) as client:
         payload = client.get('/api/job-schema').json()
 

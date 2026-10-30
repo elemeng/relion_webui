@@ -10,8 +10,8 @@ contains a slash.
 import pytest
 from fastapi.testclient import TestClient
 
-from recryo import pipeline as pipeline_module
-from recryo.app import create_app
+from relion_webui import pipeline as pipeline_module
+from relion_webui.app import create_app
 
 
 @pytest.fixture

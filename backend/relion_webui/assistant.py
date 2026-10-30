@@ -67,7 +67,7 @@ PROVIDERS: Dict[str, dict] = {
     'local': {
         'label': 'Local / OpenAI-compatible',
         'kind': 'openai',
-        'env': 'RECRYO_LLM_API_KEY',
+        'env': 'RELION_WEB_LLM_API_KEY',
         'default_model': '',
         'models': [],
         # Any server speaking the OpenAI chat API: vLLM, Ollama, LM Studio, a
@@ -161,19 +161,19 @@ class AssistantConfig:
 def config_from_env() -> AssistantConfig:
     """Read the assistant's defaults from the environment.
 
-    `RECRYO_LLM_PROVIDER` and friends, so a site can configure the assistant
+    `RELION_WEB_LLM_PROVIDER` and friends, so a site can configure the assistant
     in its service unit rather than in the browser. The key is deliberately
     server-side: it must not be shipped to every browser that opens the panel.
     """
-    provider = os.environ.get('RECRYO_LLM_PROVIDER', 'openai').strip().lower()
+    provider = os.environ.get('RELION_WEB_LLM_PROVIDER', 'openai').strip().lower()
     if provider not in PROVIDERS:
         provider = 'openai'
     spec = PROVIDERS[provider]
     return AssistantConfig(
         provider=provider,
-        model=os.environ.get('RECRYO_LLM_MODEL', '') or spec['default_model'],
+        model=os.environ.get('RELION_WEB_LLM_MODEL', '') or spec['default_model'],
         api_key=os.environ.get(spec['env'], ''),
-        base_url=os.environ.get('RECRYO_LLM_BASE_URL') or spec['base_url'],
+        base_url=os.environ.get('RELION_WEB_LLM_BASE_URL') or spec['base_url'],
     )
 
 

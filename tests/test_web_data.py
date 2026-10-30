@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from recryo import dataset, mrc, png
-from recryo._cli import main  # noqa: F401 - import check
+from relion_webui import dataset, mrc, png
+from relion_webui._cli import main  # noqa: F401 - import check
 
 
 @pytest.fixture
@@ -149,7 +149,7 @@ def test_global_table_with_one_object(tmp_path):
     starfile returns a dict in that case, and a one-tilt-series file is exactly
     what a test dataset looks like, so this used to fail on the smallest input.
     """
-    from recryo import dataset
+    from relion_webui import dataset
 
     path = tmp_path / 'global.star'
     path.write_text(RELION_ONE_OBJECT_GLOBAL)

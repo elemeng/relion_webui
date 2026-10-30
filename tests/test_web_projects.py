@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from recryo import pipeline
-from recryo.projects import ProjectRegistry
+from relion_webui import pipeline
+from relion_webui.projects import ProjectRegistry
 
 LABEL_IMPORT = 'relion.importtomo'
 LABEL_CTF = 'relion.ctffind'
@@ -148,7 +148,7 @@ def test_summary_keeps_other_projects_when_one_loses_its_pipeline(tmp_path):
 # ----------------------------------------------------------- job.star reading
 def test_read_job_star_round_trips_options(tmp_path):
     """What the parameters tab shows comes from here, so it must round-trip."""
-    from recryo import job_artifacts
+    from relion_webui import job_artifacts
 
     directory = tmp_path / 'Import' / 'job001'
     job_artifacts.write_job_star(
@@ -172,7 +172,7 @@ def test_read_job_star_round_trips_options(tmp_path):
 
 def test_read_job_star_is_none_without_the_file(tmp_path):
     """A RELION 3.x job has run.job only; that is not an error, but not data."""
-    from recryo import job_artifacts
+    from relion_webui import job_artifacts
 
     directory = tmp_path / 'Import' / 'job002'
     directory.mkdir(parents=True)
@@ -184,16 +184,16 @@ def test_read_job_star_is_none_without_the_file(tmp_path):
 def test_the_project_list_lives_beside_relions_own_config(tmp_path, monkeypatch):
     """`$HOME/.relion_web`, next to the `$HOME/.relion` RELION itself writes."""
     monkeypatch.setenv('HOME', str(tmp_path))
-    monkeypatch.delenv('RECRYO_HOME', raising=False)
-    from recryo.projects import default_config_directory
+    monkeypatch.delenv('RELION_WEB_HOME', raising=False)
+    from relion_webui.projects import default_config_directory
 
     assert default_config_directory() == tmp_path / '.relion_web'
 
 
 def test_relion_web_home_still_overrides(tmp_path, monkeypatch):
     monkeypatch.setenv('HOME', str(tmp_path / 'home'))
-    monkeypatch.setenv('RECRYO_HOME', str(tmp_path / 'custom'))
-    from recryo.projects import default_config_directory
+    monkeypatch.setenv('RELION_WEB_HOME', str(tmp_path / 'custom'))
+    from relion_webui.projects import default_config_directory
 
     assert default_config_directory() == tmp_path / 'custom'
 
@@ -203,7 +203,7 @@ def test_an_old_xdg_list_is_carried_over(tmp_path, monkeypatch):
     import json
 
     monkeypatch.setenv('HOME', str(tmp_path))
-    monkeypatch.delenv('RECRYO_HOME', raising=False)
+    monkeypatch.delenv('RELION_WEB_HOME', raising=False)
     monkeypatch.delenv('XDG_CONFIG_HOME', raising=False)
 
     legacy = tmp_path / '.config' / 'relion-web'
@@ -223,7 +223,7 @@ def test_an_existing_new_list_is_not_overwritten_by_the_old_one(tmp_path, monkey
     import json
 
     monkeypatch.setenv('HOME', str(tmp_path))
-    monkeypatch.delenv('RECRYO_HOME', raising=False)
+    monkeypatch.delenv('RELION_WEB_HOME', raising=False)
     monkeypatch.delenv('XDG_CONFIG_HOME', raising=False)
 
     new = tmp_path / '.relion_web'

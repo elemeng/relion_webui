@@ -11,20 +11,20 @@ from pathlib import Path
 
 import pytest
 
-from recryo import pipeline
-from recryo.auth import (
+from relion_webui import pipeline
+from relion_webui.auth import (
     AuthError,
     AuthManager,
     check_ssh_credentials,
 )
-from recryo.projects import ProjectRegistry
+from relion_webui.projects import ProjectRegistry
 
 fastapi = pytest.importorskip('fastapi')
 pytest.importorskip('httpx')
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from recryo.app import create_app  # noqa: E402
+from relion_webui.app import create_app  # noqa: E402
 
 
 def make_project(directory: Path, job_counter: int = 3) -> Path:
@@ -44,7 +44,7 @@ def test_login_mints_session_that_expires():
 
 
 def _fake_login(manager, lifetime):
-    from recryo.auth import Session
+    from relion_webui.auth import Session
 
     session = Session(
         token='tok', username='someone', created_at=time.time(),
@@ -74,7 +74,7 @@ def test_repeated_failures_lock_out_the_client(monkeypatch):
         return False, 'invalid username or password'
 
     monkeypatch.setattr(
-        'recryo.auth.check_ssh_credentials', reject
+        'relion_webui.auth.check_ssh_credentials', reject
     )
     for _ in range(3):
         with pytest.raises(AuthError):
@@ -83,7 +83,7 @@ def test_repeated_failures_lock_out_the_client(monkeypatch):
     # The next attempt is refused without even consulting sshd.
     called = []
     monkeypatch.setattr(
-        'recryo.auth.check_ssh_credentials',
+        'relion_webui.auth.check_ssh_credentials',
         lambda *a, **k: called.append(1) or (False, 'rejected'),
     )
     with pytest.raises(AuthError, match='too many failed attempts'):
@@ -95,7 +95,7 @@ def test_successful_login_clears_failure_count(monkeypatch):
     manager = AuthManager(session_lifetime=60, max_failures=5, failure_window=60)
     results = [(False, 'bad'), (True, '')]
     monkeypatch.setattr(
-        'recryo.auth.check_ssh_credentials',
+        'relion_webui.auth.check_ssh_credentials',
         lambda *a, **k: results.pop(0),
     )
     with pytest.raises(AuthError):

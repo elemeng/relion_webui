@@ -32,7 +32,7 @@ Run it from the repository root:
 
     python scripts/generate_web_job_commands.py
 
-It rewrites ``backend/recryo/generated_commands.py``. The test
+It rewrites ``backend/relion_webui/generated_commands.py``. The test
 ``test_web_commands.py`` re-extracts and fails if the checked-in file is stale.
 """
 
@@ -81,7 +81,7 @@ def resolve_source_root(explicit=None) -> Path:
         'could not find a RELION checkout. Pass --relion-source /path/to/relion '
         'or set RELION_SOURCE. Tried:\n  ' + tried
     )
-_OUTPUT_DIR = WEBUI_ROOT / 'backend' / 'recryo'
+_OUTPUT_DIR = WEBUI_ROOT / 'backend' / 'relion_webui'
 OUTPUT = _OUTPUT_DIR / 'generated_commands.py'
 
 # cpp function suffix -> web job id. Must match generate_web_job_schema.py.

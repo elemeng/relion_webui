@@ -31,10 +31,10 @@ def default_config_directory() -> Path:
     "where did the web UI keep my projects" will look where RELION keeps its
     settings, not in the XDG tree.
 
-    ``RECRYO_HOME`` overrides it, which is what the tests use and what a user
+    ``RELION_WEB_HOME`` overrides it, which is what the tests use and what a user
     needs if their home is read-only or on a shared filesystem.
     """
-    override = os.environ.get('RECRYO_HOME')
+    override = os.environ.get('RELION_WEB_HOME')
     if override:
         return Path(override).expanduser()
     return Path.home() / '.relion_web'

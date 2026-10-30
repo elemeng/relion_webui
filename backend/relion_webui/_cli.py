@@ -1,13 +1,13 @@
 # SPDX-FileCopyrightText: 2026 elemeng
 # SPDX-License-Identifier: GPL-2.0-or-later
-"""Command line entry point: ``recryo``.
+"""Command line entry point: ``relion_webui``.
 
 One agent per user, started once and left running. It serves on the LAN and asks
 the host's sshd to validate any browser login, so visitors sign in with their
 normal account rather than a password this program knows about.
 
 This is a single-command Typer app, so options are passed directly
-(``recryo --host 0.0.0.0``), with no subcommand.
+(``relion_webui --host 0.0.0.0``), with no subcommand.
 """
 
 import getpass
@@ -230,7 +230,7 @@ def serve(
     )
     app.state.initial_project = str(project[0].expanduser().resolve()) if project else None
 
-    typer.echo(f'recryo running as {username}')
+    typer.echo(f'relion_webui running as {username}')
     typer.echo(f'listening on {host}:{port}')
     if host in ('127.0.0.1', 'localhost', '::1'):
         typer.echo('reachable only from this machine')
@@ -296,16 +296,16 @@ def serve(
         # rebuilds the app from the environment.
         import os as _os
 
-        _os.environ['RECRYO_ASSISTANT'] = '1' if assistant else '0'
-        _os.environ['RECRYO_MCP'] = '1' if mcp else '0'
-        _os.environ['RECRYO_HOST'] = host
-        _os.environ['RECRYO_MCP_READ_ONLY'] = '1' if mcp_read_only else '0'
-        _os.environ['RECRYO_HOST_NODES'] = __import__('json').dumps(
+        _os.environ['RELION_WEB_ASSISTANT'] = '1' if assistant else '0'
+        _os.environ['RELION_WEB_MCP'] = '1' if mcp else '0'
+        _os.environ['RELION_WEB_HOST'] = host
+        _os.environ['RELION_WEB_MCP_READ_ONLY'] = '1' if mcp_read_only else '0'
+        _os.environ['RELION_WEB_HOST_NODES'] = __import__('json').dumps(
             list(host_node or [])
         )
         typer.echo('reload enabled: watching the Python sources')
         uvicorn.run(
-            'recryo._devapp:app',
+            'relion_webui._devapp:app',
             host=host,
             port=port,
             log_level='info',
@@ -327,16 +327,16 @@ def _export_reload_environment(**settings) -> None:
     import json
     import os
 
-    os.environ['RECRYO_ROOTS'] = json.dumps(settings['roots'])
-    os.environ['RECRYO_POLL'] = str(settings['poll_interval'])
+    os.environ['RELION_WEB_ROOTS'] = json.dumps(settings['roots'])
+    os.environ['RELION_WEB_POLL'] = str(settings['poll_interval'])
     if settings['config_directory']:
-        os.environ['RECRYO_CONFIG'] = str(settings['config_directory'])
-    os.environ['RECRYO_AUTH'] = '1' if settings['auth_enabled'] else '0'
-    os.environ['RECRYO_SESSION_HOURS'] = str(settings['session_hours'])
-    os.environ['RECRYO_SSH_HOST'] = str(settings['ssh_host'])
-    os.environ['RECRYO_SSH_PORT'] = str(settings['ssh_port'])
+        os.environ['RELION_WEB_CONFIG'] = str(settings['config_directory'])
+    os.environ['RELION_WEB_AUTH'] = '1' if settings['auth_enabled'] else '0'
+    os.environ['RELION_WEB_SESSION_HOURS'] = str(settings['session_hours'])
+    os.environ['RELION_WEB_SSH_HOST'] = str(settings['ssh_host'])
+    os.environ['RELION_WEB_SSH_PORT'] = str(settings['ssh_port'])
     if settings['initial_project']:
-        os.environ['RECRYO_INITIAL_PROJECT'] = str(settings['initial_project'])
+        os.environ['RELION_WEB_INITIAL_PROJECT'] = str(settings['initial_project'])
 
 
 def main() -> None:

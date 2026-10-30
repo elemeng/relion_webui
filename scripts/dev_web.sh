@@ -11,7 +11,7 @@
 #
 # So editing a .py restarts the agent and editing a .tsx refreshes the browser,
 # with no manual rebuild of the committed bundle under
-# backend/recryo/static.
+# backend/relion_webui/static.
 #
 # Nothing here needs RELION to be compiled: the agent is pure Python and the
 # only RELION binary it may call is relion_pipeliner, for the clean/scheduler
@@ -37,13 +37,13 @@ set -euo pipefail
 readonly WEBUI_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly FRONTEND_DIR="$WEBUI_ROOT/frontend"
 readonly SOURCE_DIR="$WEBUI_ROOT/backend"
-readonly VENV_DIR="${RECRYO_VENV:-$WEBUI_ROOT/.venv}"
+readonly VENV_DIR="${RELION_WEB_VENV:-$WEBUI_ROOT/.venv}"
 
 # 127.0.0.1 by default: --no-auth is refused on any other address, and this
 # script disables auth unless --auth is given.
 HOST="127.0.0.1"
-API_PORT="${RECRYO_PORT:-8765}"
-UI_PORT="${RECRYO_UI_PORT:-5173}"
+API_PORT="${RELION_WEB_PORT:-8765}"
+UI_PORT="${RELION_WEB_UI_PORT:-5173}"
 RUN_API=1
 RUN_UI=1
 DO_LOGIN=0
@@ -98,14 +98,14 @@ if [[ -z "$UV" ]]; then
     die "uv is not on PATH; install it with 'curl -LsSf https://astral.sh/uv/install.sh | sh'"
 fi
 
-PYTHON="${RECRYO_PYTHON:-}"
+PYTHON="${RELION_WEB_PYTHON:-}"
 if [[ -z "$PYTHON" ]]; then
     if [[ -x "$VENV_DIR/bin/python" ]]; then
         PYTHON="$VENV_DIR/bin/python"
     elif command -v python3 >/dev/null 2>&1; then
         PYTHON="$(command -v python3)"
     else
-        die "no python3 on PATH; set RECRYO_PYTHON"
+        die "no python3 on PATH; set RELION_WEB_PYTHON"
     fi
 fi
 
@@ -187,7 +187,7 @@ AUTH_FLAG=(--no-auth)
 # the project it was started with without a separate --root.
 # Typer promotes a single command to the root, so there is no "serve" here.
 AGENT_CMD=(
-    "$PYTHON" -m recryo._cli
+    "$PYTHON" -m relion_webui._cli
     --host "$HOST" --port "$API_PORT"
     --poll-interval 0.5
     --reload
@@ -209,12 +209,12 @@ if (( RUN_UI )); then
     # Vite proxies to the agent's port; keep them in step when --api-port moves.
     VITE_ARGS=(--port "$UI_PORT" --strictPort)
     note "ui     -> http://127.0.0.1:$UI_PORT/  (hot reload; proxy -> $API_PORT)"
-    # vite.config.ts reads RECRYO_API to point its /api and /ws proxy at the
+    # vite.config.ts reads RELION_WEB_API to point its /api and /ws proxy at the
     # agent. `env -C` would need coreutils 8.28+, so the cd happens in a
     # subshell that execs into the group leader instead.
     (
         cd "$FRONTEND_DIR"
-        export RECRYO_API="http://127.0.0.1:$API_PORT"
+        export RELION_WEB_API="http://127.0.0.1:$API_PORT"
         exec setsid bun run dev -- "${VITE_ARGS[@]}"
     ) &
     PIDS+=($!)

@@ -1,4 +1,4 @@
-recryo — a web interface for RELION cryo-ET projects
+relion-webui — a web interface for RELION cryo-ET projects
 
 Copyright (C) 2026 elemeng
 
@@ -28,15 +28,15 @@ This package is a derivative work of RELION, which is GPL-2.0-or-later
 (each source file in RELION says "version 2 of the License, or (at your
 option) any later version"). Specifically:
 
-  * backend/recryo/generated_schema.py, generated_commands.py and
+  * backend/relion_webui/generated_schema.py, generated_commands.py and
     generated_cli_options.py are extracted mechanically from RELION's
     C++ sources (pipeline_jobs.cpp, gui_jobwindow.cpp and RELION's Typer
     programs). generated_schema.py carries RELION's option help text
     essentially verbatim: 330 of 335 strings match the C++ sources.
-  * backend/recryo/job_commands.py ports the getCommands* functions
+  * backend/relion_webui/job_commands.py ports the getCommands* functions
     one by one, citing the source line for each.
-  * backend/recryo/job_specs.py transcribes RELION's output-node tables.
-  * backend/recryo/_vendor.py reimplements RELION's filtered tilt-series
+  * backend/relion_webui/job_specs.py transcribes RELION's output-node tables.
+  * backend/relion_webui/_vendor.py reimplements RELION's filtered tilt-series
     writer to produce the same on-disk layout.
 
 A permissive license (MIT, BSD, Apache) therefore cannot be used: the

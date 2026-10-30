@@ -9,14 +9,14 @@ from pathlib import Path
 
 import pytest
 
-from recryo import browse, pipeline
+from relion_webui import browse, pipeline
 
 fastapi = pytest.importorskip('fastapi')
 pytest.importorskip('httpx')
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from recryo.app import create_app  # noqa: E402
+from relion_webui.app import create_app  # noqa: E402
 
 
 @pytest.fixture
@@ -199,8 +199,8 @@ def test_browse_locations_endpoint(client):
 
 
 def test_browse_requires_login_when_auth_is_on(tmp_path):
-    from recryo.auth import AuthManager
-    from recryo.projects import ProjectRegistry
+    from relion_webui.auth import AuthManager
+    from relion_webui.projects import ProjectRegistry
 
     app = create_app(
         roots=[tmp_path],

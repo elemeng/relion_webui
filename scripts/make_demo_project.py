@@ -20,8 +20,8 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'backend'))
 
-from recryo import job_artifacts, pipeline  # noqa: E402
-from recryo import job_specs  # noqa: E402
+from relion_webui import job_artifacts, pipeline  # noqa: E402
+from relion_webui import job_specs  # noqa: E402
 
 
 # (job type, label used in the tree, status, input node names, log lines)
@@ -157,7 +157,7 @@ def demo_options(spec, root: Path, index: int) -> dict:
     options: dict = {'fn_in': str(root / 'tilt_series.star')}
     schema = None
     try:
-        from recryo import job_commands
+        from relion_webui import job_commands
 
         schema = job_commands.form_schema(spec.job_type)
     except (KeyError, ImportError):

@@ -68,7 +68,7 @@ def resolve_source_root(explicit=None) -> Path:
         'could not find a RELION checkout. Pass --relion-source /path/to/relion '
         'or set RELION_SOURCE. Tried:\n  ' + tried
     )
-OUTPUT = WEBUI_ROOT / 'backend' / 'recryo' / 'generated_cli_options.py'
+OUTPUT = WEBUI_ROOT / 'backend' / 'relion_webui' / 'generated_cli_options.py'
 
 
 def _strip_comments(text: str) -> str:

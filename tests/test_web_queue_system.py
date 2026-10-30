@@ -21,14 +21,14 @@ from pathlib import Path
 
 import pytest
 
-from recryo import hosts as hosts_module
-from recryo import job_artifacts
-from recryo._vendor import JOB_SUCCESS_FILENAME
-from recryo import node_metrics
-from recryo import pipeline as pipeline_module
-from recryo import job_artifacts, queue_system
-from recryo.jobs import JobManager
-from recryo.paths import PathGuard
+from relion_webui import hosts as hosts_module
+from relion_webui import job_artifacts
+from relion_webui._vendor import JOB_SUCCESS_FILENAME
+from relion_webui import node_metrics
+from relion_webui import pipeline as pipeline_module
+from relion_webui import job_artifacts, queue_system
+from relion_webui.jobs import JobManager
+from relion_webui.paths import PathGuard
 
 
 # ------------------------------------------------------------------ fixtures

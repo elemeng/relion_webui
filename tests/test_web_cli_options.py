@@ -24,9 +24,9 @@ import pytest
 
 from _relion_source import relion_source
 
-from recryo import cli_options, job_commands
-from recryo.generated_cli_options import CLI_OPTIONS
-from recryo.generated_schema import JOBS
+from relion_webui import cli_options, job_commands
+from relion_webui.generated_cli_options import CLI_OPTIONS
+from relion_webui.generated_schema import JOBS
 
 WEBUI_ROOT = Path(__file__).resolve().parents[1]
 GENERATOR = WEBUI_ROOT / 'scripts' / 'generate_web_cli_options.py'

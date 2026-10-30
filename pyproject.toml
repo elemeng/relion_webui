@@ -3,7 +3,7 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "recryo"
+name = "relion-webui"
 version = "0.1.0"
 description = "Browser UI for RELION cryo-ET projects: browse data, submit jobs, manage the pipeline"
 readme = "README.md"
@@ -71,7 +71,7 @@ dev = [
 ]
 
 [project.scripts]
-recryo = "recryo._cli:main"
+relion-webui = "relion_webui._cli:main"
 
 [tool.uv]
 # uv is the Python toolchain for this distribution. It creates the virtualenv
@@ -92,10 +92,10 @@ source = "https://github.com/3dem/relion/tree/master/webui"
 
 [tool.setuptools]
 package-dir = {"" = "backend"}
-packages = ["recryo"]
+packages = ["relion_webui"]
 
 [tool.setuptools.package-data]
-recryo = ["static/**/*", "README.md", "COVERAGE.md"]
+relion_webui = ["static/**/*", "README.md", "COVERAGE.md"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"

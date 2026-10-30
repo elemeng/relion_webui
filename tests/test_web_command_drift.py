@@ -28,9 +28,9 @@ from pathlib import Path
 
 import pytest
 
-from recryo import job_commands
-from recryo.generated_commands import COMMANDS
-from recryo.generated_schema import JOBS
+from relion_webui import job_commands
+from relion_webui.generated_commands import COMMANDS
+from relion_webui.generated_schema import JOBS
 
 from _relion_source import relion_source
 

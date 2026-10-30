@@ -10,7 +10,7 @@ import { fileURLToPath, URL } from "node:url";
 
 // Where the dev server forwards API and WebSocket traffic. scripts/dev_web.sh
 // sets this when the agent runs on a non-default port.
-const API_TARGET = process.env.RECRYO_API ?? "http://127.0.0.1:8765";
+const API_TARGET = process.env.RELION_WEB_API ?? "http://127.0.0.1:8765";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -20,7 +20,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: "../backend/recryo/static",
+    outDir: "../backend/relion_webui/static",
     emptyOutDir: false,
     assetsDir: "assets",
     // Fixed names keep index.html self-contained and avoid stale hash misses
@@ -38,7 +38,7 @@ export default defineConfig({
     // `npm run dev` proxies API calls to a running agent, so the UI can be
     // developed with hot reload instead of rebuilding for every change.
     //
-    // RECRYO_API lets scripts/dev_web.sh point this at a different port;
+    // RELION_WEB_API lets scripts/dev_web.sh point this at a different port;
     // the default matches the agent's own default.
     proxy: {
       "/api": API_TARGET,

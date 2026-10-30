@@ -11,7 +11,7 @@ Keep it current. A rule here that has stopped being true is worse than no rule.
 
 ## What this is
 
-`recryo` is a browser interface for RELION cryo-ET projects. You can browse
+`relion_webui` is a browser interface for RELION cryo-ET projects. You can browse
 tilt-series and tomograms, render slices and volumes, build and submit jobs,
 watch them run, and inspect what they produced.
 
@@ -71,8 +71,8 @@ is installed (see *Gated decisions*).
 ## Layout
 
 ```
-backend/recryo/          the package
-frontend/                React app; `npm`/`bun run build` writes into backend/recryo/static
+backend/relion_webui/          the package
+frontend/                React app; `npm`/`bun run build` writes into backend/relion_webui/static
 scripts/                 dev_web.sh, dev_test.sh, the three table generators
 tests/                   pytest suite
 docs/                    design notes (local only, not committed)

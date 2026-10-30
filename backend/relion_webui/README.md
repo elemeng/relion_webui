@@ -24,7 +24,7 @@ their normal account rather than a password this program stores.
 
 ## Install
 
-This is a standalone Python distribution (`recryo`). It does **not** need
+This is a standalone Python distribution (`relion_webui`). It does **not** need
 RELION to be compiled and does not need RELION's Python package: the pipeline
 file format is written directly and the programs are driven through their
 command lines and the sentinel files. RELION's binaries must be on `PATH` to
@@ -34,7 +34,7 @@ are detected at run time and their absence is reported per action.
 From a RELION checkout:
 
 ```bash
-cd recryo
+cd relion_webui
 uv pip install -e '.[dev]'
 ./scripts/dev_web.sh          # agent + Vite, both with reload
 ```
@@ -43,8 +43,8 @@ On a machine that already has RELION installed, point it at that installation
 and run the installed command:
 
 ```bash
-uv pip install recryo    # or: uv pip install /path/to/recryo
-recryo --host 127.0.0.1 --root /data/projects
+uv pip install relion-webui    # or: uv pip install /path/to/relion_webui
+relion_webui --host 127.0.0.1 --root /data/projects
 ```
 
 The UI is a Vite/React bundle built with shadcn/ui components, and the built
@@ -66,10 +66,10 @@ is remembered per browser.
 cd frontend
 bun install     # reads bun.lock
 bun run dev     # proxies /api and /ws to an agent on 127.0.0.1:8765
-bun run build   # writes the bundle into backend/recryo/static
+bun run build   # writes the bundle into backend/relion_webui/static
 ```
 
-`bun run build` writes into `backend/recryo/static`, which is what the
+`bun run build` writes into `backend/relion_webui/static`, which is what the
 agent serves; the result is committed, so a clone runs without any JS toolchain.
 Building RELION itself never runs bun.
 
@@ -81,13 +81,13 @@ copied in rather than pulled from a package, so they can be edited directly.
 One agent per user, started once:
 
 ```bash
-recryo --port 8765
+relion_webui --port 8765
 ```
 
 The banner prints the address to open:
 
 ```
-recryo running as meng
+relion_webui running as meng
 listening on 0.0.0.0:8765
 open in a browser:
   http://192.168.1.42:8765/
@@ -105,7 +105,7 @@ well for keeping it up:
 Description=RELION cryo-ET web agent
 
 [Service]
-ExecStart=%h/relion/build/bin/recryo --port 8765
+ExecStart=%h/relion/build/bin/relion_webui --port 8765
 Restart=on-failure
 
 [Install]
@@ -163,7 +163,7 @@ the sidebar or through the API:
 | `DELETE /api/projects?path=` | Forget a project (its files are untouched). |
 
 The list is stored in `~/.config/relion-web/projects.json` (override with
-`--config-directory` or `RECRYO_HOME`). It is also the access
+`--config-directory` or `RELION_WEB_HOME`). It is also the access
 boundary: the file APIs only reach listed projects and `--root` directories, so
 a client cannot point the agent at arbitrary paths even though the agent could
 read them.
@@ -365,7 +365,7 @@ time RELION changed an option, so the metadata is generated from RELION's own
 sources:
 
 ```bash
-python recryo/scripts/generate_web_job_schema.py   # rewrites generated_schema.py
+python relion_webui/scripts/generate_web_job_schema.py   # rewrites generated_schema.py
 ```
 
 `generated_schema.py` holds, per job, every option's label, default, range,
@@ -454,7 +454,7 @@ the backend as `<Type>/job<NNN>`, so `output_directory` may be left empty.
 ## Tests
 
 ```bash
-cd recryo
+cd relion_webui
 uv pip install -e '.[dev]'
 pytest
 ```
@@ -465,7 +465,7 @@ when no checkout is available (`RELION_SOURCE`, or the parent directory).
 Format compatibility is checked separately, against RELION's own parser:
 
 ```bash
-recryo/scripts/relion_compat_check/run.sh
+relion_webui/scripts/relion_compat_check/run.sh
 ```
 
 It compiles a small tool from `src/metadata_table.cpp` plus three writers, then

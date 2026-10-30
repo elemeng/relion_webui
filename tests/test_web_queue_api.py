@@ -9,8 +9,8 @@ is exactly the state a fresh project is in.
 import pytest
 from fastapi.testclient import TestClient
 
-from recryo import job_artifacts, pipeline as pipeline_module
-from recryo.app import create_app
+from relion_webui import job_artifacts, pipeline as pipeline_module
+from relion_webui.app import create_app
 
 
 @pytest.fixture

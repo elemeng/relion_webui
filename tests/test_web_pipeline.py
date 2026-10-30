@@ -14,9 +14,9 @@ import pandas as pd
 import pytest
 import starfile
 
-from recryo import job_artifacts, job_commands, job_specs, pipeline
-from recryo.jobs import JobManager
-from recryo.paths import PathGuard
+from relion_webui import job_artifacts, job_commands, job_specs, pipeline
+from relion_webui.jobs import JobManager
+from relion_webui.paths import PathGuard
 
 
 def write_reference_pipeline(project: Path, *, job_counter: int = 8) -> Path:
@@ -381,7 +381,7 @@ def test_column_indices_are_sequential(tmp_path):
     Duplicated ``#1`` markers parsed fine in practice but produced files that
     differ from what the GUI emits, so they are checked structurally.
     """
-    from recryo import job_artifacts as artifacts
+    from relion_webui import job_artifacts as artifacts
 
     proj = tmp_path / 'proj'
     proj.mkdir()

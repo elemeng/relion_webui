@@ -21,8 +21,8 @@ from _relion_source import relion_source
 WEBUI_ROOT = Path(__file__).resolve().parents[1]
 GENERATOR = WEBUI_ROOT / 'scripts' / 'generate_web_job_schema.py'
 
-from recryo import job_commands, job_specs  # noqa: E402
-from recryo.generated_schema import (  # noqa: E402
+from relion_webui import job_commands, job_specs  # noqa: E402
+from relion_webui.generated_schema import (  # noqa: E402
     FIELD_COUNTS,
     JOBS,
 )

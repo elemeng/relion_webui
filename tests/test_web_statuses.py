@@ -8,7 +8,7 @@ that replaced those ad-hoc dicts.
 
 import pytest
 
-from recryo import statuses
+from relion_webui import statuses
 
 
 def test_every_status_has_a_pipeline_label():

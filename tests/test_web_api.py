@@ -5,11 +5,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from recryo.app import create_app
-from recryo import job_commands
-from recryo import pipeline as pipeline_module
-from recryo.jobs import JobManager
-from recryo.paths import PathGuard
+from relion_webui.app import create_app
+from relion_webui import job_commands
+from relion_webui import pipeline as pipeline_module
+from relion_webui.jobs import JobManager
+from relion_webui.paths import PathGuard
 
 fastapi = pytest.importorskip('fastapi')
 pytest.importorskip('httpx')
@@ -324,7 +324,7 @@ def test_job_manager_success_sentinel_wins(tmp_path):
     )
     executable.chmod(0o755)
 
-    import recryo.jobs as jobs_module
+    import relion_webui.jobs as jobs_module
 
     original = jobs_module.SUPPORTED_JOBS.copy()
     jobs_module.SUPPORTED_JOBS['fake'] = str(executable)
@@ -347,7 +347,7 @@ def test_job_manager_abort_sentinel_reports_aborted(tmp_path):
     )
     executable.chmod(0o755)
 
-    import recryo.jobs as jobs_module
+    import relion_webui.jobs as jobs_module
 
     original = jobs_module.SUPPORTED_JOBS.copy()
     jobs_module.SUPPORTED_JOBS['fake_abort'] = str(executable)
@@ -374,7 +374,7 @@ def test_cancel_reports_aborted_and_cleans_abort_file(tmp_path):
     executable.write_text('#!/bin/sh\nsleep 30\n')
     executable.chmod(0o755)
 
-    import recryo.jobs as jobs_module
+    import relion_webui.jobs as jobs_module
 
     original = jobs_module.SUPPORTED_JOBS.copy()
     jobs_module.SUPPORTED_JOBS['slow'] = str(executable)
@@ -402,7 +402,7 @@ def test_completed_job_reports_success_even_if_cancel_requested(tmp_path):
     executable.write_text('#!/bin/sh\nexit 0\n')
     executable.chmod(0o755)
 
-    import recryo.jobs as jobs_module
+    import relion_webui.jobs as jobs_module
 
     original = jobs_module.SUPPORTED_JOBS.copy()
     jobs_module.SUPPORTED_JOBS['quick'] = str(executable)
@@ -430,7 +430,7 @@ def test_log_chunk_returns_only_new_bytes(tmp_path):
     )
     executable.chmod(0o755)
 
-    import recryo.jobs as jobs_module
+    import relion_webui.jobs as jobs_module
 
     original = jobs_module.SUPPORTED_JOBS.copy()
     jobs_module.SUPPORTED_JOBS['chatty'] = str(executable)
@@ -461,7 +461,7 @@ def test_log_chunk_resets_when_offset_past_end(tmp_path):
     executable.write_text('#!/bin/sh\necho hi\n')
     executable.chmod(0o755)
 
-    import recryo.jobs as jobs_module
+    import relion_webui.jobs as jobs_module
 
     original = jobs_module.SUPPORTED_JOBS.copy()
     jobs_module.SUPPORTED_JOBS['tiny'] = str(executable)
@@ -509,7 +509,7 @@ def test_websocket_log_subscription_streams_chunks(tmp_path):
     executable.write_text('#!/bin/sh\necho payload-line\n')
     executable.chmod(0o755)
 
-    import recryo.jobs as jobs_module
+    import relion_webui.jobs as jobs_module
 
     original = jobs_module.SUPPORTED_JOBS.copy()
     jobs_module.SUPPORTED_JOBS['stream'] = str(executable)
@@ -714,7 +714,7 @@ def _project_with_job(tmp_path):
     pipeline_module.write_pipeline(project, p)
     job_dir = project / 'Tomograms' / 'job001'
     job_dir.mkdir(parents=True)
-    from recryo import job_artifacts
+    from relion_webui import job_artifacts
 
     job_artifacts.write_job_star(job_dir, 'relion.reconstructtomograms', {})
     job_artifacts.write_output_nodes(
@@ -842,7 +842,7 @@ def test_job_mark_api(tmp_path):
 
 def _register_import_job(project):
     """A project with one Import job, which is what the endpoint looks up."""
-    from recryo import pipeline
+    from relion_webui import pipeline
 
     pipeline.write_pipeline(project, pipeline.Pipeline(job_counter=1))
     state = pipeline.read_pipeline(project)
@@ -863,7 +863,7 @@ def _register_import_job(project):
 
 def test_job_options_reads_job_star(client, tmp_path):
     """The dialog's parameters tab is only honest if this returns the record."""
-    from recryo import job_artifacts, pipeline
+    from relion_webui import job_artifacts, pipeline
 
     project = tmp_path / 'proj'
     project.mkdir()
@@ -888,7 +888,7 @@ def test_job_options_reads_job_star(client, tmp_path):
 
 def test_job_options_is_null_without_job_star(client, tmp_path):
     """null means "not recorded", which must not read as "no options"."""
-    from recryo import pipeline
+    from relion_webui import pipeline
 
     project = tmp_path / 'proj'
     project.mkdir()
@@ -909,7 +909,7 @@ def test_job_options_is_null_without_job_star(client, tmp_path):
 
 def test_job_options_refuses_a_path_outside_the_project(client, tmp_path):
     """process_name comes from the browser, so it must stay inside the project."""
-    from recryo import pipeline
+    from relion_webui import pipeline
 
     project = tmp_path / 'proj'
     project.mkdir()

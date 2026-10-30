@@ -13,8 +13,8 @@ import warnings
 import numpy as np
 import pytest
 
-from recryo import mrc
-from recryo.app import create_app
+from relion_webui import mrc
+from relion_webui.app import create_app
 
 fastapi = pytest.importorskip('fastapi')
 from fastapi.testclient import TestClient  # noqa: E402

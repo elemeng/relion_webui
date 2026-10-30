@@ -16,9 +16,9 @@ from pathlib import Path
 
 import pytest
 
-from recryo import assistant, job_actions, tools
-from recryo.paths import PathGuard
-from recryo.projects import ProjectRegistry
+from relion_webui import assistant, job_actions, tools
+from relion_webui.paths import PathGuard
+from relion_webui.projects import ProjectRegistry
 
 
 # --------------------------------------------------------------- fixtures
@@ -361,7 +361,7 @@ def test_deleting_twice_does_not_destroy_the_first_copy(context, demo_project):
     The earlier copy is the only remaining one, and Trash exists to keep it, so
     a name collision gets a suffix instead of an rmtree.
     """
-    from recryo import pipeline as pipeline_module
+    from relion_webui import pipeline as pipeline_module
 
     job = demo_project / 'Tomograms' / 'job001'
     job_actions.delete(demo_project, 'Tomograms/job001')
@@ -393,7 +393,7 @@ def test_deleting_twice_does_not_destroy_the_first_copy(context, demo_project):
 
 def test_a_suffixed_trash_entry_restores_to_its_real_name(context, demo_project):
     """The suffix is a Trash artifact; the job comes back as `job001`."""
-    from recryo import pipeline as pipeline_module
+    from relion_webui import pipeline as pipeline_module
     import shutil
 
     job_actions.delete(demo_project, 'Tomograms/job001')
@@ -423,7 +423,7 @@ def test_a_suffixed_trash_entry_restores_to_its_real_name(context, demo_project)
 
 def test_a_running_job_cannot_be_deleted(context, demo_project):
     """Moving a directory a process is writing into is not recoverable."""
-    from recryo import pipeline as pipeline_module
+    from relion_webui import pipeline as pipeline_module
 
     pipeline = pipeline_module.read_pipeline(demo_project)
     pipeline.find_process('Tomograms/job001').status = pipeline_module.STATUS_RUNNING
@@ -443,7 +443,7 @@ def test_a_running_job_cannot_be_deleted(context, demo_project):
 
 # ------------------------------------------------------------------ MCP layer
 def test_mcp_is_optional_but_importable():
-    from recryo import mcp_server
+    from relion_webui import mcp_server
 
     # The registry is the contract; the transport is a view over it. If the MCP
     # extra is absent the registry must still work, which is why tools.py has no
@@ -455,7 +455,7 @@ def test_read_only_mcp_publishes_no_write_tools():
     """A read-only server must not advertise capabilities it will refuse."""
     from fastapi.testclient import TestClient
 
-    from recryo.app import create_app
+    from relion_webui.app import create_app
 
     app = create_app(
         roots=['/tmp'],
@@ -519,7 +519,7 @@ def test_call_tool_refuses_writes_when_disabled(context, demo_project):
 
 def test_mcp_annotations_mark_writes_destructive():
     pytest.importorskip('mcp')
-    from recryo import mcp_server
+    from relion_webui import mcp_server
 
     registry = {tool.name: tool for tool in tools.build_registry()}
     for name, tool in registry.items():
@@ -606,8 +606,8 @@ def test_approve_endpoint_runs_the_tool(monkeypatch, demo_project):
     """The HTTP path must execute, not just mark the call allowed."""
     from fastapi.testclient import TestClient
 
-    from recryo import assistant as assistant_module
-    from recryo.app import create_app
+    from relion_webui import assistant as assistant_module
+    from relion_webui.app import create_app
 
     # A stub model that asks for one write, so the route parks a real call.
     from pydantic_ai.models.function import DeltaToolCall, FunctionModel
@@ -701,7 +701,7 @@ def test_conversation_is_per_session(monkeypatch):
     """Two browsers must not share a history, so the key is the session token."""
     from fastapi.testclient import TestClient
 
-    from recryo.app import create_app
+    from relion_webui.app import create_app
 
     app = create_app(roots=['/tmp'], enable_assistant=True)
     with TestClient(app) as client:
@@ -719,7 +719,7 @@ def test_conversation_is_per_session(monkeypatch):
 def test_assistant_is_off_by_default():
     from fastapi.testclient import TestClient
 
-    from recryo.app import create_app
+    from relion_webui.app import create_app
 
     app = create_app(roots=['/tmp'])
     with TestClient(app) as client:
@@ -730,7 +730,7 @@ def test_assistant_is_off_by_default():
 def test_mcp_is_off_by_default():
     from fastapi.testclient import TestClient
 
-    from recryo.app import create_app
+    from relion_webui.app import create_app
 
     app = create_app(roots=['/tmp'])
     with TestClient(app) as client:
@@ -746,7 +746,7 @@ def test_settings_returns_the_same_shape_as_config():
     """
     from fastapi.testclient import TestClient
 
-    from recryo.app import create_app
+    from relion_webui.app import create_app
 
     app = create_app(
         roots=['/tmp'],
@@ -769,7 +769,7 @@ def test_switching_provider_starts_a_fresh_conversation():
     """A provider change must not replay one vendor's history into another."""
     from fastapi.testclient import TestClient
 
-    from recryo.app import create_app
+    from relion_webui.app import create_app
 
     app = create_app(roots=['/tmp'], enable_assistant=True)
     with TestClient(app) as client:
@@ -790,7 +790,7 @@ def test_switching_provider_starts_a_fresh_conversation():
 def test_unknown_provider_is_rejected():
     from fastapi.testclient import TestClient
 
-    from recryo.app import create_app
+    from relion_webui.app import create_app
 
     app = create_app(roots=['/tmp'], enable_assistant=True)
     with TestClient(app) as client:
@@ -803,7 +803,7 @@ def test_unknown_provider_is_rejected():
 def test_chat_without_a_key_streams_an_error_not_a_crash():
     from fastapi.testclient import TestClient
 
-    from recryo.app import create_app
+    from relion_webui.app import create_app
 
     app = create_app(roots=['/tmp'], enable_assistant=True)
     with TestClient(app) as client:
@@ -894,7 +894,7 @@ def test_wait_is_not_a_write_tool():
 
 # ------------------------------------------------------- results as numbers
 def test_metrics_read_defocus_from_a_ctf_star(demo_project, tmp_path):
-    from recryo import pipeline as pipeline_module
+    from relion_webui import pipeline as pipeline_module
 
     job = demo_project / 'Tomograms' / 'job001'
     # Metrics are chosen by the job's recorded type, so this has to be a CTF job.
@@ -1000,7 +1000,7 @@ def test_submit_refuses_a_missing_input(context, demo_project):
 # --------------------------------------------------- MCP resources and prompts
 def test_mcp_content_is_registered():
     pytest.importorskip('mcp')
-    from recryo import mcp_content
+    from relion_webui import mcp_content
 
     assert len(mcp_content.template_uris()) == 5
     assert mcp_content.resource_uris()['projects'].startswith('relion://')
@@ -1012,7 +1012,7 @@ def test_mcp_content_is_registered():
 
 
 def test_uri_encoding_survives_awkward_paths():
-    from recryo import mcp_content
+    from relion_webui import mcp_content
 
     uri = mcp_content.project_uri('/data/my project#1')
     assert ' ' not in uri and '#' not in uri
@@ -1023,7 +1023,7 @@ def test_resources_and_prompts_are_served(demo_project, tmp_path):
     pytest.importorskip('mcp')
     import asyncio
 
-    from recryo import mcp_content, mcp_server
+    from relion_webui import mcp_content, mcp_server
 
     ctx = context_of(demo_project, tmp_path)
     server = mcp_server.create_server(ctx, hosts=['testserver'])
@@ -1060,7 +1060,7 @@ def test_read_only_mcp_still_serves_resources(demo_project, tmp_path):
     pytest.importorskip('mcp')
     import asyncio
 
-    from recryo import mcp_server
+    from relion_webui import mcp_server
 
     ctx = context_of(demo_project, tmp_path)
     server = mcp_server.create_server(
@@ -1079,7 +1079,7 @@ def test_read_only_mcp_still_serves_resources(demo_project, tmp_path):
 
 # ------------------------------------------------------- execution hosts
 def test_hosts_always_include_local_first():
-    from recryo import hosts
+    from relion_webui import hosts
 
     registry = hosts.registry_from_specs(['gpu2=gpu2.lab', 'gpu1=gpu1.lab'])
     assert [h.name for h in registry.list()] == ['local', 'gpu1', 'gpu2']
@@ -1089,7 +1089,7 @@ def test_hosts_always_include_local_first():
 
 
 def test_host_spec_forms():
-    from recryo import hosts
+    from relion_webui import hosts
 
     plain = hosts.parse_host_spec('gpu1=gpu1.lab')
     assert (plain.name, plain.hostname, plain.port, plain.user) == ('gpu1', 'gpu1.lab', 22, None)
@@ -1101,7 +1101,7 @@ def test_host_spec_forms():
 
 @pytest.mark.parametrize('spec', ['noequals', 'a=', '=b', 'a=b:x', 'a='])
 def test_bad_host_specs_are_refused(spec):
-    from recryo import hosts
+    from relion_webui import hosts
 
     with pytest.raises(hosts.HostError):
         hosts.parse_host_spec(spec)
@@ -1109,14 +1109,14 @@ def test_bad_host_specs_are_refused(spec):
 
 def test_local_cannot_be_redefined():
     """`local` is what "run here" means; shadowing it would be surprising."""
-    from recryo import hosts
+    from relion_webui import hosts
 
     with pytest.raises(hosts.HostError):
         hosts.registry_from_specs(['local=elsewhere.lab'])
 
 
 def test_unknown_host_lists_the_known_ones():
-    from recryo import hosts
+    from relion_webui import hosts
 
     registry = hosts.registry_from_specs(['gpu1=gpu1.lab'])
     with pytest.raises(hosts.HostError) as excinfo:
@@ -1126,14 +1126,14 @@ def test_unknown_host_lists_the_known_ones():
 
 def test_local_host_leaves_the_argv_alone():
     """One code path for execution: a local job is not wrapped in anything."""
-    from recryo import hosts
+    from relion_webui import hosts
 
     argv = ['/bin/sh', '-c', 'echo hi']
     assert hosts.wrap_for_host(argv, '/data/p', hosts.ExecutionHost('local')) == argv
 
 
 def test_remote_host_wraps_in_ssh_with_the_shared_directory():
-    from recryo import hosts
+    from relion_webui import hosts
 
     host = hosts.ExecutionHost('gpu1', 'gpu1.lab')
     launch = hosts.wrap_for_host(['relion_x', '--i', 'a.star'], '/data/my proj', host)
@@ -1150,7 +1150,7 @@ def test_remote_host_wraps_in_ssh_with_the_shared_directory():
 
 def test_remote_command_quotes_each_argument():
     """A job's argv must not be re-split by the remote shell."""
-    from recryo import hosts
+    from relion_webui import hosts
 
     command = hosts.remote_command(['relion_x', '--fn', 'a b.star'], '/data/p')
     assert "'a b.star'" in command
@@ -1158,7 +1158,7 @@ def test_remote_command_quotes_each_argument():
 
 def test_no_password_is_ever_stored():
     """The security property the remote design has to live with."""
-    from recryo import hosts
+    from relion_webui import hosts
 
     launch = hosts.wrap_for_host(['x'], '/p', hosts.ExecutionHost('g', 'g.lab'))
     joined = ' '.join(launch)
@@ -1172,7 +1172,7 @@ def test_queue_on_a_remote_host_is_refused():
     """Rendering and submitting the template happens on the agent, not the node."""
     import inspect
 
-    from recryo.jobs import JobManager
+    from relion_webui.jobs import JobManager
 
     source = inspect.getsource(JobManager.submit)
     assert 'cannot submit a queued job' in source
@@ -1181,7 +1181,7 @@ def test_queue_on_a_remote_host_is_refused():
 def test_job_records_the_host_it_ran_on():
     import time
 
-    from recryo.jobs import Job
+    from relion_webui.jobs import Job
 
     job = Job(
         id='x', job_type='t', command=[], output_directory='/tmp',
@@ -1192,7 +1192,7 @@ def test_job_records_the_host_it_ran_on():
 
 
 def test_list_hosts_tool_reports_the_registry(tmp_path):
-    from recryo import hosts
+    from relion_webui import hosts
 
     registry = hosts.registry_from_specs(['gpu1=gpu1.lab'])
     ctx = tools.ToolContext(
@@ -1218,7 +1218,7 @@ def test_submit_job_takes_a_host():
 def test_api_reports_hosts_and_accepts_one_on_submit(tmp_path, demo_project):
     from fastapi.testclient import TestClient
 
-    from recryo.app import create_app
+    from relion_webui.app import create_app
 
     app = create_app(
         roots=[str(demo_project)], host_nodes=['gpu1=gpu1.lab']
@@ -1268,7 +1268,7 @@ MemAvailable: 32768000 kB
 
 
 def test_snapshot_parses_every_section():
-    from recryo import node_metrics
+    from relion_webui import node_metrics
 
     snap = node_metrics.parse_snapshot('gpu1', SNAPSHOT)
     assert snap.reachable
@@ -1286,7 +1286,7 @@ def test_gpu_fields_including_unsupported_ones():
     A laptop GPU commonly has no power limit; printing 0 W would read as "drawing
     no power", which is a different and wrong statement.
     """
-    from recryo import node_metrics
+    from relion_webui import node_metrics
 
     snap = node_metrics.parse_snapshot('n', SNAPSHOT)
     assert len(snap.gpus) == 2
@@ -1302,7 +1302,7 @@ def test_gpu_fields_including_unsupported_ones():
 
 def test_processes_group_by_job_directory():
     """One row per job, not per MPI rank."""
-    from recryo import node_metrics
+    from relion_webui import node_metrics
 
     snap = node_metrics.parse_snapshot('n', SNAPSHOT)
     names = [job.process_name for job in snap.jobs]
@@ -1319,7 +1319,7 @@ def test_processes_group_by_job_directory():
 
 def test_snapshot_survives_a_node_with_no_gpu():
     """The card must still show CPU and memory; a GPU is not required."""
-    from recryo import node_metrics
+    from relion_webui import node_metrics
 
     plain = SNAPSHOT.split('@@GPU@@')[0] + '@@END@@\n'
     snap = node_metrics.parse_snapshot('cpu-only', plain)
@@ -1329,10 +1329,10 @@ def test_snapshot_survives_a_node_with_no_gpu():
 
 
 def test_a_failed_ssh_is_reported_not_raised():
-    from recryo import node_metrics
+    from relion_webui import node_metrics
 
     snap = node_metrics.collect(
-        __import__('recryo.hosts', fromlist=['x']).ExecutionHost(
+        __import__('relion_webui.hosts', fromlist=['x']).ExecutionHost(
             'gone', 'no.such.host.invalid'
         ),
         timeout=5,
@@ -1343,7 +1343,7 @@ def test_a_failed_ssh_is_reported_not_raised():
 
 def test_local_collection_works_without_ssh():
     """The agent's own card uses the same script, so there is one code path."""
-    from recryo import hosts, node_metrics
+    from relion_webui import hosts, node_metrics
 
     snap = node_metrics.collect(hosts.ExecutionHost('local'))
     assert snap.reachable is True
@@ -1353,7 +1353,7 @@ def test_local_collection_works_without_ssh():
 
 # ---------------------------------------------------------- node management
 def test_hosts_persist_and_carry_enabled_state(tmp_path):
-    from recryo import hosts
+    from relion_webui import hosts
 
     config = tmp_path / 'cfg'
     registry = hosts.HostRegistry(config_directory=config)
@@ -1369,7 +1369,7 @@ def test_hosts_persist_and_carry_enabled_state(tmp_path):
 
 
 def test_a_disabled_node_is_not_offered_and_refuses_jobs():
-    from recryo import hosts
+    from relion_webui import hosts
 
     registry = hosts.registry_from_specs(['gpu1=gpu1.lab', 'gpu2=gpu2.lab'])
     registry.update('gpu1', enabled=False)
@@ -1380,7 +1380,7 @@ def test_a_disabled_node_is_not_offered_and_refuses_jobs():
 
 
 def test_local_cannot_be_removed_or_updated():
-    from recryo import hosts
+    from relion_webui import hosts
 
     registry = hosts.registry_from_specs([])
     with pytest.raises(hosts.HostError):
@@ -1391,7 +1391,7 @@ def test_local_cannot_be_removed_or_updated():
 
 def test_host_names_are_restricted():
     """A name reaches a JSON file, the UI and the model; keep it simple."""
-    from recryo import hosts
+    from relion_webui import hosts
 
     registry = hosts.registry_from_specs([])
     with pytest.raises(hosts.HostError):
@@ -1403,8 +1403,8 @@ def test_host_names_are_restricted():
 def test_node_management_over_http(tmp_path):
     from fastapi.testclient import TestClient
 
-    from recryo.app import create_app
-    from recryo.projects import ProjectRegistry
+    from relion_webui.app import create_app
+    from relion_webui.projects import ProjectRegistry
 
     config = tmp_path / 'cfg'
     app = create_app(
@@ -1437,7 +1437,7 @@ def test_node_management_over_http(tmp_path):
 def test_nodes_endpoint_returns_snapshots():
     from fastapi.testclient import TestClient
 
-    from recryo.app import create_app
+    from relion_webui.app import create_app
 
     app = create_app(roots=['/tmp'], host_nodes=['node1=127.0.0.1'])
     with TestClient(app) as client:
@@ -1454,7 +1454,7 @@ def test_nodes_skips_disabled_hosts():
     """A node out of service should not be polled at all."""
     from fastapi.testclient import TestClient
 
-    from recryo.app import create_app
+    from relion_webui.app import create_app
 
     app = create_app(roots=['/tmp'], host_nodes=['node1=127.0.0.1'])
     app.state.jobs.hosts.update('node1', enabled=False)

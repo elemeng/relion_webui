@@ -5,13 +5,13 @@ tomograms, submit any of the desktop GUI's job types, and follow the pipeline -
 without building or installing the rest of RELION.
 
 ```
-recryo/
-├── backend/recryo/   the agent (FastAPI); a standalone Python package
+relion_webui/
+├── backend/relion_webui/   the agent (FastAPI); a standalone Python package
 ├── frontend/               the React UI (Vite + Tailwind + daisyUI)
 ├── scripts/                one-command dev startup, the code generators,
 │                           and the RELION-format compatibility check
 ├── tests/                  the agent's test suite
-└── pyproject.toml          distribution "recryo"
+└── pyproject.toml          distribution "relion_webui"
 ```
 
 This directory is self-contained so it can be copied to, or installed on, a
@@ -57,8 +57,8 @@ The agent needs RELION's *binaries* on `PATH` to run jobs, not RELION's Python
 package and not a build tree:
 
 ```bash
-uv pip install recryo    # or: uv pip install /path/to/recryo
-recryo --host 127.0.0.1 --root /data/projects
+uv pip install relion-webui    # or: uv pip install /path/to/relion_webui
+relion_webui --host 127.0.0.1 --root /data/projects
 ```
 
 `relion_pipeliner` is used for the clean and scheduler actions; when it is not
@@ -66,7 +66,7 @@ on `PATH` those actions say so and everything else still works.
 
 The project list is kept in `$HOME/.relion_web/projects.json` - beside the
 `$HOME/.relion` that RELION itself writes - so it is where you would look for
-it. `--config-directory` or `RECRYO_HOME` point it somewhere else, which is
+it. `--config-directory` or `RELION_WEB_HOME` point it somewhere else, which is
 what you want on a shared machine or a read-only home. Older versions used
 `~/.config/relion-web`; an existing list there is copied over on first start.
 
@@ -145,7 +145,7 @@ editing Python.
 cd frontend
 bun install     # reads bun.lock
 bun run dev     # hot reload, proxies /api and /ws to the agent
-bun run build   # writes backend/recryo/static, which the agent serves
+bun run build   # writes backend/relion_webui/static, which the agent serves
 ```
 
 The built bundle is committed, so running the agent needs no JS toolchain at

@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-from recryo import job_actions, job_artifacts
-from recryo import pipeline as pipeline_module
+from relion_webui import job_actions, job_artifacts
+from relion_webui import pipeline as pipeline_module
 
 
 @pytest.fixture
@@ -251,7 +251,7 @@ def test_undelete_needs_the_type_directory(project):
 
 # ------------------------------------------------------------------ mark
 def test_mark_failed_writes_the_sentinel_the_gui_reads(project):
-    from recryo._vendor import JOB_FAILURE_FILENAME
+    from relion_webui._vendor import JOB_FAILURE_FILENAME
 
     job_actions.mark_status(project, 'Tomograms/job001', failed=True)
     assert (project / 'Tomograms' / 'job001' / JOB_FAILURE_FILENAME).is_file()
@@ -260,7 +260,7 @@ def test_mark_failed_writes_the_sentinel_the_gui_reads(project):
 
 
 def test_mark_finished_clears_a_previous_failure(project):
-    from recryo._vendor import (
+    from relion_webui._vendor import (
         JOB_FAILURE_FILENAME,
         JOB_SUCCESS_FILENAME,
     )

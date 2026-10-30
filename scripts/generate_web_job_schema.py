@@ -20,7 +20,7 @@ Run it from the repository root:
 
     python scripts/generate_web_job_schema.py
 
-It rewrites ``backend/recryo/generated_schema.py``. The test
+It rewrites ``backend/relion_webui/generated_schema.py``. The test
 ``test_web_schema.py`` re-runs the extraction and fails if the checked-in file
 is stale, so a RELION source change that alters an option cannot silently go
 unnoticed.
@@ -74,7 +74,7 @@ def resolve_source_root(explicit=None) -> Path:
         'could not find a RELION checkout. Pass --relion-source /path/to/relion '
         'or set RELION_SOURCE. Tried:\n  ' + tried
     )
-OUTPUT = WEBUI_ROOT / 'backend' / 'recryo' / 'generated_schema.py'
+OUTPUT = WEBUI_ROOT / 'backend' / 'relion_webui' / 'generated_schema.py'
 
 # Job name in the C++ source -> (web id, GUI tab title, process type constant).
 # The tab titles are what gui_mainwindow.cpp adds to the browser list, so they

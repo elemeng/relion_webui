@@ -26,7 +26,7 @@ readonly WEBUI_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly BACKEND="$WEBUI_ROOT/backend"
 readonly FRONTEND_DIR="$WEBUI_ROOT/frontend"
 readonly TESTS_DIR="$WEBUI_ROOT/tests"
-readonly VENV_DIR="${RECRYO_VENV:-$WEBUI_ROOT/.venv}"
+readonly VENV_DIR="${RELION_WEB_VENV:-$WEBUI_ROOT/.venv}"
 
 QUICK=0
 FIX=0
@@ -67,7 +67,7 @@ sys.exit(1 if any(u.find_spec(n) is None for n in
 
 pick_python() {
     local candidate
-    for candidate in "${RECRYO_PYTHON:-}" "$VENV_DIR/bin/python" \
+    for candidate in "${RELION_WEB_PYTHON:-}" "$VENV_DIR/bin/python" \
                      "$(command -v python3 2>/dev/null)" \
                      "$(command -v python 2>/dev/null)"; do
         [[ -n "$candidate" && -x "$candidate" ]] || continue
@@ -78,14 +78,14 @@ pick_python() {
     done
     # Nothing has the extras; fall back so the tests report the skip themselves,
     # which names the missing package.
-    for candidate in "${RECRYO_PYTHON:-}" "$VENV_DIR/bin/python" \
+    for candidate in "${RELION_WEB_PYTHON:-}" "$VENV_DIR/bin/python" \
                      "$(command -v python3 2>/dev/null)"; do
         [[ -n "$candidate" && -x "$candidate" ]] && { printf '%s' "$candidate"; return 0; }
     done
     return 1
 }
 
-PYTHON="$(pick_python)" || die "no python3 found; set RECRYO_PYTHON"
+PYTHON="$(pick_python)" || die "no python3 found; set RELION_WEB_PYTHON"
 
 # The generators and the drift tests read the C++ sources from here. Same rule
 # as tests/_relion_source.py: an explicit override, else a `relion` checkout
@@ -190,7 +190,7 @@ Relationships:
   --fix     regenerates the tables before checking them
 
 Environment:
-  RECRYO_PYTHON  interpreter to use   (now: $PYTHON)
+  RELION_WEB_PYTHON  interpreter to use   (now: $PYTHON)
   RELION_SOURCE      RELION checkout      (now: ${RELION_SOURCE:-<none>})
 TEXT
     exit 0
@@ -276,16 +276,16 @@ if want ui && (( ! QUICK )); then
         # `run build` is `tsc -b && vite build`, so this typechecks and
         # produces the bundle the agent serves. The output is compared below:
         # a UI change that was never rebuilt would ship a stale bundle.
-        if ( cd "$FRONTEND_DIR" && "$RUNNER" run build >/tmp/recryo-build.log 2>&1 ); then
+        if ( cd "$FRONTEND_DIR" && "$RUNNER" run build >/tmp/relion_webui-build.log 2>&1 ); then
             record PASS "ui" "typechecked and built"
         else
-            tail -30 /tmp/recryo-build.log >&2
+            tail -30 /tmp/relion_webui-build.log >&2
             record FAIL "ui" "see output above"
         fi
 
         # The built bundle is committed; if the build changed it, the change was
         # not committed either.
-        if ( cd "$WEBUI_ROOT" && git diff --quiet -- backend/recryo/static ); then
+        if ( cd "$WEBUI_ROOT" && git diff --quiet -- backend/relion_webui/static ); then
             record PASS "ui-bundle" "committed bundle is current"
         else
             record FAIL "ui-bundle" "build output differs from the committed bundle"
@@ -295,10 +295,10 @@ if want ui && (( ! QUICK )); then
         # TypeScript directly, so this needs no test runner. A wrong rank does
         # not throw - it silently produces an unreadable graph.
         if ( cd "$FRONTEND_DIR" && node --experimental-strip-types \
-                src/lib/layout.test.ts >/tmp/recryo-layout.log 2>&1 ); then
-            record PASS "ui-layout" "$(tail -1 /tmp/recryo-layout.log)"
+                src/lib/layout.test.ts >/tmp/relion_webui-layout.log 2>&1 ); then
+            record PASS "ui-layout" "$(tail -1 /tmp/relion_webui-layout.log)"
         else
-            tail -20 /tmp/recryo-layout.log >&2
+            tail -20 /tmp/relion_webui-layout.log >&2
             record FAIL "ui-layout" "see output above"
         fi
     fi
