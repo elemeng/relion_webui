@@ -799,7 +799,7 @@ export function App() {
   const counts = countStatuses(graph);
 
   return (
-    <div className="grid h-svh grid-cols-[3.5rem_minmax(0,1fr)] overflow-hidden">
+    <div className="grid h-svh grid-cols-[2.875rem_minmax(0,1fr)] overflow-hidden">
       <Rail
         mode={mode}
         onMode={setMode}
@@ -819,7 +819,7 @@ export function App() {
         }}
       />
 
-      <div className="grid min-w-0 grid-rows-[3.5rem_minmax(0,1fr)_1.75rem] overflow-hidden">
+      <div className="grid min-w-0 grid-rows-[2.875rem_minmax(0,1fr)_1.75rem] overflow-hidden">
         <TopBar
           project={activeProject}
           onProjects={() => setMode("projects")}
@@ -1179,7 +1179,7 @@ function Rail({
 }) {
   const item = (active: boolean) =>
     cn(
-      "relative grid size-8 place-items-center rounded-field transition-colors",
+      "relative grid size-9 place-items-center rounded-field transition-colors",
       active
         ? "bg-frame-raise text-frame-ink"
         : "text-frame-muted hover:bg-frame-raise hover:text-frame-ink",
@@ -1187,7 +1187,7 @@ function Rail({
 
   return (
     <nav
-      className="flex flex-col items-center gap-1 border-r border-frame-rule bg-frame py-2"
+      className="flex flex-col items-center gap-1 border-r border-frame-rule bg-frame py-1.5"
       aria-label="Sections"
     >
       {/* Projects is the level above a pipeline, so it sits first. */}
@@ -1424,7 +1424,7 @@ function TopBarButton({
       className={cn(
         "rounded-field border px-2 py-1 t-label",
         primary
-          ? "border-transparent bg-frame-ink font-medium text-frame hover:bg-white"
+          ? "border-transparent bg-signal font-medium text-white hover:bg-[oklch(34%_0.09_255)]"
           : "border-frame-rule text-frame-muted hover:border-frame-muted hover:text-frame-ink",
       )}
     >

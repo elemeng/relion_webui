@@ -41,6 +41,10 @@
  * criostat's warmth and every interactive color is a print-blue, so buttons
  * and links read as things you act on rather than text you find.
  *
+ * The chrome (frame tokens) is light here too: a rail and top bar in the
+ * same family as the page, one step behind and forward of it. The dark theme
+ * keeps dark chrome, where it belongs.
+ *
  * Status is five RELION states, not nine, and each one owns exactly one fill /
  * text / edge triple. Every text pair is verified at >= 4.5:1 against its own
  * fill in both themes (WCGA 2.x relative-luminance; the numbers in comments
@@ -92,12 +96,14 @@
   --depth: 0;
   --noise: 0;
 
-  /* our own tokens, beside daisyUI's */
-  --frame: oklch(20% 0.028 266); /* #10151f */
-  --frame-raise: oklch(24% 0.028 264); /* #171d29 */
-  --frame-rule: oklch(31% 0.03 264); /* #28303f */
-  --frame-ink: oklch(93% 0.008 261); /* #e4e8ec */
-  --frame-muted: oklch(66% 0.026 262); /* #8b96a8 */
+  /* Light chrome: the rail and top bar sit in the page palette rather than
+     against it. Raise stays a step lighter, ink stays the content ink, so
+     every bg-frame / text-frame pairing inverts with the theme for free. */
+  --frame: oklch(96.4% 0.006 255); /* one step behind the page */
+  --frame-raise: oklch(99% 0.003 250); /* raised surface   #fdfdfd */
+  --frame-rule: oklch(88.5% 0.008 255); /* hairline on chrome */
+  --frame-ink: oklch(24% 0.012 264); /* = base-content   #1b1e24 */
+  --frame-muted: oklch(46% 0.015 262); /* secondary on chrome #4d525a */
   /* Three ink levels, all AA on both paper surfaces:
      content 24% -> 16.1:1, muted 40% -> 9.0:1, faint 48% -> 6.4:1.
      Faint is the floor for anything a user has to read; it is used for job
@@ -166,6 +172,15 @@
   --color-warning-content: oklch(25% 0.04 62);
   --color-error: oklch(78% 0.13 26);
   --color-error-content: oklch(24.5% 0.05 26.7);
+
+  /* Dark chrome: a step behind the page, the way light chrome is a step
+     beside it. Raise is a step lighter (the raised surface must catch light
+     at night), ink/muted follow the content ink. */
+  --frame: oklch(16.5% 0.014 264); /* #0d0f14 */
+  --frame-raise: oklch(24% 0.014 262); /* #1d212b */
+  --frame-rule: oklch(30% 0.016 262); /* #2c3240 */
+  --frame-ink: oklch(94.5% 0.004 262); /* = base-content */
+  --frame-muted: oklch(64% 0.018 262); /* #7e8595 */
 
   /* Same three levels, inverted: 94.5% -> 13.4:1, 74% -> 6.8:1, 66% -> 5.1:1. */
   --ink-muted: oklch(74% 0.018 262);
