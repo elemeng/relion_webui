@@ -159,7 +159,9 @@ export function ProjectBrowser({
             <code className="font-mono t-meta">default_pipeline.star</code> the
             way RELION&apos;s own GUI starts one.
             <Tip text="This list is the agent's write boundary: jobs may only write inside these directories. Removing a project never deletes files.">
-              <span className="ml-1 cursor-help border-b border-dotted border-rule-strong text-ink-faint">
+              {/* Text-decoration, not border-b: a border on an inline span
+                  paints at the line-box bottom, detached from the glyphs. */}
+              <span className="cursor-help underline decoration-dotted decoration-rule-strong underline-offset-2 text-ink-faint">
                 more
               </span>
             </Tip>
