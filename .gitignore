@@ -1,0 +1,61 @@
+# Ignore rules for the web UI distribution.
+#
+# These live here rather than in the repository root so they travel with the
+# code that produces the artefacts. Nothing here may match a tracked path: the
+# committed frontend bundle (backend/relion_webui/static/) is the one thing in
+# this directory that looks like build output and must stay in the repository.
+
+# ---------------------------------------------------------------- Python
+# The virtualenv `scripts/dev_web.sh` creates. It honours RELION_WEB_VENV, so a
+# contributor may point it elsewhere; the name here is the default only.
+.venv/
+
+# `pip install -e .` writes the metadata beside the package.
+*.egg-info/
+
+# Byte-compiled files and interpreter caches.
+__pycache__/
+*.py[cod]
+
+# Code can be imported from anywhere in this tree, because the tests put
+# `backend/` on PYTHONPATH and the package imports its own submodules by name.
+# So the cache rules above must not be anchored to a single directory.
+.pytest_cache/
+
+# ------------------------------------------------------------------ Node
+# `bun install` in frontend/. frontend/.gitignore repeats these three for the
+# same directory; the duplicates are deliberate, so that editing one file in
+# isolation does not quietly stop ignoring something.
+frontend/node_modules/
+frontend/dist/
+*.tsbuildinfo
+
+# The project's toolchain is bun, and bun.lock is the lockfile that ships. An
+# `npm install` would write a second lockfile describing a slightly different
+# tree; ignoring it keeps one source of truth rather than two that drift.
+frontend/package-lock.json
+frontend/yarn.lock
+
+# ---------------------------------------------------- local scratch state
+# The agent keeps its project list, node definitions and queue in
+# $HOME/.relion_web by default. These three names appear here only if someone
+# runs it with --config-directory pointing at the working tree, which is useful
+# for testing and should never be committed.
+#
+# Anchored to the top level on purpose: a test fixture called hosts.json deeper
+# in the tree is real data, and an unanchored rule would hide it.
+/hosts.json
+/queue.json
+/projects.json
+
+# ------------------------------------------- Python build and distribution
+# `uv build` writes sdist and wheel here, and setuptools stages the wheel
+# contents under build/.
+/dist/
+/build/
+*.egg-info/
+
+# ------------------------------------------------------------- OS noise
+.DS_Store
+
+/docs/

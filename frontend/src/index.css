@@ -1,0 +1,392 @@
+@import "tailwindcss";
+
+@plugin 'daisyui' {
+  themes: false;
+  logs: false;
+}
+
+/* ---------------------------------------------------------------------------
+ * Theme
+ *
+ * Three zones, deliberately different in kind:
+ *
+ *   frame  - the dark chrome (rail, top bar). Dark in both themes: it is a
+ *            frame around the work, not a surface you read.
+ *   canvas - the working surface behind cards and panels. Deliberately a step
+ *            darker than a card so cards read as objects resting on it rather
+ *            than white boxes floating in white.
+ *   paper  - cards and panels (base-100).
+ *
+ * Boundaries carry meaning here, so they have their own scale rather than
+ * borrowing base-300 (which is also the canvas dot colour and would make a rule
+ * fight the grid):
+ *
+ *   --rule        a component edge - card, panel, input. Visible at a glance.
+ *   --rule-soft   a division inside a component - table rows, section breaks.
+ *   --rule-strong an edge that must register without a colour cue - the
+ *                 selected card, a dashed placeholder.
+ *
+ * The palette is expressed in daisyUI's own variable names, so every daisyUI
+ * component - btn, input, badge, modal, menu, tabs - picks it up without being
+ * overridden. Our few extra names (frame, canvas, rules, status pairs) sit
+ * alongside.
+ *
+ * Status is five RELION states, not nine, and each one owns exactly one fill /
+ * text / edge triple. Every text pair is verified at >= 4.5:1 against its own
+ * fill in both themes.
+ * ------------------------------------------------------------------------ */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* paper - the surfaces you read */
+  --color-base-100: oklch(100% 0 0); /* card and panel    #ffffff */
+  --color-base-200: oklch(96.5% 0.002 265); /* page              #f2f3f4 */
+  --color-base-300: oklch(89.5% 0.005 265); /* canvas dots       #dcdee1 */
+  --color-base-content: oklch(22.2% 0.008 264); /* ink             #191b1f */
+
+  /* rules - the boundaries between things */
+  --rule: oklch(82.5% 0.007 265); /* component edge    #c3c6cb */
+  --rule-soft: oklch(90.5% 0.005 265); /* internal division #dde0e3 */
+  --rule-strong: oklch(72% 0.010 265); /* selected / dashed #a7abb2 */
+
+  /* primary is the deep ink used for filled buttons and the frame */
+  --color-primary: oklch(26.8% 0.012 264); /* graphite        #23262c */
+  --color-primary-content: oklch(98.8% 0.001 106);
+  --color-secondary: oklch(94.5% 0.004 265);
+  --color-secondary-content: oklch(22.2% 0.008 264);
+  --color-accent: oklch(48.5% 0.115 254); /* signal          #2f66a8 */
+  --color-accent-content: oklch(100% 0 0);
+  --color-neutral: oklch(26.8% 0.012 264);
+  --color-neutral-content: oklch(98.8% 0.001 106);
+
+  /* status - daisyUI's named slots carry our five states */
+  --color-info: oklch(49% 0.155 258); /* running         #1c5cbb */
+  --color-info-content: oklch(96% 0.015 258);
+  --color-success: oklch(45.5% 0.095 156); /* succeeded       #1a6741 */
+  --color-success-content: oklch(96% 0.018 156);
+  --color-warning: oklch(47% 0.10 64); /* aborted         #83500f */
+  --color-warning-content: oklch(97% 0.024 83);
+  --color-error: oklch(43.5% 0.145 29); /* failed          #8f2a1f */
+  --color-error-content: oklch(96% 0.017 24);
+
+  /* geometry: small radii, hairline rules - an instrument, not a SaaS page */
+  --radius-selector: 0.1875rem; /* 3px - chips, pills, tabs        */
+  --radius-field: 0.25rem; /* 4px - buttons, inputs           */
+  --radius-box: 0.3125rem; /* 5px - cards, panels, dialogs    */
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+
+  /* our own tokens, beside daisyUI's */
+  --frame: oklch(21% 0.029 266); /* #121826 */
+  --frame-raise: oklch(25.2% 0.029 264); /* #1b2230 */
+  --frame-rule: oklch(31.7% 0.031 264); /* #2a3242 */
+  --frame-ink: oklch(93.3% 0.007 261); /* #e6e9ee */
+  --frame-muted: oklch(68% 0.026 262); /* #8f98a8 */
+  /* Three ink levels, all AA on both paper surfaces:
+       content 22% -> 17.2:1, muted 44% -> 7.0:1, faint 52% -> 5.0:1.
+     Faint is the floor for anything a user has to read; it is used for job
+     numbers and unit suffixes, not for prose. */
+  --ink-muted: oklch(44% 0.014 262); /* secondary text   #4e535a */
+  --ink-faint: oklch(52% 0.012 262); /* tertiary text    #656970 */
+  --canvas: oklch(96.5% 0.002 265); /* the working plane */
+  --signal: oklch(48.5% 0.115 254); /* #2f66a8 */
+
+  /* Five states, three values each: a wash for a card body, a fill for a
+     pill, an ink for text. The ink is dark enough to read on paper, so it is
+     also used for the dot and the accent rail. */
+  --st-scheduled-fill: oklch(95.5% 0.003 265);
+  --st-scheduled-text: oklch(46% 0.014 258);
+  --st-scheduled-rail: oklch(72% 0.010 265);
+  --st-running-fill: oklch(95% 0.018 258);
+  --st-running-text: oklch(49% 0.155 258);
+  --st-running-rail: oklch(49% 0.155 258);
+  --st-succeeded-fill: oklch(95.5% 0.020 156);
+  --st-succeeded-text: oklch(45.5% 0.095 156);
+  --st-succeeded-rail: oklch(45.5% 0.095 156);
+  --st-failed-fill: oklch(95.5% 0.018 24);
+  --st-failed-text: oklch(43.5% 0.145 29);
+  --st-failed-rail: oklch(43.5% 0.145 29);
+  --st-aborted-fill: oklch(96.5% 0.030 83);
+  --st-aborted-text: oklch(47% 0.10 64);
+  --st-aborted-rail: oklch(47% 0.10 64);
+
+  /* Card sizes step by viewport; 21" 1920x1080 is the reference at 272px. */
+  --card-w: 232px;
+  --card-mini-w: 172px;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-base-100: oklch(26.5% 0.011 264); /* #21242a */
+  --color-base-200: oklch(19.5% 0.010 268); /* #14161b */
+  --color-base-300: oklch(32% 0.014 264); /* dots    #2d323a */
+  --color-base-content: oklch(94% 0.003 265); /* #eaecee */
+
+  --rule: oklch(37.5% 0.014 264); /* #373d47 */
+  --rule-soft: oklch(30.5% 0.012 264); /* #2b3038 */
+  --rule-strong: oklch(48% 0.016 264); /* #4b525e */
+
+  --color-primary: oklch(96.8% 0.003 265);
+  --color-primary-content: oklch(20.9% 0.01 268);
+  --color-secondary: oklch(30% 0.014 262);
+  --color-secondary-content: oklch(94% 0.003 265);
+  --color-accent: oklch(73% 0.115 255);
+  --color-accent-content: oklch(20.9% 0.01 268);
+  --color-neutral: oklch(30% 0.014 262);
+  --color-neutral-content: oklch(94% 0.003 265);
+
+  --color-info: oklch(73% 0.115 255);
+  --color-info-content: oklch(24% 0.045 255);
+  --color-success: oklch(74% 0.11 157);
+  --color-success-content: oklch(25% 0.042 154);
+  --color-warning: oklch(76% 0.115 73);
+  --color-warning-content: oklch(25% 0.034 62);
+  --color-error: oklch(73% 0.125 26.5);
+  --color-error-content: oklch(24% 0.048 26.7);
+
+  /* Same three levels, inverted: 94% -> 12.8:1, 76% -> 7.1:1, 66% -> 4.9:1. */
+  --ink-muted: oklch(76% 0.014 261);
+  --ink-faint: oklch(66% 0.013 261);
+  --canvas: oklch(19.5% 0.010 268);
+  --signal: oklch(73% 0.115 255);
+
+  --st-scheduled-fill: oklch(30% 0.014 262);
+  --st-scheduled-text: oklch(76% 0.014 261);
+  --st-scheduled-rail: oklch(50% 0.014 261);
+  --st-running-fill: oklch(28% 0.050 255);
+  --st-running-text: oklch(78% 0.105 255);
+  --st-running-rail: oklch(73% 0.115 255);
+  --st-succeeded-fill: oklch(28% 0.045 154);
+  --st-succeeded-text: oklch(79% 0.105 157);
+  --st-succeeded-rail: oklch(74% 0.11 157);
+  --st-failed-fill: oklch(27% 0.052 26.7);
+  --st-failed-text: oklch(78% 0.115 26.5);
+  --st-failed-rail: oklch(73% 0.125 26.5);
+  --st-aborted-fill: oklch(28% 0.038 62);
+  --st-aborted-text: oklch(80% 0.105 73);
+  --st-aborted-rail: oklch(76% 0.115 73);
+}
+
+/* ---- responsive card sizes ---------------------------------------------- */
+@media (min-width: 1281px) {
+  :root {
+    --card-w: 248px;
+    --card-mini-w: 184px;
+  }
+}
+@media (min-width: 1501px) {
+  :root {
+    --card-w: 272px;
+    --card-mini-w: 196px;
+  }
+}
+@media (min-width: 2000px) {
+  :root {
+    --card-w: 288px;
+    --card-mini-w: 208px;
+  }
+}
+@media (min-width: 2400px) {
+  :root {
+    --card-w: 320px;
+    --card-mini-w: 224px;
+  }
+}
+
+/* ---- Tailwind theme bridge ----------------------------------------------
+ * daisyUI's variables are plain CSS custom properties; these map them onto
+ * Tailwind utility names so `bg-base-100` / `text-base-content` / the frame
+ * and rule colours work as classes.
+ * ------------------------------------------------------------------------ */
+@theme inline {
+  --color-base-100: var(--color-base-100);
+  --color-base-200: var(--color-base-200);
+  --color-base-300: var(--color-base-300);
+  --color-base-content: var(--color-base-content);
+
+  --color-frame: var(--frame);
+  --color-frame-raise: var(--frame-raise);
+  --color-frame-rule: var(--frame-rule);
+  --color-frame-ink: var(--frame-ink);
+  --color-frame-muted: var(--frame-muted);
+
+  --color-canvas: var(--canvas);
+  --color-rule: var(--rule);
+  --color-rule-soft: var(--rule-soft);
+  --color-rule-strong: var(--rule-strong);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-signal: var(--signal);
+
+  --color-st-scheduled: var(--st-scheduled-text);
+  --color-st-running: var(--st-running-text);
+  --color-st-succeeded: var(--st-succeeded-text);
+  --color-st-failed: var(--st-failed-text);
+  --color-st-aborted: var(--st-aborted-text);
+
+  /* One family for the interface, one for data. Both are system stacks here;
+     see the note in the README about bundling a webfont. */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono',
+    monospace;
+}
+
+/* ---- Typography ---------------------------------------------------------
+ * Five steps, and nothing in between. daisyUI's own scale (12/14/16/18/24/30)
+ * covers prose; these cover the dense chrome a scientific tool needs. Every
+ * size is named for its role, not its number, so a change of scale is one edit
+ * rather than a sweep of arbitrary values.
+ *
+ *   meta   job numbers, counters, unit suffixes - the smallest legible layer
+ *   label  secondary labels, section headings, tab captions
+ *   ui     the interface default: table cells, list rows, form values
+ *   body   reading text: help, dialog prose, notices
+ *   head   card and dialog titles
+ * ---------------------------------------------------------------------- */
+@utility t-meta {
+  font-size: 10px;
+  line-height: 14px;
+  letter-spacing: 0.01em;
+}
+@utility t-label {
+  font-size: 11px;
+  line-height: 15px;
+}
+@utility t-ui {
+  font-size: 12px;
+  line-height: 17px;
+}
+@utility t-body {
+  font-size: 13px;
+  line-height: 19px;
+}
+@utility t-head {
+  font-size: 15px;
+  line-height: 21px;
+  letter-spacing: -0.006em;
+}
+
+/* A section heading: the small caps line that opens a group. */
+@utility t-section {
+  font-size: 10px;
+  line-height: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@layer base {
+  html {
+    /* daisyUI writes colour-scheme per theme; this is the fallback. */
+    color-scheme: light;
+  }
+  html[data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-base-200 text-base-content antialiased;
+    font-family: var(--font-sans);
+    /* Job numbers, elapsed times and flags line up in columns. */
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Prose follows daisyUI's scale. Headings carry the weight, body text stays
+     at the 14px default. No display face - this is an instrument. */
+  h1 {
+    @apply text-2xl font-semibold;
+  }
+  h2 {
+    @apply text-lg font-semibold;
+  }
+  h3 {
+    @apply text-base font-semibold;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--rule) transparent;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 1px;
+  }
+}
+
+@layer utilities {
+  /* The viewer shows image data, so it must not be smoothed or resampled. */
+  .image-pixelated {
+    image-rendering: pixelated;
+  }
+
+  /* The canvas' dot grid: an orientation aid, quiet enough to ignore. */
+  .canvas-grid {
+    background-color: var(--canvas);
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      var(--color-base-300) 1px,
+      transparent 0
+    );
+    background-size: 24px 24px;
+    background-position: 11px 11px;
+  }
+
+  /* Status fills, as utilities so a card can tint its body. */
+  .fill-scheduled {
+    background: var(--st-scheduled-fill);
+    color: var(--st-scheduled-text);
+  }
+  .fill-running {
+    background: var(--st-running-fill);
+    color: var(--st-running-text);
+  }
+  .fill-succeeded {
+    background: var(--st-succeeded-fill);
+    color: var(--st-succeeded-text);
+  }
+  .fill-failed {
+    background: var(--st-failed-fill);
+    color: var(--st-failed-text);
+  }
+  .fill-aborted {
+    background: var(--st-aborted-fill);
+    color: var(--st-aborted-text);
+  }
+
+  /* The 3px status rail down the left edge of a card. Declared once so every
+     view that shows a job agrees about what state looks like. */
+  .rail-scheduled {
+    background: var(--st-scheduled-rail);
+  }
+  .rail-running {
+    background: var(--st-running-rail);
+  }
+  .rail-succeeded {
+    background: var(--st-succeeded-rail);
+  }
+  .rail-failed {
+    background: var(--st-failed-rail);
+  }
+  .rail-aborted {
+    background: var(--st-aborted-rail);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

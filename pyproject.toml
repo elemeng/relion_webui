@@ -1,0 +1,119 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "recryo"
+version = "0.1.0"
+description = "Browser UI for RELION cryo-ET projects: browse data, submit jobs, manage the pipeline"
+readme = "README.md"
+requires-python = ">=3.13"
+license = {text = "BSD 3-Clause License"}
+authors = [
+    {name = "RELION contributors"},
+]
+keywords = ["cryo-ET", "cryo-electron tomography", "RELION", "tomography", "web-ui"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "Framework :: FastAPI",
+    "Intended Audience :: Science/Research",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: JavaScript",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
+
+# Only what the agent imports. RELION itself is a *runtime* dependency in the
+# sense that its binaries must be on PATH to run jobs, but it is not a Python
+# dependency: the agent reimplements the pipeline file format and speaks to the
+# programs through their command lines and sentinel files. That is what lets
+# this install on a machine with RELION installed system-wide.
+dependencies = [
+    "fastapi>=0.162.0",
+    "mrcfile>=1.5.4",
+    "numpy>=2.5.4",
+    "pandas>=3.1.0",
+    "paramiko>=5.1.0",
+    "python-multipart>=0.0.32",
+    "starfile>=0.5.13",
+    "typer>=0.27.3",
+    "uvicorn>=0.54.0",
+    "websockets>=17.3",
+]
+
+[project.optional-dependencies]
+# The assistant and the MCP server are optional: the agent runs without them,
+# and a RELION site that does not want an LLM in the loop should not have to
+# install one. `pip install -e '.[assistant]'`.
+#
+# mcp 2 is supported: mcp_server.py and mcp_content.py import the 2.x names
+# (MCPServer, mcp.server.mcpserver.Context/Prompt) and fall back to the 1.x ones,
+# so either major runs. mcp 2 renamed FastMCP to MCPServer, moved the transport
+# options from the constructor to streamable_http_app(), snake_cased the
+# ToolAnnotations fields, and added a resource-template check that rejects
+# absolute paths - the last of which is relaxed in mcp_server because every
+# handler resolves through PathGuard instead.
+assistant = [
+    # mcp 2 (see the note above). The code detects which major is installed, so
+    # no upper bound is needed and neither is there a starlette conflict.
+    "mcp>=2.3.0",
+    "pydantic-ai-slim[anthropic,google,openai]>=2.63.0",
+    "sse-starlette>=3.6.0",
+]
+dev = [
+    "pytest>=8.0",
+    "httpx",
+]
+
+[project.scripts]
+recryo = "recryo._cli:main"
+
+[tool.uv]
+# uv is the Python toolchain for this distribution. It creates the virtualenv
+# and resolves from this file, so there is no separate requirements list to keep
+# in step.
+#
+# The two extras stay opt-in: `uv pip install -e '.[dev]'` for the tests and the
+# MCP/assistant stack, or `-e '.[dev,assistant]'` for everything. Both are
+# documented in README.md.
+
+[project.urls]
+homepage = "https://github.com/3dem/relion"
+# The package's own home, once it has one. `download` and `issues` are the two
+# PyPI links people actually follow.
+issues = "https://github.com/3dem/relion/issues"
+documentation = "https://github.com/3dem/relion/tree/master/webui"
+source = "https://github.com/3dem/relion/tree/master/webui"
+
+[tool.setuptools]
+package-dir = {"" = "backend"}
+packages = ["recryo"]
+
+[tool.setuptools.package-data]
+recryo = ["static/**/*", "README.md", "COVERAGE.md"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = ["tests"]
+filterwarnings = [
+    "error",
+    # Two warnings raised inside third-party code that the tests exercise.
+    # Both are matched on the message because the emitting module is not the
+    # one whose name appears in the warning.
+    #
+    # anyio deprecated the `BlockingPortal` alias and starlette's TestClient
+    # still imports it.
+    "ignore:The anyio.abc.BlockingPortal alias is deprecated:DeprecationWarning",
+    # numpy 2.5 deprecates setting `dtype` on an ndarray subclass; mrcfile does
+    # it while writing. Not ours to fix, and it fires on every volume test.
+    "ignore:Setting the dtype on a NumPy array has been deprecated:DeprecationWarning",
+    # mcp's FastMCP settings model has a forward-referenced `lifespan` field.
+    # It resolves at use and the MCP server works; the warning only fires while
+    # pydantic-settings inspects the model, and the suite treats warnings as
+    # errors. Raised inside the third-party package, so it is not ours to fix.
+    "ignore:Field 'lifespan' has an incomplete definition:Warning",
+]

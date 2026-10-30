@@ -1,0 +1,27 @@
+{
+  // The layout tests are a Node script, not app code: `scripts/dev_test.sh`
+  // runs them with `node --experimental-strip-types`, and they import
+  // `node:assert` and use `process`.
+  //
+  // They are typechecked here rather than with the app config, so that "node"
+  // types are available without leaking them into browser code - where a stray
+  // `process.env` would typecheck but fail at runtime.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["node"],
+    // Same alias the app config uses, relative to this file.
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*.test.ts"]
+}
