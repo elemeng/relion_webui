@@ -38,6 +38,7 @@ becoming a cluster scheduler, or becoming a general workflow engine.
 | Python toolchain | **uv** | resolves from `pyproject.toml`; a cold install of the full set is ~14 s where pip took over a minute |
 | Frontend | React 19 + TypeScript 7 | |
 | CSS | Tailwind 4 + daisyUI 5 | daisyUI owns the component layer; see *UI rules* |
+| Type | Geist + Geist Mono (self-hosted, variable) | bundled via `@fontsource-variable`; see *UI rules* |
 | Frontend toolchain | **bun** | `bun install` / `bun run build`; `bun.lock` is the lockfile |
 | Bundler | **Vite 8** | |
 | Agent surface | pydantic-ai (assistant) + `mcp` (MCP server) | one registry, two exports |
@@ -224,12 +225,28 @@ null-byte rejection is kept.
 provides. Use daisyUI colour names (`base-100`, `text-base-content/60`) rather
 than Tailwind palette colours, so both themes follow.
 
-Status colours are the exception: RELION's five states are not daisyUI's semantic
-roles ("running" is not a warning), so `components/Status.tsx` owns them. Every
-fill/text pair is verified at ≥ 4.5:1 in both themes.
+**Scaling is one number**: `html { font-size: 120% }` in `index.css`. Tailwind's
+and daisyUI's spacing/text/radius scales are rem-based, so everything rides it.
+Never re-introduce a px font size or px control dimension; if you need an
+arbitrary length, use `rem` (px/16 at the 120% root). The `t-*` type utilities
+`index.css` carries are the only door to the type ladder — no raw `text-xs`.
+
+Type is **Geist + Geist Mono** (variable, self-hosted via `@fontsource-variable`,
+OFL-1.1). Do not swap to a UI kit's default font; the mono is what makes job
+numbers and paths read as data. New colours go through the CSS variables in
+`index.css` (`--frame*`, `--rule*`, `--ink-*`, `--st-*-…`), not new literals.
+
+Status colours are the exception to daisyUI's roles: RELION's five states are
+not daisyUI's semantic roles ("running" is not a warning), so
+`components/Status.tsx` owns them. Every fill/text pair is verified at ≥ 4.5:1
+in both themes — the measured ratios are recorded in the comments beside each
+`--st-*` block in `index.css`; re-measure when a value changes.
 
 The **pipeline graph is the product**, not a sidebar list. A draft job exists on
-the canvas before it is queued.
+the canvas before it is queued. Canvas world geometry (`NODE_WIDTH` etc. in
+`lib/layout.ts`) is true px inside the zoom transform, so it is scaled
+deliberately (∼×1.2 to match) rather than rem-based; fit thresholds
+(`MIN_READABLE_SCALE`, `MINI_SCALE`) are tuned against it.
 
 ---
 
