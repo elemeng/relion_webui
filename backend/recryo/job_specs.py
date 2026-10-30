@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Where each job goes in a RELION project, derived from the generated schema.
 
 Everything here used to be a hand-copied table of C++ constants. It now comes

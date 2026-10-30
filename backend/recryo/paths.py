@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Path resolution restricted to a set of allowed roots.
 
 Every path that arrives from a client is resolved and checked against the

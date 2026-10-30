@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """The two things this package used to import from RELION's Python tree.
 
 The agent is meant to run on any machine that has RELION *installed* - meaning

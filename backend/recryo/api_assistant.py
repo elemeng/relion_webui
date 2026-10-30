@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """HTTP surface for the assistant, and the MCP mount.
 
 Kept out of `app.py` because that module is already the whole REST API; the

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 elemeng
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 import { useMemo, useState } from "react";
 import { AlertCircle, ChevronRight, Info, ListTree } from "lucide-react";
 

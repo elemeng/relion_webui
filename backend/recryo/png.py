@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Minimal PNG encoder.
 
 Pillow is not part of the RELION conda environment, and adding an image stack

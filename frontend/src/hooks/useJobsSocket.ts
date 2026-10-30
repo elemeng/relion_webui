@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 elemeng
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { Job, LogChunk } from "@/lib/types";

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Produce the on-disk artefacts a RELION job directory needs.
 
 For the official GUI to open a job created elsewhere, the directory must contain

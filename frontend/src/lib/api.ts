@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 elemeng
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 /**
  * Thin fetch wrapper for the agent's JSON API.
  *

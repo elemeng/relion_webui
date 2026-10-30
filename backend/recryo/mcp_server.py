@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """The tool registry, spoken over MCP.
 
 This module only translates. `tools.py` decides what a capability is and what

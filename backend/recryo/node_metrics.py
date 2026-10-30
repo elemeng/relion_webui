@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """What is running on a node, in one ssh round trip.
 
 A node card has to answer three questions at a glance: how loaded is this

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """MCP resources and prompts.
 
 Tools are what an agent *calls*; resources and prompts are the other half of the

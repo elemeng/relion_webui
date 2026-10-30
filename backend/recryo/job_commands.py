@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Build the argv for each job the way RELION's own ``getCommands*`` does.
 
 ``generated_schema.py`` supplies the option metadata and the form layout, but it

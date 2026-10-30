@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Where a job runs: this machine, or a named GPU node on the local network.
 
 The deployment this models is a small cluster of GPU machines that share a

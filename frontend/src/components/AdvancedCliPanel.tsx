@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 elemeng
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 import { useId, useMemo, useState } from "react";
 import { ChevronDown, Plus, Trash2 } from "lucide-react";
 

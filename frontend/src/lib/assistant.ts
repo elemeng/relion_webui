@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 elemeng
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 /** Types and transport for the LLM assistant. */
 
 export interface AssistantProvider {

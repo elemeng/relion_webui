@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Directory browsing for the path pickers.
 
 Why this is not restricted to the allowed roots: the point of the picker is to

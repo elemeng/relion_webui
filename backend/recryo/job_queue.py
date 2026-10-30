@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """MPI wrapping and queue submission, following ``prepareFinalCommand``.
 
 RELION does not run a job's command directly. ``RelionJob::prepareFinalCommand``

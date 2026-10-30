@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """The in-browser assistant: an LLM with the same tools the MCP server exposes.
 
 The model comes from whichever provider the operator configured (OpenAI,

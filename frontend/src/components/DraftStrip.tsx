@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 elemeng
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 import { Clock, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";

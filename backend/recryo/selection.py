@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Write a filtered tilt-series set, matching the desktop excluder's output.
 
 The desktop excluder filters each tilt-series table and rewrites both the global

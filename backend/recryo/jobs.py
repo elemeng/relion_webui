@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Job execution following RELION's own directory + sentinel-file protocol.
 
 The desktop GUI does not talk to jobs over a socket. ``prepareFinalCommand``

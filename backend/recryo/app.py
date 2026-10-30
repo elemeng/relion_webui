@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """FastAPI application exposing RELION cryo-ET data and jobs over HTTP."""
 
 import asyncio

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Job actions, delegating to RELION's own programs wherever possible.
 
 The desktop GUI's "Job actions" menu offers alias, note, abort, mark as

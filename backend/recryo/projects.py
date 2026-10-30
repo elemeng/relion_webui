@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """The set of RELION projects a user has added to their agent.
 
 The agent runs long-lived, so the list has to survive restarts. It is stored in

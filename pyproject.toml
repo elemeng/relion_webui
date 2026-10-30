@@ -8,9 +8,10 @@ version = "0.1.0"
 description = "Browser UI for RELION cryo-ET projects: browse data, submit jobs, manage the pipeline"
 readme = "README.md"
 requires-python = ">=3.13"
-license = {text = "BSD 3-Clause License"}
+license = "GPL-2.0-or-later"
+license-files = ["COPYING", "LICENSE"]
 authors = [
-    {name = "RELION contributors"},
+    {name = "elemeng", email = "tjumxm@outlook.com"},
 ]
 keywords = ["cryo-ET", "cryo-electron tomography", "RELION", "tomography", "web-ui"]
 classifiers = [

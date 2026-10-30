@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """A small job queue for a handful of shared-storage GPU nodes.
 
 The alternative to this module is RELION's submission-script template

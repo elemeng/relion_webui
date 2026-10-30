@@ -175,3 +175,19 @@ not part of this repository. It informed the code rather than shipping with it.
 
 The references in this README and in `frontend/src/index.css` point at those
 local notes; they are deliberately absent from a clone.
+
+## License
+
+GPL-2.0-or-later. See [LICENSE](LICENSE) for the copyright notice and the
+reasoning, and [COPYING](COPYING) for the full text.
+
+This project is a derivative work of [RELION](https://github.com/3dem/relion),
+which is licensed GPL-2.0-or-later: the generated tables are extracted from
+RELION's C++ sources and carry its option text, and the command builders port
+its `getCommands*` functions. A permissive license is therefore not available.
+"or later" rather than "2.0 only" because several dependencies
+(`python-multipart`, and the OpenAI/Anthropic/Google SDKs in the assistant extra)
+are Apache-2.0, which is compatible with GPL-3.0 but not with GPL-2.0-only.
+
+The intent is that this could be offered to the RELION project as a web
+platform, which is another reason the license matches RELION's exactly.

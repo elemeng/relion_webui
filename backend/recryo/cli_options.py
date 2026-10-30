@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """The CLI surface of each job, and the extra arguments the form does not cover.
 
 The desktop job window shows a subset of what a program accepts: it hides a few

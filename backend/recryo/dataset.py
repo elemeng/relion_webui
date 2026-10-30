@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Read-only dataset access built on top of the existing RELION metadata models.
 
 ``RlnTiltSeriesSet.from_star_file`` eagerly reads every tilt-series STAR file

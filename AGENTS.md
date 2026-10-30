@@ -43,7 +43,9 @@ becoming a cluster scheduler, or becoming a general workflow engine.
 | Agent surface | pydantic-ai (assistant) + `mcp` (MCP server) | one registry, two exports |
 | Testing | pytest (backend), committed layout checks (frontend) | |
 
-`requires-python = ">=3.13"`. `mcp` 2 and 1.x both work; the code detects which
+`requires-python = ">=3.13"`. Licensed **GPL-2.0-or-later**; every source file
+carries an SPDX header, and the generated tables carry one their generator emits
+(so regenerating never drops it). `mcp` 2 and 1.x both work; the code detects which
 is installed (see *Gated decisions*).
 
 ### Toolchain traps
@@ -263,11 +265,14 @@ commit the result; never edit it directly.
 
 ## Known open items
 
-- **License.** `pyproject.toml` declares BSD-3-Clause, but the generated schema
-  carries RELION's help text essentially verbatim (330 of 335 strings), and
-  `_vendor.py` transcribes RELION's Python writer. That makes this a derivative
-  work of a GPL-2.0-or-later project, so BSD-3-Clause is not a valid declaration
-  for a published release. **This blocks a public release.** Not yet decided.
+- **Licensing is settled: GPL-2.0-or-later.** See `LICENSE` for the reasoning in
+  full. Briefly: ~30% of the backend is derived from RELION (the generated tables
+  carry 330 of 335 help strings verbatim; `job_commands.py` ports `getCommands*`),
+  so a permissive license is not available. "or-later" rather than "-only" because
+  34 dependencies are Apache-2.0 (`python-multipart`, plus the OpenAI/Anthropic/
+  Google SDKs in the assistant extra), which are compatible with GPL-3.0 but not
+  GPL-2.0-only. **Do not relicense to MIT or BSD without rewriting the derived
+  30%**, and do not accept a contribution under a different license.
 - **The drag gesture is not browser-verified.** Dragging a job card onto an input
   slot is covered by typecheck and the API contract underneath, but has not been
   exercised in a real browser.

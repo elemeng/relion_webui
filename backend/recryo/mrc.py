@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Memory-mapped access to MRC volumes and tilt images.
 
 The existing helpers in ``_utils/mrc.py`` read whole files with

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """The tool surface, defined once and served two ways.
 
 Both consumers of this module need the same capabilities: an MCP client (Claude

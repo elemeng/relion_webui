@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Read and write RELION's ``default_pipeline.star``.
 
 The desktop GUI never inspects job directories to decide what exists; it reads

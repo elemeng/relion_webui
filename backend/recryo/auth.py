@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Login against the machine's own sshd.
 
 The web agent does not keep a user database and does not decide on its own

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """The one status vocabulary, and the mappings to and from RELION's.
 
 Three layers described the same job in three spellings, and every boundary

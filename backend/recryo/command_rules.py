@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Execute the command rules extracted from RELION's ``getCommands*``.
 
 ``generated_commands.py`` holds the rules; this module evaluates them. Keeping

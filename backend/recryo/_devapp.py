@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 elemeng
+# SPDX-License-Identifier: GPL-2.0-or-later
 """App factory for ``--reload``.
 
 ``uvicorn --reload`` re-imports an import string in a fresh process on every
