@@ -171,7 +171,7 @@ function HostPill({ host }: { host: QueueSnapshot["hosts"][number] }) {
   return (
     <span
       className={cn(
-        "flex items-center gap-1 rounded-[3px] px-1.5 py-px font-mono t-meta",
+        "flex items-center gap-1 rounded-selector px-1.5 py-px font-mono t-meta",
         host.problem
           ? "bg-[var(--st-failed-fill)] text-[var(--st-failed-text)]"
           : "bg-base-200 text-ink-muted",
@@ -251,7 +251,7 @@ function QueueRow({
         </span>
         {entry.exclusive && (
           <span
-            className="rounded-[2px] bg-base-200 px-1 t-meta text-ink-muted"
+            className="rounded-[0.125rem] bg-base-200 px-1 t-meta text-ink-muted"
             title="Nothing else starts on this node while it runs"
           >
             whole node

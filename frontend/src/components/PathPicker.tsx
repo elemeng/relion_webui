@@ -230,7 +230,7 @@ export function PathPicker({
             value={typed}
             onChange={(event) => setTyped(event.target.value)}
             spellCheck={false}
-            className="h-8 font-mono text-xs"
+            className="h-8 font-mono t-ui"
             placeholder="/path/to/open"
           />
           <Button
@@ -250,7 +250,7 @@ export function PathPicker({
               type="button"
               variant="ghost"
               size="sm"
-              className="h-7 gap-1.5 px-2 text-xs"
+              className="h-7 gap-1.5 px-2 t-ui"
               onClick={() => load(location.path)}
             >
               {location.label === "home" ? (
@@ -266,7 +266,7 @@ export function PathPicker({
               type="button"
               variant="ghost"
               size="sm"
-              className="h-7 gap-1.5 px-2 text-xs"
+              className="h-7 gap-1.5 px-2 t-ui"
               onClick={() => load(listing.parent ?? undefined)}
             >
               <ChevronUp className="size-3.5" />
@@ -277,7 +277,7 @@ export function PathPicker({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-7 gap-1.5 px-2 text-xs"
+            className="h-7 gap-1.5 px-2 t-ui"
             onClick={() => setShowHidden((value) => !value)}
             aria-pressed={showHidden}
             title={
@@ -297,7 +297,7 @@ export function PathPicker({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-7 gap-1.5 px-2 text-xs"
+            className="h-7 gap-1.5 px-2 t-ui"
             onClick={() => setCreating((value) => !value)}
             aria-pressed={creating}
             title="Create a folder in this directory"
@@ -322,12 +322,12 @@ export function PathPicker({
                 onChange={(event) => setNewName(event.target.value)}
                 placeholder="folder name"
                 spellCheck={false}
-                className="h-8 min-w-0 flex-1 font-mono text-xs"
+                className="h-8 min-w-0 flex-1 font-mono t-ui"
               />
               <Button
                 type="submit"
                 size="sm"
-                className="h-8 shrink-0 text-xs"
+                className="h-8 shrink-0 t-ui"
                 disabled={submittingFolder || !newName.trim()}
               >
                 {submittingFolder ? (
@@ -341,7 +341,7 @@ export function PathPicker({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-8 shrink-0 text-xs"
+                className="h-8 shrink-0 t-ui"
                 onClick={() => {
                   setCreating(false);
                   setNewName("");
@@ -372,7 +372,7 @@ export function PathPicker({
           </p>
         )}
 
-        <div className="min-h-0 flex-1 overflow-auto rounded-[4px] border border-rule">
+        <div className="min-h-0 flex-1 overflow-auto rounded-field border border-rule">
           {loading && (
             <div className="flex items-center justify-center gap-2 p-8">
               <Spinner size="sm" className="text-base-content/60" />

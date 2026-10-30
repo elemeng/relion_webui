@@ -181,9 +181,9 @@ export function NewJobDialog({
       aria-modal
       aria-label={`New ${schema?.title ?? draft.jobType}`}
     >
-      <div className="flex w-[min(520px,100%)] flex-col overflow-hidden rounded-box border border-rule-strong bg-base-100 shadow-[0_24px_64px_-16px_rgb(0_0_0/0.45)]">
+      <div className="flex w-[min(32.5rem,100%)] flex-col overflow-hidden rounded-box border border-rule-strong bg-base-100 shadow-[0_24px_64px_-16px_rgb(0_0_0/0.45)]">
         <div className="flex items-center gap-2 border-b border-rule px-4 py-2.5">
-          <span className="rounded-[3px] border border-dashed border-rule-strong px-1.5 py-px font-mono t-meta text-ink-muted">
+          <span className="rounded-selector border border-dashed border-rule-strong px-1.5 py-px font-mono t-meta text-ink-muted">
             draft
           </span>
           <h2 className="min-w-0 flex-1 truncate t-head font-semibold">
@@ -192,7 +192,7 @@ export function NewJobDialog({
           <button
             type="button"
             onClick={onClose}
-            className="grid size-7 shrink-0 place-items-center rounded-[4px] text-ink-faint hover:bg-base-200 hover:text-base-content"
+            className="grid size-7 shrink-0 place-items-center rounded-field text-ink-faint hover:bg-base-200 hover:text-base-content"
             title="Close, keeping the draft"
             aria-label="Close"
           >
@@ -231,7 +231,7 @@ export function NewJobDialog({
             </div>
           )}
           {!projectDirectory && (
-            <p className="mb-3 rounded-[4px] border border-rule bg-base-200 px-2.5 py-1.5 t-label leading-snug text-ink-muted">
+            <p className="mb-3 rounded-field border border-rule bg-base-200 px-2.5 py-1.5 t-label leading-snug text-ink-muted">
               No project is open, so this job cannot be queued. It can still be
               configured and postponed.
             </p>
@@ -366,7 +366,7 @@ export function NewJobDialog({
           <button
             type="button"
             onClick={onDiscard}
-            className="rounded-[3px] px-1.5 py-0.5 t-label text-ink-faint hover:bg-st-failed/10 hover:text-st-failed"
+            className="rounded-selector px-1.5 py-0.5 t-label text-ink-faint hover:bg-st-failed/10 hover:text-st-failed"
             title="Remove this node from the canvas"
           >
             Discard

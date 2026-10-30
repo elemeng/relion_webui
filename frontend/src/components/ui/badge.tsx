@@ -35,7 +35,7 @@ function Badge({
     <span
       data-slot="badge"
       className={cn(
-        "badge h-auto gap-1 rounded-[3px] px-1.5 py-0 t-meta font-medium whitespace-nowrap",
+        "badge h-auto gap-1 rounded-selector px-1.5 py-0 t-meta font-medium whitespace-nowrap",
         TONES[tone],
         className,
       )}

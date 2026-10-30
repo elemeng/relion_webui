@@ -157,7 +157,7 @@ export function NodeMenu({
         aria-haspopup="menu"
         aria-label="Job actions"
         className={cn(
-          "grid size-5 place-items-center rounded-[3px] text-ink-faint",
+          "grid size-5 place-items-center rounded-selector text-ink-faint",
           "hover:bg-base-200 hover:text-base-content",
           open && "bg-base-200 text-base-content",
         )}
@@ -177,7 +177,7 @@ export function NodeMenu({
               top: position?.top ?? -9999,
             }}
             className={cn(
-              "fixed z-[60] w-[188px] overflow-hidden rounded-box border border-rule",
+              "fixed z-[60] w-[11.75rem] overflow-hidden rounded-box border border-rule",
               "bg-base-100 py-1 shadow-[0_6px_20px_-6px_rgb(0_0_0/0.28),0_2px_6px_-2px_rgb(0_0_0/0.16)]",
             )}
             onClick={(event) => event.stopPropagation()}

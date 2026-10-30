@@ -148,7 +148,7 @@ export function JobCard({
             only this app's queue can start the first. */}
         {queuedHere && (
           <span
-            className="shrink-0 rounded-[2px] border border-[var(--st-scheduled-text)] px-1 t-meta text-[var(--st-scheduled-text)]"
+            className="shrink-0 rounded-[0.125rem] border border-[var(--st-scheduled-text)] px-1 t-meta text-[var(--st-scheduled-text)]"
             title="Queued here: starts on its own when its inputs exist and a GPU is free"
           >
             queue

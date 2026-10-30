@@ -106,7 +106,7 @@ export function ImageViewer({
         <Select
           value={axis}
           onValueChange={(value) => setAxis(value as typeof axis)}
-          className="w-[150px]"
+          className="w-[9.5rem]"
         >
           <SelectItem value="z">z · xy plane</SelectItem>
           <SelectItem value="y">y · xz plane</SelectItem>
@@ -164,7 +164,7 @@ export function ImageViewer({
                 className="accent-primary h-1.5 w-40 cursor-pointer"
                 aria-label="Tilt image"
               />
-              <span className="text-base-content/60 w-14 text-right font-mono text-xs tabular-nums">
+              <span className="text-base-content/60 w-14 text-right font-mono t-ui tabular-nums">
                 {imageIndex + 1}/{images.length}
               </span>
             </>
@@ -285,7 +285,7 @@ export function ImageViewer({
         </div>
       )}
 
-      <p className="text-base-content/60 min-h-4 text-xs">
+      <p className="text-base-content/60 min-h-4 t-ui">
         {mode === "volume"
           ? "server-rendered 3D projection"
           : mode === "projection"

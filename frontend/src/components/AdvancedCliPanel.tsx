@@ -166,7 +166,7 @@ export function AdvancedCliPanel({
                         value={row.flag}
                         placeholder="--flag"
                         spellCheck={false}
-                        className="h-8 font-mono text-xs"
+                        className="h-8 font-mono t-ui"
                         onChange={(event) =>
                           update(index, { flag: event.target.value })
                         }
@@ -192,7 +192,7 @@ export function AdvancedCliPanel({
                       placeholder={boolean ? "flag" : "value"}
                       disabled={boolean}
                       spellCheck={false}
-                      className="h-8 w-28 shrink-0 font-mono text-xs"
+                      className="h-8 w-28 shrink-0 font-mono t-ui"
                       onChange={(event) =>
                         update(index, { value: event.target.value })
                       }
@@ -220,7 +220,7 @@ export function AdvancedCliPanel({
             <Input
               value={filter}
               placeholder="filter flags…"
-              className="h-8 min-w-32 flex-1 text-xs"
+              className="h-8 min-w-32 flex-1 t-ui"
               onChange={(event) => setFilter(event.target.value)}
             />
             {!unavailable && (
@@ -237,7 +237,7 @@ export function AdvancedCliPanel({
           </div>
 
           {!unavailable && filter.trim() !== "" && candidates.length > 0 && (
-            <ul className="max-h-48 overflow-y-auto rounded-[4px] border border-rule">
+            <ul className="max-h-48 overflow-y-auto rounded-field border border-rule">
               {candidates.slice(0, 40).map((option) => (
                 <li key={option.flag}>
                   <button

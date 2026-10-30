@@ -38,8 +38,8 @@ export function Segmented<T extends string>({
             className={cn(
               "btn join-item btn-xs h-6 min-h-0 border-rule px-2 t-label font-medium",
               "shadow-none",
-              index === 0 && "rounded-l-[4px]",
-              index === options.length - 1 && "rounded-r-[4px]",
+              index === 0 && "rounded-l-field",
+              index === options.length - 1 && "rounded-r-field",
               active
                 ? "btn-active border-rule bg-base-100 text-base-content"
                 : "border-rule bg-base-200 text-ink-muted hover:text-base-content",

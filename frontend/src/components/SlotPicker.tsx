@@ -130,7 +130,7 @@ export function SlotPicker({
       aria-modal
       aria-label={`Files for ${label}`}
     >
-      <div className="flex max-h-[min(560px,90vh)] w-[min(560px,100%)] flex-col overflow-hidden rounded-box border border-rule-strong bg-base-100 shadow-[0_24px_64px_-16px_rgb(0_0_0/0.45)]">
+      <div className="flex max-h-[min(35rem,90vh)] w-[min(35rem,100%)] flex-col overflow-hidden rounded-box border border-rule-strong bg-base-100 shadow-[0_24px_64px_-16px_rgb(0_0_0/0.45)]">
         <header className="flex items-start gap-2 border-b border-rule px-3.5 py-2.5">
           <FileOutput className="mt-0.5 size-4 shrink-0 text-ink-faint" />
           <div className="min-w-0 flex-1">
@@ -143,7 +143,7 @@ export function SlotPicker({
           <button
             type="button"
             onClick={onClose}
-            className="grid size-6 shrink-0 place-items-center rounded-[3px] text-ink-faint hover:bg-base-200 hover:text-base-content"
+            className="grid size-6 shrink-0 place-items-center rounded-selector text-ink-faint hover:bg-base-200 hover:text-base-content"
             aria-label="Close"
           >
             <X className="size-3.5" />
@@ -244,7 +244,7 @@ function StatusWord({ candidate }: { candidate: InputCandidate }) {
   return (
     <span
       className={cn(
-        "shrink-0 rounded-[2px] px-1 t-meta",
+        "shrink-0 rounded-[0.125rem] px-1 t-meta",
         candidate.producer_status === "Scheduled"
           ? "bg-[var(--st-scheduled-fill)] text-[var(--st-scheduled-text)]"
           : "bg-[var(--st-running-fill)] text-[var(--st-running-text)]",

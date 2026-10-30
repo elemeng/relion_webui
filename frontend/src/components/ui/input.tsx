@@ -10,7 +10,7 @@ function Input({ className, ...props }: React.ComponentProps<"input">) {
   return (
     <input
       data-slot="input"
-      className={cn("input input-sm w-full text-xs", className)}
+      className={cn("input input-sm w-full ", className)}
       {...props}
     />
   );

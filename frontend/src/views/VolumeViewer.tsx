@@ -189,7 +189,7 @@ export function VolumeViewer({
         <Button
           variant="outline"
           size="sm"
-          className="h-7 text-xs"
+          className="h-7 t-ui"
           onClick={() => {
             setYaw(-30);
             setPitch(20);
@@ -218,7 +218,7 @@ export function VolumeViewer({
         onPointerUp={onPointerUp}
         onPointerCancel={endDrag}
         className={cn(
-          "relative aspect-square w-full overflow-hidden rounded-[4px] border border-rule bg-base-200",
+          "relative aspect-square w-full overflow-hidden rounded-field border border-rule bg-base-200",
           path ? "cursor-grab active:cursor-grabbing" : "",
         )}
       >
@@ -247,7 +247,7 @@ export function VolumeViewer({
         )}
 
         {error && (
-          <span className="text-error bg-base-200/80 absolute inset-0 flex items-center justify-center p-4 text-center text-xs">
+          <span className="text-error bg-base-200/80 absolute inset-0 flex items-center justify-center p-4 text-center t-ui">
             {error}
           </span>
         )}

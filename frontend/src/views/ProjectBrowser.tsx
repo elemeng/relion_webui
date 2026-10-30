@@ -78,10 +78,10 @@ export function ProjectBrowser({
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-5 px-5 py-6">
+      <div className="mx-auto flex w-full max-w-[73.75rem] flex-col gap-5 px-5 py-6">
         <div className="flex items-center gap-2.5">
           <h1 className="t-head font-semibold">Projects</h1>
-          <span className="rounded-[3px] bg-secondary px-1.5 py-px font-mono t-meta text-ink-muted">
+          <span className="rounded-selector bg-secondary px-1.5 py-px font-mono t-meta text-ink-muted">
             {projects.length}
           </span>
           <span className="flex-1" />
@@ -219,7 +219,7 @@ function ProjectCard({
       <div className="flex items-start gap-2.5">
         <span
           className={cn(
-            "mt-0.5 grid size-7 shrink-0 place-items-center rounded-[4px]",
+            "mt-0.5 grid size-7 shrink-0 place-items-center rounded-field",
             active ? "bg-signal/10 text-signal" : "bg-base-200 text-ink-faint",
           )}
         >
@@ -243,7 +243,7 @@ function ProjectCard({
           </div>
         </div>
         {active && (
-          <span className="mt-0.5 shrink-0 rounded-[3px] bg-[var(--st-running-fill)] px-1.5 py-px t-meta font-medium text-[var(--st-running-text)]">
+          <span className="mt-0.5 shrink-0 rounded-selector bg-[var(--st-running-fill)] px-1.5 py-px t-meta font-medium text-[var(--st-running-text)]">
             open
           </span>
         )}
@@ -254,7 +254,7 @@ function ProjectCard({
             type="button"
             onClick={onRemove}
             className={cn(
-              "z-10 mt-0.5 grid size-5 shrink-0 place-items-center rounded-[3px] text-ink-faint",
+              "z-10 mt-0.5 grid size-5 shrink-0 place-items-center rounded-selector text-ink-faint",
               "opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100",
               "hover:bg-st-failed/10 hover:text-st-failed",
             )}

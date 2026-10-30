@@ -118,7 +118,7 @@ export function TiltBrowser({
   }
 
   return (
-    <div className="grid h-full grid-cols-[220px_minmax(0,1fr)_300px] overflow-hidden">
+    <div className="grid h-full grid-cols-[13.75rem_minmax(0,1fr)_18.75rem] overflow-hidden">
       <aside className="flex min-h-0 flex-col border-r border-rule bg-base-100">
         <div className="flex items-center gap-1.5 border-b border-rule px-3 py-2">
           <span className="t-section text-ink-faint">Tilt-series</span>
@@ -196,7 +196,7 @@ function TiltSeriesRow({
         type="button"
         onClick={onSelect}
         className={cn(
-          "flex w-full items-center gap-1.5 rounded-[3px] px-2 py-1.5 text-left t-label transition-colors",
+          "flex w-full items-center gap-1.5 rounded-selector px-2 py-1.5 text-left t-label transition-colors",
           active
             ? "bg-[color-mix(in_srgb,var(--signal)_12%,transparent)] text-base-content"
             : "text-base-content hover:bg-base-200",
@@ -205,12 +205,12 @@ function TiltSeriesRow({
       >
         <span className="min-w-0 flex-1 truncate">{info.name}</span>
         {info.tomogram_file && (
-          <span className="shrink-0 rounded-[2px] bg-[var(--st-succeeded-fill)] px-1 t-meta text-[var(--st-succeeded-text)]">
+          <span className="shrink-0 rounded-[0.125rem] bg-[var(--st-succeeded-fill)] px-1 t-meta text-[var(--st-succeeded-text)]">
             tomo
           </span>
         )}
         {info.denoised_tomogram_file && (
-          <span className="shrink-0 rounded-[2px] bg-[var(--st-running-fill)] px-1 t-meta text-[var(--st-running-text)]">
+          <span className="shrink-0 rounded-[0.125rem] bg-[var(--st-running-fill)] px-1 t-meta text-[var(--st-running-text)]">
             den
           </span>
         )}

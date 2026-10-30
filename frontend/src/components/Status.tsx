@@ -144,7 +144,7 @@ export function StatusPill({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-[3px] px-1.5 py-px t-meta font-medium whitespace-nowrap",
+        "inline-flex items-center rounded-selector px-1.5 py-px t-meta font-medium whitespace-nowrap",
         FILL[normalised],
         className,
       )}
@@ -185,7 +185,7 @@ export function StatusCounts({
         <span
           key={status}
           className={cn(
-            "inline-flex items-center gap-1 rounded-[3px] px-1.5 py-px t-meta font-medium",
+            "inline-flex items-center gap-1 rounded-selector px-1.5 py-px t-meta font-medium",
             FILL[status],
           )}
           title={`${count} ${status.toLowerCase()}`}

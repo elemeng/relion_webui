@@ -86,10 +86,10 @@ export function TiltImageList({
         onChange={(event) => setFilter(event.target.value)}
         placeholder="filter…"
         spellCheck={false}
-        className="h-8 text-xs"
+        className="h-8 t-ui"
       />
 
-      <ul className="min-h-0 flex-1 overflow-auto rounded-[4px] border border-rule">
+      <ul className="min-h-0 flex-1 overflow-auto rounded-field border border-rule">
         {visible.map((image) => {
           const isCurrent = image.index === currentIndex;
           return (

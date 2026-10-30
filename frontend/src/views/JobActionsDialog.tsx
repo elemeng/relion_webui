@@ -101,7 +101,7 @@ export function JobActionsDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="w-[min(520px,92vw)] gap-0">
+      <DialogContent className="w-[min(32.5rem,92vw)] gap-0">
         <DialogHeader>
           <DialogTitle className="font-mono">{process.name}</DialogTitle>
           <DialogDescription>

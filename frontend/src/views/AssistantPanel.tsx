@@ -315,7 +315,7 @@ export function AssistantPanel({
 
   return (
     <aside
-      className="absolute inset-y-0 right-0 z-30 flex w-[min(460px,100%)] flex-col border-l border-rule-strong bg-base-100 shadow-[-8px_0_24px_-16px_rgb(0_0_0/0.4)]"
+      className="absolute inset-y-0 right-0 z-30 flex w-[min(28.75rem,100%)] flex-col border-l border-rule-strong bg-base-100 shadow-[-8px_0_24px_-16px_rgb(0_0_0/0.4)]"
       aria-label="Assistant"
     >
       <header className="flex shrink-0 items-center gap-2 border-b border-rule px-3 py-2">
@@ -329,7 +329,7 @@ export function AssistantPanel({
         {config?.mcp.enabled && (
           <span
             className={cn(
-              "flex shrink-0 items-center gap-1 rounded-[3px] px-1.5 py-px t-meta",
+              "flex shrink-0 items-center gap-1 rounded-selector px-1.5 py-px t-meta",
               config.mcp.allow_writes
                 ? "bg-base-200 text-ink-muted"
                 : "bg-[var(--st-succeeded-fill)] text-[var(--st-succeeded-text)]",
@@ -351,7 +351,7 @@ export function AssistantPanel({
         <button
           type="button"
           onClick={() => setShowSettings((value) => !value)}
-          className="grid size-6 place-items-center rounded-[3px] text-ink-faint hover:bg-base-200 hover:text-base-content"
+          className="grid size-6 place-items-center rounded-selector text-ink-faint hover:bg-base-200 hover:text-base-content"
           title="Provider settings"
           aria-label="Provider settings"
           aria-expanded={showSettings}
@@ -361,7 +361,7 @@ export function AssistantPanel({
         <button
           type="button"
           onClick={reset}
-          className="grid size-6 place-items-center rounded-[3px] text-ink-faint hover:bg-base-200 hover:text-base-content"
+          className="grid size-6 place-items-center rounded-selector text-ink-faint hover:bg-base-200 hover:text-base-content"
           title="New conversation"
           aria-label="New conversation"
         >
@@ -370,7 +370,7 @@ export function AssistantPanel({
         <button
           type="button"
           onClick={onClose}
-          className="grid size-6 place-items-center rounded-[3px] text-ink-faint hover:bg-base-200 hover:text-base-content"
+          className="grid size-6 place-items-center rounded-selector text-ink-faint hover:bg-base-200 hover:text-base-content"
           title="Close (Esc)"
           aria-label="Close assistant"
         >
@@ -486,7 +486,7 @@ function Turn({ entry }: { entry: TranscriptEntry }) {
   if (entry.role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[85%] rounded-box rounded-br-[3px] bg-secondary px-2.5 py-1.5 t-ui whitespace-pre-wrap">
+        <div className="max-w-[85%] rounded-box rounded-br-selector bg-secondary px-2.5 py-1.5 t-ui whitespace-pre-wrap">
           {entry.text}
         </div>
       </div>
@@ -510,7 +510,7 @@ function Turn({ entry }: { entry: TranscriptEntry }) {
         </span>
       )}
       {entry.error && (
-        <p className="flex items-start gap-1.5 rounded-[4px] border border-[color-mix(in_srgb,var(--st-failed-text)_35%,var(--rule))] bg-[var(--st-failed-fill)] px-2 py-1.5 t-label text-[var(--st-failed-text)]">
+        <p className="flex items-start gap-1.5 rounded-field border border-[color-mix(in_srgb,var(--st-failed-text)_35%,var(--rule))] bg-[var(--st-failed-fill)] px-2 py-1.5 t-label text-[var(--st-failed-text)]">
           <AlertCircle className="mt-px size-3 shrink-0" />
           {entry.error}
         </p>
@@ -541,7 +541,7 @@ function ToolRow({ call }: { call: ToolActivity }) {
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-[4px] border",
+        "overflow-hidden rounded-field border",
         parked
           ? "border-[color-mix(in_srgb,var(--st-aborted-text)_40%,var(--rule))] bg-[var(--st-aborted-fill)]"
           : "border-rule bg-base-200/60",
@@ -687,7 +687,7 @@ function Settings({
         <button
           type="button"
           onClick={onClose}
-          className="grid size-5 place-items-center rounded-[3px] text-ink-faint hover:bg-base-200"
+          className="grid size-5 place-items-center rounded-selector text-ink-faint hover:bg-base-200"
           aria-label="Close settings"
         >
           <X className="size-3" />

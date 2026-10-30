@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import {
   MIN_READABLE_SCALE,
   MINI_SCALE,
+  MINI_WIDTH,
   NODE_HEIGHT,
   NODE_WIDTH,
   edgeColour,
@@ -469,7 +470,11 @@ function CanvasNode({
 }) {
   // The card is shared with the grid view, so the two cannot drift apart; only
   // the positioning differs.
-  const position = { left: node.x, top: node.y, width: mini ? 96 : NODE_WIDTH };
+  const position = {
+    left: node.x,
+    top: node.y,
+    width: mini ? MINI_WIDTH : NODE_WIDTH,
+  };
 
   if (mini) {
     return (
@@ -514,7 +519,7 @@ function CanvasButton({
     <button
       type="button"
       onClick={onClick}
-      className="grid size-7 place-items-center rounded-[3px] text-ink-muted hover:bg-base-200 hover:text-base-content"
+      className="grid size-7 place-items-center rounded-selector text-ink-muted hover:bg-base-200 hover:text-base-content"
       title={label}
       aria-label={label}
     >
@@ -537,14 +542,14 @@ function CanvasControls({
   onCentre: () => void;
 }) {
   return (
-    <div className="absolute right-3 bottom-3 flex items-center gap-0.5 rounded-[4px] border border-rule bg-base-100 p-0.5 shadow-sm">
+    <div className="absolute right-3 bottom-3 flex items-center gap-0.5 rounded-field border border-rule bg-base-100 p-0.5 shadow-sm">
       <CanvasButton onClick={onZoomOut} label="Zoom out">
         <Minus className="size-3.5" />
       </CanvasButton>
       <button
         type="button"
         onClick={onFit}
-        className="w-10 rounded-[3px] py-1 text-center font-mono t-meta text-ink-muted hover:bg-base-200"
+        className="w-10 rounded-selector py-1 text-center font-mono t-meta text-ink-muted hover:bg-base-200"
         title="Reset to fit (F)"
       >
         {Math.round(scale * 100)}%
@@ -557,7 +562,7 @@ function CanvasControls({
         type="button"
         data-canvas-centre
         onClick={onCentre}
-        className="grid size-7 place-items-center rounded-[3px] text-ink-muted hover:bg-base-200 hover:text-base-content"
+        className="grid size-7 place-items-center rounded-selector text-ink-muted hover:bg-base-200 hover:text-base-content"
         title="Centre on selection (T)"
       >
         <Boxes className="size-3.5" />
@@ -566,7 +571,7 @@ function CanvasControls({
         type="button"
         data-canvas-fit
         onClick={onFit}
-        className="grid size-7 place-items-center rounded-[3px] text-ink-muted hover:bg-base-200 hover:text-base-content"
+        className="grid size-7 place-items-center rounded-selector text-ink-muted hover:bg-base-200 hover:text-base-content"
         title="Fit to view (F)"
       >
         <Maximize2 className="size-3.5" />

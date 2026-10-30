@@ -17,13 +17,13 @@ import type { PipelineGraph } from "@/lib/types";
  * canvas zooms.
  */
 
-export const NODE_WIDTH = 208;
-export const NODE_HEIGHT = 78;
-export const MINI_WIDTH = 96;
-export const MINI_HEIGHT = 38;
-const COLUMN_GAP = 40;
-const ROW_GAP = 14;
-const PADDING = 24;
+export const NODE_WIDTH = 250;
+export const NODE_HEIGHT = 94;
+export const MINI_WIDTH = 116;
+export const MINI_HEIGHT = 46;
+const COLUMN_GAP = 48;
+const ROW_GAP = 17;
+const PADDING = 29;
 
 export interface LayoutNode {
   /** Process names in this node. More than one means a condensed cycle. */
@@ -272,12 +272,12 @@ export function layoutPipeline(graph: GraphInput): Layout {
 /**
  * Fit a graph into a viewport without letting cards become unreadable.
  *
- * Measured: below ~72% a card's 12px title renders under 9px and stops being
- * readable at a glance, so `fit` stops there and the canvas pans instead.
- * Returning a floor rather than shrinking to zero is the difference between an
- * overview and a grid of coloured chips.
+ * Measured: cards carry the ~13px `t-ui` title, and below ~60% that renders
+ * under 9px on screen and stops being readable at a glance, so `fit` stops
+ * there and the canvas pans instead. Returning a floor rather than shrinking
+ * to zero is the difference between an overview and a grid of coloured chips.
  */
-export const MIN_READABLE_SCALE = 0.72;
+export const MIN_READABLE_SCALE = 0.6;
 
 /**
  * The scale the whole graph fits at, ignoring readability.
@@ -313,7 +313,7 @@ export function fitScale(
 }
 
 /** Below this a node renders as the zoomed-out status chip. */
-export const MINI_SCALE = 0.55;
+export const MINI_SCALE = 0.48;
 
 /** A stable hue per node type, kept in a calm band so edges never shout. */
 export function edgeColour(typeLabel: string): string {

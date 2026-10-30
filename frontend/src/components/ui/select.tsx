@@ -35,7 +35,7 @@ function Select({
     <select
       id={id}
       data-slot="select"
-      className={cn("select select-sm w-full text-xs", className)}
+      className={cn("select select-sm w-full ", className)}
       value={value}
       disabled={disabled}
       onChange={(event) => onValueChange(event.target.value)}

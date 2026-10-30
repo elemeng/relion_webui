@@ -69,7 +69,7 @@ function DialogContent({
       data-slot="dialog-content"
       className={cn(
         "modal-box flex max-h-[85svh] max-w-2xl flex-col gap-3 p-0",
-        "border-base-300 bg-base-100 rounded-[4px] border",
+        "border-base-300 bg-base-100 rounded-field border",
         className,
       )}
       {...props}
@@ -106,7 +106,7 @@ function DialogDescription({ className, ...props }: React.ComponentProps<"p">) {
   return (
     <p
       data-slot="dialog-description"
-      className={cn("text-base-content/70 text-xs", className)}
+      className={cn("t-base-content/70 t-ui", className)}
       {...props}
     />
   );

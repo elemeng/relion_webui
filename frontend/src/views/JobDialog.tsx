@@ -162,7 +162,7 @@ export function JobDialog({
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-box border border-rule bg-base-100 shadow-2xl">
         <div className="flex items-center gap-2.5 border-b border-rule px-4 py-2.5">
           <StatusDot status={process.status} className="size-2" />
-          <span className="shrink-0 rounded-[3px] bg-base-200 px-1.5 py-0.5 font-mono t-meta text-ink-muted">
+          <span className="shrink-0 rounded-selector bg-base-200 px-1.5 py-0.5 font-mono t-meta text-ink-muted">
             {jobNumber(process.name)}
           </span>
           <h2 className="min-w-0 truncate t-head font-semibold">
@@ -193,7 +193,7 @@ export function JobDialog({
           <button
             type="button"
             onClick={onClose}
-            className="grid size-7 shrink-0 place-items-center rounded-[4px] text-ink-faint hover:bg-base-200 hover:text-base-content"
+            className="grid size-7 shrink-0 place-items-center rounded-field text-ink-faint hover:bg-base-200 hover:text-base-content"
             title="Close (Esc)"
             aria-label="Close"
           >
@@ -211,7 +211,7 @@ export function JobDialog({
               <TabsTrigger key={value} value={value}>
                 {label}
                 {count !== undefined && count > 0 && (
-                  <span className="ml-1.5 rounded-[2px] bg-base-200 px-1 font-mono t-meta text-ink-muted">
+                  <span className="ml-1.5 rounded-[0.125rem] bg-base-200 px-1 font-mono t-meta text-ink-muted">
                     {count}
                   </span>
                 )}
@@ -319,7 +319,7 @@ function Overview({
   onOpenProcess: (process: PipelineProcess) => void;
 }) {
   return (
-    <div className="grid h-full grid-cols-[minmax(0,1fr)_248px] overflow-hidden">
+    <div className="grid h-full grid-cols-[minmax(0,1fr)_15.5rem] overflow-hidden">
       <div className="flex min-h-0 flex-col gap-3 overflow-y-auto p-4">
         <div className="flex flex-wrap gap-2">
           <Kpi label="Pipeline">
@@ -368,7 +368,7 @@ function Overview({
 
         {/* The log grows into whatever height the KPI row and preview leave,
             rather than sitting at a fixed 176px with a void beneath it. */}
-        <div className="flex min-h-[120px] flex-1 flex-col">
+        <div className="flex min-h-[7.5rem] flex-1 flex-col">
           <DialogLog
             process={process}
             liveJob={liveJob}
@@ -387,7 +387,7 @@ function Overview({
             produced.map((node) => (
               <div
                 key={node.name}
-                className="truncate rounded-[3px] border border-rule bg-base-100 px-2 py-1.5 font-mono t-meta"
+                className="truncate rounded-selector border border-rule bg-base-100 px-2 py-1.5 font-mono t-meta"
                 title={node.name}
               >
                 {basename(node.name)}
@@ -455,7 +455,7 @@ function OutputsPanel({
         return (
           <li
             key={node.name}
-            className="flex items-center gap-2 rounded-[4px] border border-rule px-2.5 py-2"
+            className="flex items-center gap-2 rounded-field border border-rule px-2.5 py-2"
           >
             <FileText className="size-3.5 shrink-0 text-ink-faint" />
             <span className="min-w-0 flex-1 truncate font-mono t-meta">
@@ -636,7 +636,7 @@ function ParametersPanel({
     <div className="flex flex-col gap-4">
       <div
         className={cn(
-          "rounded-[4px] border px-3 py-2 t-label leading-relaxed",
+          "rounded-field border px-3 py-2 t-label leading-relaxed",
           state === "ready"
             ? "border-rule bg-base-200 text-ink-muted"
             : "border-[color-mix(in_srgb,var(--st-aborted-text)_35%,var(--rule))] bg-[var(--st-aborted-fill)] text-[var(--st-aborted-text)]",
@@ -652,7 +652,7 @@ function ParametersPanel({
             {consumed.map((node) => (
               <div
                 key={node.name}
-                className="truncate rounded-[3px] border border-rule px-2 py-1.5 font-mono t-meta"
+                className="truncate rounded-selector border border-rule px-2 py-1.5 font-mono t-meta"
                 title={node.name}
               >
                 {node.name}
@@ -806,7 +806,7 @@ function MetadataPanel({
       {liveJob && liveJob.command.length > 0 && (
         <div>
           <div className="mb-1.5 t-section text-ink-faint">Command</div>
-          <pre className="overflow-x-auto rounded-[4px] border border-rule bg-base-200 p-2 font-mono t-meta whitespace-pre-wrap">
+          <pre className="overflow-x-auto rounded-field border border-rule bg-base-200 p-2 font-mono t-meta whitespace-pre-wrap">
             {liveJob.command.join(" ")}
           </pre>
         </div>
@@ -866,7 +866,7 @@ function Preview({
 
   return (
     <div className="relative w-full overflow-hidden rounded-box border border-rule bg-base-200">
-      <div className="relative h-[min(48vh,460px)] w-full">
+      <div className="relative h-[min(48vh,28.75rem)] w-full">
         {!error && url && (
           <img
             key={url}
@@ -888,7 +888,7 @@ function Preview({
           </span>
         )}
       </div>
-      <span className="absolute bottom-1.5 left-2 rounded-[2px] bg-base-100/85 px-1 font-mono t-meta text-ink-muted">
+      <span className="absolute bottom-1.5 left-2 rounded-[0.125rem] bg-base-100/85 px-1 font-mono t-meta text-ink-muted">
         {basename(node.name)} ·{" "}
         {axis === null ? "max proj" : `${axis}=${centre ?? "…"}`}
       </span>
@@ -984,9 +984,9 @@ function DialogLog({
   const body = (
     <pre
       className={cn(
-        "overflow-auto bg-base-200 font-mono leading-[17px] whitespace-pre-wrap text-ink-muted",
+        "overflow-auto bg-base-200 font-mono leading-[1.4] whitespace-pre-wrap text-ink-muted",
         compact
-          ? "h-full min-h-0 rounded-[4px] border border-rule px-2.5 py-2 t-meta"
+          ? "h-full min-h-0 rounded-field border border-rule px-2.5 py-2 t-meta"
           : "h-full px-4 py-3 t-label",
       )}
     >
@@ -1029,7 +1029,7 @@ function SideSection({
     <div className="mb-3.5 last:mb-0">
       <div className="mb-1.5 flex items-center gap-1.5">
         <span className="t-section text-ink-faint">{title}</span>
-        <span className="rounded-[2px] bg-base-100 px-1 font-mono t-meta text-ink-faint">
+        <span className="rounded-[0.125rem] bg-base-100 px-1 font-mono t-meta text-ink-faint">
           {count}
         </span>
       </div>
@@ -1049,7 +1049,7 @@ function RelatedRow({
     <button
       type="button"
       onClick={onOpen}
-      className="group flex items-center gap-1.5 rounded-[3px] border border-rule bg-base-100 px-2 py-1.5 text-left hover:border-signal"
+      className="group flex items-center gap-1.5 rounded-selector border border-rule bg-base-100 px-2 py-1.5 text-left hover:border-signal"
       title={`Open ${process.name}`}
     >
       <StatusDot status={process.status} className="size-1" />
@@ -1072,7 +1072,7 @@ function Kpi({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-w-[92px] rounded-[4px] border border-rule bg-base-100 px-2.5 py-1.5">
+    <div className="min-w-[5.75rem] rounded-field border border-rule bg-base-100 px-2.5 py-1.5">
       <div className="t-meta text-ink-faint">{label}</div>
       <div className="mt-0.5">{children}</div>
     </div>

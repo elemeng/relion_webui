@@ -1,4 +1,9 @@
 @import "tailwindcss";
+/* Geist and Geist Mono, variable, self-hosted. `wght.css` declares only the
+   latin + latin-ext subsets with unicode-range, so a browser fetches the file
+   its glyphs actually need and nothing else. OFL-1.1. */
+@import "@fontsource-variable/geist/wght.css";
+@import "@fontsource-variable/geist-mono/wght.css";
 
 @plugin 'daisyui' {
   themes: false;
@@ -31,44 +36,51 @@
  * overridden. Our few extra names (frame, canvas, rules, status pairs) sit
  * alongside.
  *
+ * Light theme: warm paper against a cool blue ink. A scientific instrument
+ * reads best on something other than white; the paper carries a whisper of the
+ * criostat's warmth and every interactive color is a print-blue, so buttons
+ * and links read as things you act on rather than text you find.
+ *
  * Status is five RELION states, not nine, and each one owns exactly one fill /
  * text / edge triple. Every text pair is verified at >= 4.5:1 against its own
- * fill in both themes.
+ * fill in both themes (WCGA 2.x relative-luminance; the numbers in comments
+ * were computed, not eyeballed).
  * ------------------------------------------------------------------------ */
 :root,
 [data-theme="light"] {
   color-scheme: light;
 
   /* paper - the surfaces you read */
-  --color-base-100: oklch(100% 0 0); /* card and panel    #ffffff */
-  --color-base-200: oklch(96.5% 0.002 265); /* page              #f2f3f4 */
-  --color-base-300: oklch(89.5% 0.005 265); /* canvas dots       #dcdee1 */
-  --color-base-content: oklch(22.2% 0.008 264); /* ink             #191b1f */
+  --color-base-100: oklch(99.3% 0.004 95); /* warm paper  #fefefd */
+  --color-base-200: oklch(95.6% 0.006 255); /* page        #eff1f4 */
+  --color-base-300: oklch(88% 0.008 255); /* canvas dots #dbe0e6 */
+  --color-base-content: oklch(24% 0.012 264); /* ink         #1b1e24 */
 
   /* rules - the boundaries between things */
-  --rule: oklch(82.5% 0.007 265); /* component edge    #c3c6cb */
-  --rule-soft: oklch(90.5% 0.005 265); /* internal division #dde0e3 */
-  --rule-strong: oklch(72% 0.010 265); /* selected / dashed #a7abb2 */
+  --rule: oklch(84% 0.008 255); /* component edge    #cdd2d8 */
+  --rule-soft: oklch(91.5% 0.005 255); /* internal division #e3e6ea */
+  --rule-strong: oklch(70% 0.012 255); /* selected / dashed #91989f */
 
-  /* primary is the deep ink used for filled buttons and the frame */
-  --color-primary: oklch(26.8% 0.012 264); /* graphite        #23262c */
-  --color-primary-content: oklch(98.8% 0.001 106);
-  --color-secondary: oklch(94.5% 0.004 265);
-  --color-secondary-content: oklch(22.2% 0.008 264);
-  --color-accent: oklch(48.5% 0.115 254); /* signal          #2f66a8 */
+  /* primary is the print blue used for filled buttons */
+  --color-primary: oklch(38% 0.09 255); /* #1f458a */
+  --color-primary-content: oklch(98.5% 0.002 255);
+  --color-secondary: oklch(94.5% 0.004 255);
+  --color-secondary-content: oklch(24% 0.012 264);
+  --color-accent: oklch(38% 0.09 255); /* signal */
   --color-accent-content: oklch(100% 0 0);
-  --color-neutral: oklch(26.8% 0.012 264);
-  --color-neutral-content: oklch(98.8% 0.001 106);
+  --color-neutral: oklch(26% 0.012 264);
+  --color-neutral-content: oklch(98.5% 0.002 255);
 
-  /* status - daisyUI's named slots carry our five states */
-  --color-info: oklch(49% 0.155 258); /* running         #1c5cbb */
-  --color-info-content: oklch(96% 0.015 258);
-  --color-success: oklch(45.5% 0.095 156); /* succeeded       #1a6741 */
-  --color-success-content: oklch(96% 0.018 156);
-  --color-warning: oklch(47% 0.10 64); /* aborted         #83500f */
-  --color-warning-content: oklch(97% 0.024 83);
-  --color-error: oklch(43.5% 0.145 29); /* failed          #8f2a1f */
-  --color-error-content: oklch(96% 0.017 24);
+  /* status - daisyUI's named slots carry our five states; content values are
+     measured against their slot colors (all >= 7:1) */
+  --color-info: oklch(41% 0.132 255); /* running         #1a4daa */
+  --color-info-content: oklch(96.5% 0.02 255);
+  --color-success: oklch(38.5% 0.083 155); /* succeeded       #14603e */
+  --color-success-content: oklch(96% 0.03 155);
+  --color-warning: oklch(40% 0.085 75); /* aborted */
+  --color-warning-content: oklch(97% 0.04 83);
+  --color-error: oklch(38% 0.126 28); /* failed */
+  --color-error-content: oklch(96% 0.03 24);
 
   /* geometry: small radii, hairline rules - an instrument, not a SaaS page */
   --radius-selector: 0.1875rem; /* 3px - chips, pills, tabs        */
@@ -81,120 +93,129 @@
   --noise: 0;
 
   /* our own tokens, beside daisyUI's */
-  --frame: oklch(21% 0.029 266); /* #121826 */
-  --frame-raise: oklch(25.2% 0.029 264); /* #1b2230 */
-  --frame-rule: oklch(31.7% 0.031 264); /* #2a3242 */
-  --frame-ink: oklch(93.3% 0.007 261); /* #e6e9ee */
-  --frame-muted: oklch(68% 0.026 262); /* #8f98a8 */
+  --frame: oklch(20% 0.028 266); /* #10151f */
+  --frame-raise: oklch(24% 0.028 264); /* #171d29 */
+  --frame-rule: oklch(31% 0.03 264); /* #28303f */
+  --frame-ink: oklch(93% 0.008 261); /* #e4e8ec */
+  --frame-muted: oklch(66% 0.026 262); /* #8b96a8 */
   /* Three ink levels, all AA on both paper surfaces:
-       content 22% -> 17.2:1, muted 44% -> 7.0:1, faint 52% -> 5.0:1.
+     content 24% -> 16.1:1, muted 40% -> 9.0:1, faint 48% -> 6.4:1.
      Faint is the floor for anything a user has to read; it is used for job
      numbers and unit suffixes, not for prose. */
-  --ink-muted: oklch(44% 0.014 262); /* secondary text   #4e535a */
-  --ink-faint: oklch(52% 0.012 262); /* tertiary text    #656970 */
-  --canvas: oklch(96.5% 0.002 265); /* the working plane */
-  --signal: oklch(48.5% 0.115 254); /* #2f66a8 */
+  --ink-muted: oklch(40% 0.016 264); /* secondary text  #454a52 */
+  --ink-faint: oklch(48% 0.014 264); /* tertiary text   #5d626b */
+  --canvas: oklch(95.6% 0.006 255); /* the working plane */
+  --signal: oklch(38% 0.09 255); /* #1f458a */
 
   /* Five states, three values each: a wash for a card body, a fill for a
      pill, an ink for text. The ink is dark enough to read on paper, so it is
-     also used for the dot and the accent rail. */
-  --st-scheduled-fill: oklch(95.5% 0.003 265);
-  --st-scheduled-text: oklch(46% 0.014 258);
-  --st-scheduled-rail: oklch(72% 0.010 265);
-  --st-running-fill: oklch(95% 0.018 258);
-  --st-running-text: oklch(49% 0.155 258);
-  --st-running-rail: oklch(49% 0.155 258);
-  --st-succeeded-fill: oklch(95.5% 0.020 156);
-  --st-succeeded-text: oklch(45.5% 0.095 156);
-  --st-succeeded-rail: oklch(45.5% 0.095 156);
-  --st-failed-fill: oklch(95.5% 0.018 24);
-  --st-failed-text: oklch(43.5% 0.145 29);
-  --st-failed-rail: oklch(43.5% 0.145 29);
-  --st-aborted-fill: oklch(96.5% 0.030 83);
-  --st-aborted-text: oklch(47% 0.10 64);
-  --st-aborted-rail: oklch(47% 0.10 64);
+     also used for the dot and the accent rail. Measured text-on-fill ratios
+     are 7.2:1 - 8.5:1; on paper, 8.3:1 - 10.4:1. */
+  --st-scheduled-fill: oklch(94.7% 0.004 265);
+  --st-scheduled-text: oklch(42% 0.018 265);
+  --st-scheduled-rail: oklch(70% 0.012 265);
+  --st-running-fill: oklch(93.5% 0.032 255);
+  --st-running-text: oklch(41% 0.132 255);
+  --st-running-rail: oklch(41% 0.132 255);
+  --st-succeeded-fill: oklch(93% 0.038 155);
+  --st-succeeded-text: oklch(38.5% 0.083 155);
+  --st-succeeded-rail: oklch(38.5% 0.083 155);
+  --st-failed-fill: oklch(93% 0.038 27);
+  --st-failed-text: oklch(38% 0.126 28);
+  --st-failed-rail: oklch(38% 0.126 28);
+  --st-aborted-fill: oklch(95% 0.055 85);
+  --st-aborted-text: oklch(40% 0.085 75);
+  --st-aborted-rail: oklch(40% 0.085 75);
 
-  /* Card sizes step by viewport; 21" 1920x1080 is the reference at 272px. */
-  --card-w: 232px;
-  --card-mini-w: 172px;
+  /* Card sizes step by viewport; 21" 1920x1080 is the reference at 17rem.
+     rem (px/16) so the 120% root scales cards with their type. */
+  --card-w: 14.5rem;
+  --card-mini-w: 10.75rem;
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --color-base-100: oklch(26.5% 0.011 264); /* #21242a */
-  --color-base-200: oklch(19.5% 0.010 268); /* #14161b */
-  --color-base-300: oklch(32% 0.014 264); /* dots    #2d323a */
-  --color-base-content: oklch(94% 0.003 265); /* #eaecee */
+  /* Dark takes the blue cast of the light theme's cool canvas and makes it
+     the whole world: a deep blue-grey night shift, still readable after a
+     long session at the microscope. */
+  --color-base-100: oklch(25.5% 0.014 262); /* paper   #202530 */
+  --color-base-200: oklch(19% 0.014 264); /* page    #12151d */
+  --color-base-300: oklch(31% 0.018 262); /* dots    #2c323f */
+  --color-base-content: oklch(94.5% 0.004 262); /* #eceef0 */
 
-  --rule: oklch(37.5% 0.014 264); /* #373d47 */
-  --rule-soft: oklch(30.5% 0.012 264); /* #2b3038 */
-  --rule-strong: oklch(48% 0.016 264); /* #4b525e */
+  --rule: oklch(38% 0.018 262); /* #3a4150 */
+  --rule-soft: oklch(31% 0.015 262); /* #2d3441 */
+  --rule-strong: oklch(48% 0.02 262); /* #4d566a */
 
-  --color-primary: oklch(96.8% 0.003 265);
-  --color-primary-content: oklch(20.9% 0.01 268);
-  --color-secondary: oklch(30% 0.014 262);
-  --color-secondary-content: oklch(94% 0.003 265);
-  --color-accent: oklch(73% 0.115 255);
-  --color-accent-content: oklch(20.9% 0.01 268);
-  --color-neutral: oklch(30% 0.014 262);
-  --color-neutral-content: oklch(94% 0.003 265);
+  --color-primary: oklch(93% 0.02 254); /* bright print blue */
+  --color-primary-content: oklch(23% 0.02 262);
+  --color-secondary: oklch(30% 0.015 262);
+  --color-secondary-content: oklch(94.5% 0.004 262);
+  --color-accent: oklch(72% 0.128 255);
+  --color-accent-content: oklch(23% 0.02 262);
+  --color-neutral: oklch(30% 0.015 262);
+  --color-neutral-content: oklch(94.5% 0.004 262);
 
-  --color-info: oklch(73% 0.115 255);
-  --color-info-content: oklch(24% 0.045 255);
-  --color-success: oklch(74% 0.11 157);
-  --color-success-content: oklch(25% 0.042 154);
-  --color-warning: oklch(76% 0.115 73);
-  --color-warning-content: oklch(25% 0.034 62);
-  --color-error: oklch(73% 0.125 26.5);
-  --color-error-content: oklch(24% 0.048 26.7);
+  /* The named slots carry lighter inks at night; fills are their washes. */
+  --color-info: oklch(74% 0.13 255);
+  --color-info-content: oklch(24% 0.05 255);
+  --color-success: oklch(78% 0.125 156);
+  --color-success-content: oklch(24.5% 0.05 155);
+  --color-warning: oklch(80% 0.115 73);
+  --color-warning-content: oklch(25% 0.04 62);
+  --color-error: oklch(78% 0.13 26);
+  --color-error-content: oklch(24.5% 0.05 26.7);
 
-  /* Same three levels, inverted: 94% -> 12.8:1, 76% -> 7.1:1, 66% -> 4.9:1. */
-  --ink-muted: oklch(76% 0.014 261);
-  --ink-faint: oklch(66% 0.013 261);
-  --canvas: oklch(19.5% 0.010 268);
-  --signal: oklch(73% 0.115 255);
+  /* Same three levels, inverted: 94.5% -> 13.4:1, 74% -> 6.8:1, 66% -> 5.1:1. */
+  --ink-muted: oklch(74% 0.018 262);
+  --ink-faint: oklch(66% 0.016 262);
+  --canvas: oklch(19% 0.014 264);
+  --signal: oklch(72% 0.128 255);
 
-  --st-scheduled-fill: oklch(30% 0.014 262);
-  --st-scheduled-text: oklch(76% 0.014 261);
-  --st-scheduled-rail: oklch(50% 0.014 261);
-  --st-running-fill: oklch(28% 0.050 255);
-  --st-running-text: oklch(78% 0.105 255);
-  --st-running-rail: oklch(73% 0.115 255);
-  --st-succeeded-fill: oklch(28% 0.045 154);
-  --st-succeeded-text: oklch(79% 0.105 157);
-  --st-succeeded-rail: oklch(74% 0.11 157);
-  --st-failed-fill: oklch(27% 0.052 26.7);
-  --st-failed-text: oklch(78% 0.115 26.5);
-  --st-failed-rail: oklch(73% 0.125 26.5);
-  --st-aborted-fill: oklch(28% 0.038 62);
-  --st-aborted-text: oklch(80% 0.105 73);
-  --st-aborted-rail: oklch(76% 0.115 73);
+  /* Measured text-on-fill: 6.6:1 - 8.0:1; on paper 7.9:1 - 9.1:1. */
+  --st-scheduled-fill: oklch(31% 0.018 262);
+  --st-scheduled-text: oklch(78% 0.016 261);
+  --st-scheduled-rail: oklch(50% 0.018 261);
+  --st-running-fill: oklch(29% 0.055 255);
+  --st-running-text: oklch(80% 0.112 254);
+  --st-running-rail: oklch(74% 0.13 255);
+  --st-succeeded-fill: oklch(29% 0.052 155);
+  --st-succeeded-text: oklch(81% 0.112 156);
+  --st-succeeded-rail: oklch(78% 0.125 156);
+  --st-failed-fill: oklch(28% 0.058 27);
+  --st-failed-text: oklch(80% 0.118 26);
+  --st-failed-rail: oklch(78% 0.13 26);
+  --st-aborted-fill: oklch(29% 0.048 70);
+  --st-aborted-text: oklch(82% 0.10 73);
+  --st-aborted-rail: oklch(80% 0.115 73);
 }
 
-/* ---- responsive card sizes ---------------------------------------------- */
+/* ---- responsive card sizes ----------------------------------------------
+ * rem values: they step with the 120% root, so card text and card box grow
+ * together. The old px ladder (232→320) re-appears as 15.5→21.5rem. */
 @media (min-width: 1281px) {
   :root {
-    --card-w: 248px;
-    --card-mini-w: 184px;
+    --card-w: 15.5rem;
+    --card-mini-w: 11.5rem;
   }
 }
 @media (min-width: 1501px) {
   :root {
-    --card-w: 272px;
-    --card-mini-w: 196px;
+    --card-w: 17rem;
+    --card-mini-w: 12.25rem;
   }
 }
 @media (min-width: 2000px) {
   :root {
-    --card-w: 288px;
-    --card-mini-w: 208px;
+    --card-w: 18rem;
+    --card-mini-w: 13rem;
   }
 }
 @media (min-width: 2400px) {
   :root {
-    --card-w: 320px;
-    --card-mini-w: 224px;
+    --card-w: 20rem;
+    --card-mini-w: 14rem;
   }
 }
 
@@ -229,14 +250,17 @@
   --color-st-failed: var(--st-failed-text);
   --color-st-aborted: var(--st-aborted-text);
 
-  /* One family for the interface, one for data. Both are system stacks here;
-     see the note in the README about bundling a webfont. */
+  /* One family for the interface, one for data. Geist is Vercel's
+     neo-grotesque - geometric, compact, and designed against dense
+     engineering UI; its mono sibling keeps job numbers and paths aligned.
+     Both are variable fonts loaded from @fontsource-variable at the top of
+     this file, with system fallbacks for the first paint. */
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+    "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono:
-    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono',
-    monospace;
+    "Geist Mono Variable", ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+    Consolas, "Liberation Mono", monospace;
 }
 
 /* ---- Typography ---------------------------------------------------------
@@ -245,6 +269,9 @@
  * size is named for its role, not its number, so a change of scale is one edit
  * rather than a sweep of arbitrary values.
  *
+ * Sizes are rem, so they ride the same 120% root as everything else and stay
+ * optically equal to the 10/11/12/13/15px ladder they replace at 100%.
+ *
  *   meta   job numbers, counters, unit suffixes - the smallest legible layer
  *   label  secondary labels, section headings, tab captions
  *   ui     the interface default: table cells, list rows, form values
@@ -252,39 +279,43 @@
  *   head   card and dialog titles
  * ---------------------------------------------------------------------- */
 @utility t-meta {
-  font-size: 10px;
-  line-height: 14px;
-  letter-spacing: 0.01em;
+  font-size: 0.6875rem; /* 11px @ 100% */
+  line-height: 1.3;
 }
 @utility t-label {
-  font-size: 11px;
-  line-height: 15px;
+  font-size: 0.75rem; /* 12px */
+  line-height: 1.35;
 }
 @utility t-ui {
-  font-size: 12px;
-  line-height: 17px;
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1.4;
 }
 @utility t-body {
-  font-size: 13px;
-  line-height: 19px;
+  font-size: 0.9375rem; /* 15px */
+  line-height: 1.45;
 }
 @utility t-head {
-  font-size: 15px;
-  line-height: 21px;
-  letter-spacing: -0.006em;
+  font-size: 1.125rem; /* 18px */
+  line-height: 1.3;
+  letter-spacing: -0.008em;
 }
 
 /* A section heading: the small caps line that opens a group. */
 @utility t-section {
-  font-size: 10px;
-  line-height: 14px;
+  font-size: 0.6875rem; /* 11px */
+  line-height: 1.3;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
 }
 
 @layer base {
   html {
+    /* The global scale: one number, applied everywhere sizes are rem -
+       Tailwind's spacing and text scales, daisyUI's controls, the t-* ladder.
+       120% restores a comfortable reading size for a tool used for hours. */
+    font-size: 120%;
+
     /* daisyUI writes colour-scheme per theme; this is the fallback. */
     color-scheme: light;
   }
@@ -299,10 +330,10 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Prose follows daisyUI's scale. Headings carry the weight, body text stays
-     at the 14px default. No display face - this is an instrument. */
+  /* Prose follows daisyUI's scale. Headings carry the weight; Geist's tight
+     spacing does the display work, so no separate display face is loaded. */
   h1 {
-    @apply text-2xl font-semibold;
+    @apply text-2xl font-semibold tracking-tight;
   }
   h2 {
     @apply text-lg font-semibold;
@@ -336,7 +367,7 @@
       var(--color-base-300) 1px,
       transparent 0
     );
-    background-size: 24px 24px;
+    background-size: 28px 28px;
     background-position: 11px 11px;
   }
 

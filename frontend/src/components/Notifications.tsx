@@ -97,7 +97,7 @@ function Toast({
       <button
         type="button"
         onClick={() => onDismiss(item.id)}
-        className="-mr-1 shrink-0 rounded-[3px] p-0.5 text-ink-faint hover:bg-base-200 hover:text-base-content"
+        className="-mr-1 shrink-0 rounded-selector p-0.5 text-ink-faint hover:bg-base-200 hover:text-base-content"
         aria-label="Dismiss"
       >
         <X className="size-3.5" />

@@ -49,11 +49,11 @@ export class ErrorBoundary extends Component<
             <AlertTriangle className="size-5" />
             <h1 className="text-sm font-semibold">Something went wrong</h1>
           </div>
-          <p className="text-base-content/60 text-xs">
+          <p className="t-base-content/60 t-ui">
             The interface hit an error it could not recover from. Your jobs are
             unaffected: they run in the agent, not in this page.
           </p>
-          <pre className="max-h-40 overflow-auto rounded-[4px] border border-rule bg-base-200 p-2 font-mono t-label whitespace-pre-wrap">
+          <pre className="max-h-40 overflow-auto rounded-field border border-rule bg-base-200 p-2 font-mono t-label whitespace-pre-wrap">
             {error.message}
           </pre>
           <div className="flex gap-2">

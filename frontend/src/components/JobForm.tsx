@@ -93,7 +93,7 @@ export function JobForm({
   return (
     <div className="flex flex-col gap-3">
       {missing.length > 0 && (
-        <div className="flex items-start gap-2 rounded-[4px] border border-[color-mix(in_srgb,var(--st-failed-text)_35%,var(--rule))] bg-[var(--st-failed-fill)] px-2.5 py-2 t-label text-[var(--st-failed-text)]">
+        <div className="flex items-start gap-2 rounded-field border border-[color-mix(in_srgb,var(--st-failed-text)_35%,var(--rule))] bg-[var(--st-failed-fill)] px-2.5 py-2 t-label text-[var(--st-failed-text)]">
           <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
           <span>
             Required before submitting:{" "}
@@ -227,7 +227,7 @@ function Section({
         <span className="min-w-0 flex-1 truncate t-label font-medium">
           {title}
         </span>
-        <span className="shrink-0 rounded-[2px] bg-base-100 px-1.5 font-mono t-meta text-ink-faint">
+        <span className="shrink-0 rounded-[0.125rem] bg-base-100 px-1.5 font-mono t-meta text-ink-faint">
           {count}
         </span>
       </button>
@@ -280,7 +280,7 @@ function FieldControl({
         // guess: a slot you cannot see you are over is worse than no drag.
         acceptsDrop &&
           dropping &&
-          "rounded-[4px] outline-2 outline-offset-2 outline-signal",
+          "rounded-field outline-2 outline-offset-2 outline-signal",
       )}
       title={inactive ? `only used when ${disabledBy} is on` : undefined}
       onDragOver={
@@ -364,7 +364,7 @@ function FieldControl({
           <Input
             id={field.variable}
             type="number"
-            className="h-8 flex-1 font-mono text-xs"
+            className="h-8 flex-1 font-mono t-ui"
             value={String(value ?? field.default ?? "")}
             min={field.min}
             max={field.max}
@@ -404,7 +404,7 @@ function FieldControl({
                 onClick={onBrowseNodes}
                 disabled={inactive}
                 aria-label={`choose ${label} from earlier jobs`}
-                className="grid size-9 shrink-0 place-items-center rounded-[4px] border border-rule text-ink-muted hover:border-rule-strong hover:bg-base-200 hover:text-base-content disabled:opacity-40"
+                className="grid size-9 shrink-0 place-items-center rounded-field border border-rule text-ink-muted hover:border-rule-strong hover:bg-base-200 hover:text-base-content disabled:opacity-40"
               >
                 <ListTree className="size-3.5" />
               </button>
@@ -414,7 +414,7 @@ function FieldControl({
       ) : isLongTextField(field) ? (
         <Textarea
           id={field.variable}
-          className="min-h-16 font-mono text-xs"
+          className="min-h-16 font-mono t-ui"
           value={String(value ?? "")}
           disabled={inactive}
           onChange={(event) => onChange(event.target.value)}
@@ -422,7 +422,7 @@ function FieldControl({
       ) : (
         <Input
           id={field.variable}
-          className="h-8 font-mono text-xs"
+          className="h-8 font-mono t-ui"
           value={String(value ?? "")}
           disabled={inactive}
           onChange={(event) => onChange(event.target.value)}

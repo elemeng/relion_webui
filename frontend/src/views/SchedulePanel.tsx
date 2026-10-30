@@ -119,7 +119,7 @@ export function SchedulePanel({
             <ul className="flex flex-col gap-1">
               {scheduled.map((process) => (
                 <li key={process.name}>
-                  <label className="flex cursor-pointer items-center gap-2 rounded-[3px] px-1.5 py-1 t-ui hover:bg-base-200">
+                  <label className="flex cursor-pointer items-center gap-2 rounded-selector px-1.5 py-1 t-ui hover:bg-base-200">
                     <input
                       type="checkbox"
                       checked={selected.includes(process.name)}
@@ -210,7 +210,7 @@ export function SchedulePanel({
             </Button>
             <span
               className={cn(
-                "rounded-[3px] px-1.5 py-0.5 font-mono t-meta",
+                "rounded-selector px-1.5 py-0.5 font-mono t-meta",
                 status?.running
                   ? "bg-[var(--st-succeeded-fill)] text-[var(--st-succeeded-text)]"
                   : "bg-base-200 text-ink-faint",
@@ -221,7 +221,7 @@ export function SchedulePanel({
           </div>
 
           {status?.tail && (
-            <pre className="max-h-32 overflow-auto rounded-[4px] border border-rule bg-base-200 p-2 font-mono t-meta whitespace-pre-wrap">
+            <pre className="max-h-32 overflow-auto rounded-field border border-rule bg-base-200 p-2 font-mono t-meta whitespace-pre-wrap">
               {status.tail}
             </pre>
           )}

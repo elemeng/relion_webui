@@ -799,7 +799,7 @@ export function App() {
   const counts = countStatuses(graph);
 
   return (
-    <div className="grid h-svh grid-cols-[46px_minmax(0,1fr)] overflow-hidden">
+    <div className="grid h-svh grid-cols-[3.5rem_minmax(0,1fr)] overflow-hidden">
       <Rail
         mode={mode}
         onMode={setMode}
@@ -819,7 +819,7 @@ export function App() {
         }}
       />
 
-      <div className="grid min-w-0 grid-rows-[46px_minmax(0,1fr)_28px] overflow-hidden">
+      <div className="grid min-w-0 grid-rows-[3.5rem_minmax(0,1fr)_1.75rem] overflow-hidden">
         <TopBar
           project={activeProject}
           onProjects={() => setMode("projects")}
@@ -1045,7 +1045,7 @@ export function App() {
               aria-modal
               aria-label="Scheduler and data transfer"
             >
-              <div className="flex max-h-full w-[600px] flex-col overflow-hidden rounded-box border border-rule-strong bg-base-100 shadow-[0_24px_64px_-16px_rgb(0_0_0/0.45)]">
+              <div className="flex max-h-full w-[37.5rem] flex-col overflow-hidden rounded-box border border-rule-strong bg-base-100 shadow-[0_24px_64px_-16px_rgb(0_0_0/0.45)]">
                 <div className="flex shrink-0 items-center gap-2 border-b border-rule px-4 py-2.5">
                   <h2 className="flex-1 t-head font-semibold">
                     Scheduler and data transfer
@@ -1053,7 +1053,7 @@ export function App() {
                   <button
                     type="button"
                     onClick={() => setScheduleOpen(false)}
-                    className="grid size-7 place-items-center rounded-[4px] text-ink-faint hover:bg-base-200 hover:text-base-content"
+                    className="grid size-7 place-items-center rounded-field text-ink-faint hover:bg-base-200 hover:text-base-content"
                     title="Close"
                     aria-label="Close"
                   >
@@ -1179,7 +1179,7 @@ function Rail({
 }) {
   const item = (active: boolean) =>
     cn(
-      "relative grid size-8 place-items-center rounded-[4px] transition-colors",
+      "relative grid size-8 place-items-center rounded-field transition-colors",
       active
         ? "bg-frame-raise text-frame-ink"
         : "text-frame-muted hover:bg-frame-raise hover:text-frame-ink",
@@ -1295,7 +1295,7 @@ function RailButton({
       {children}
       <span
         className={cn(
-          "pointer-events-none absolute left-[calc(100%+8px)] z-50 hidden whitespace-nowrap rounded-[4px]",
+          "pointer-events-none absolute left-[calc(100%+0.5rem)] z-50 hidden whitespace-nowrap rounded-field",
           "border border-frame-rule bg-frame-raise px-1.5 py-1 t-meta text-frame-ink shadow-lg",
           "group-hover/rail:block",
         )}
@@ -1332,7 +1332,7 @@ function TopBar({
       <button
         type="button"
         onClick={onProjects}
-        className="rounded-[3px] t-ui font-semibold tracking-tight text-frame-ink hover:underline"
+        className="rounded-selector t-ui font-semibold tracking-tight text-frame-ink hover:underline"
         title="All projects (P)"
       >
         RELION cryo-ET
@@ -1344,7 +1344,7 @@ function TopBar({
         <button
           type="button"
           onClick={onProjects}
-          className="rounded-[3px] px-1.5 py-0.5 t-label text-frame-muted hover:bg-frame-raise hover:text-frame-ink"
+          className="rounded-selector px-1.5 py-0.5 t-label text-frame-muted hover:bg-frame-raise hover:text-frame-ink"
           title="All projects"
         >
           projects
@@ -1354,7 +1354,7 @@ function TopBar({
             <span className="t-meta text-frame-muted" aria-hidden>
               /
             </span>
-            <span className="max-w-[320px] truncate rounded-[3px] bg-frame-raise px-1.5 py-0.5 t-label text-frame-ink">
+            <span className="max-w-[20rem] truncate rounded-selector bg-frame-raise px-1.5 py-0.5 t-label text-frame-ink">
               {basename(project.project_directory)}
             </span>
           </>
@@ -1378,7 +1378,7 @@ function TopBar({
       )}
       {onPipeline && (
         <div
-          className="flex overflow-hidden rounded-[4px] border border-frame-rule"
+          className="flex overflow-hidden rounded-field border border-frame-rule"
           role="group"
           aria-label="Pipeline layout"
         >
@@ -1422,7 +1422,7 @@ function TopBarButton({
       onClick={onClick}
       title={title}
       className={cn(
-        "rounded-[4px] border px-2 py-1 t-label",
+        "rounded-field border px-2 py-1 t-label",
         primary
           ? "border-transparent bg-frame-ink font-medium text-frame hover:bg-white"
           : "border-frame-rule text-frame-muted hover:border-frame-muted hover:text-frame-ink",
@@ -1544,7 +1544,7 @@ function ShortcutsSheet({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={onClose}
-            className="grid size-6 place-items-center rounded-[3px] text-ink-faint hover:bg-base-200 hover:text-base-content"
+            className="grid size-6 place-items-center rounded-selector text-ink-faint hover:bg-base-200 hover:text-base-content"
             title="Close"
           >
             <X className="size-3.5" />
@@ -1554,7 +1554,7 @@ function ShortcutsSheet({ onClose }: { onClose: () => void }) {
           {rows.map(([keys, description]) => (
             <div key={keys} className="flex items-baseline gap-3 py-1">
               <dt className="w-28 shrink-0">
-                <kbd className="rounded-[3px] border border-rule bg-base-200 px-1.5 py-0.5 font-mono t-meta">
+                <kbd className="rounded-selector border border-rule bg-base-200 px-1.5 py-0.5 font-mono t-meta">
                   {keys}
                 </kbd>
               </dt>

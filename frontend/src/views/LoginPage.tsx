@@ -89,7 +89,7 @@ export function LoginPage({ onSignIn }: { onSignIn: () => void }) {
           {error && (
             <div
               role="alert"
-              className="flex items-start gap-2 rounded-[4px] border border-[color-mix(in_srgb,var(--st-failed-text)_35%,var(--rule))] bg-[var(--st-failed-fill)] px-3 py-2 t-ui text-[var(--st-failed-text)]"
+              className="flex items-start gap-2 rounded-field border border-[color-mix(in_srgb,var(--st-failed-text)_35%,var(--rule))] bg-[var(--st-failed-fill)] px-3 py-2 t-ui text-[var(--st-failed-text)]"
             >
               <AlertCircle className="mt-0.5 size-4 shrink-0" />
               <span>{error}</span>

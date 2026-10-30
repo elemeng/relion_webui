@@ -145,7 +145,7 @@ export function JobTypePicker({
           className={cn(
             // Above the +: opening downward would push the tail of a 34-entry
             // list off the bottom of the window on a laptop screen.
-            "absolute bottom-[calc(100%+8px)] left-0 flex max-h-[min(74vh,560px)] w-[380px] flex-col overflow-hidden",
+            "absolute bottom-[calc(100%+0.5rem)] left-0 flex max-h-[min(74vh,35rem)] w-[23.75rem] flex-col overflow-hidden",
             "rounded-box border border-rule bg-base-100 shadow-[0_16px_48px_-12px_rgb(0_0_0/0.3)]",
           )}
           onKeyDown={(event) => {
@@ -183,7 +183,7 @@ export function JobTypePicker({
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="grid size-5 place-items-center rounded-[3px] text-ink-faint hover:bg-base-200 hover:text-base-content"
+              className="grid size-5 place-items-center rounded-selector text-ink-faint hover:bg-base-200 hover:text-base-content"
               title="Close (Esc)"
               aria-label="Close"
             >
@@ -236,11 +236,11 @@ export function JobTypePicker({
           </div>
 
           <div className="flex shrink-0 items-center gap-2 border-t border-rule bg-base-200/60 px-3 py-1.5 t-meta text-ink-faint">
-            <kbd className="rounded-[2px] border border-rule bg-base-100 px-1 py-px">
+            <kbd className="rounded-[0.125rem] border border-rule bg-base-100 px-1 py-px">
               ↑↓
             </kbd>
             navigate
-            <kbd className="ml-1.5 rounded-[2px] border border-rule bg-base-100 px-1 py-px">
+            <kbd className="ml-1.5 rounded-[0.125rem] border border-rule bg-base-100 px-1 py-px">
               ↵
             </kbd>
             add

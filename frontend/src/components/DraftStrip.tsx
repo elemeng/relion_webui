@@ -69,7 +69,7 @@ export function DraftStrip({
           <button
             type="button"
             onClick={draft.onOpen}
-            className="max-w-[190px] truncate hover:underline"
+            className="max-w-[12rem] truncate hover:underline"
             title={draft.active ? "Edit this job" : "Postponed — edit"}
           >
             {draft.label}

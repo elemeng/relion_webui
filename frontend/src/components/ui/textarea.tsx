@@ -10,7 +10,7 @@ function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
   return (
     <textarea
       data-slot="textarea"
-      className={cn("textarea textarea-sm w-full text-xs", className)}
+      className={cn("textarea textarea-sm w-full ", className)}
       {...props}
     />
   );

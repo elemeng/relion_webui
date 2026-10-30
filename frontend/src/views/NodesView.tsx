@@ -96,10 +96,10 @@ export function NodesView() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-5 py-5">
+      <div className="mx-auto flex w-full max-w-[100rem] flex-col gap-4 px-5 py-5">
         <div className="flex flex-wrap items-center gap-2.5">
           <h1 className="t-head font-semibold">GPU nodes</h1>
-          <span className="rounded-[3px] bg-secondary px-1.5 py-px font-mono t-meta text-ink-muted">
+          <span className="rounded-selector bg-secondary px-1.5 py-px font-mono t-meta text-ink-muted">
             {hosts.filter((host) => !host.local && host.enabled).length} remote
           </span>
           <span className="flex-1" />
@@ -131,7 +131,7 @@ export function NodesView() {
 
         {error && (
           <p
-            className="flex items-start gap-1.5 rounded-[4px] border border-[color-mix(in_srgb,var(--st-failed-text)_35%,var(--rule))] bg-[var(--st-failed-fill)] px-2.5 py-2 t-label text-[var(--st-failed-text)]"
+            className="flex items-start gap-1.5 rounded-field border border-[color-mix(in_srgb,var(--st-failed-text)_35%,var(--rule))] bg-[var(--st-failed-fill)] px-2.5 py-2 t-label text-[var(--st-failed-text)]"
             role="alert"
           >
             <AlertCircle className="mt-px size-3.5 shrink-0" />
@@ -234,7 +234,7 @@ function NodeCard({
         // A fixed width and a minimum height: a row of cards of different
         // heights reads as broken, and the job list is what varies, so the card
         // grows from a common floor rather than shrinking to its content.
-        "flex min-h-[420px] w-[380px] max-w-full flex-col overflow-hidden rounded-box border bg-base-100",
+        "flex min-h-[26.25rem] w-[23.75rem] max-w-full flex-col overflow-hidden rounded-box border bg-base-100",
         host.enabled
           ? "border-rule"
           : "border-dashed border-rule-strong opacity-70",
@@ -256,12 +256,12 @@ function NodeCard({
           <div className="flex items-baseline gap-1.5">
             <span className="truncate t-ui font-semibold">{host.name}</span>
             {local && (
-              <span className="shrink-0 rounded-[2px] bg-base-200 px-1 t-meta text-ink-muted">
+              <span className="shrink-0 rounded-[0.125rem] bg-base-200 px-1 t-meta text-ink-muted">
                 this machine
               </span>
             )}
             {!host.enabled && (
-              <span className="shrink-0 rounded-[2px] bg-base-200 px-1 t-meta text-ink-muted">
+              <span className="shrink-0 rounded-[0.125rem] bg-base-200 px-1 t-meta text-ink-muted">
                 disabled
               </span>
             )}
@@ -280,7 +280,7 @@ function NodeCard({
                 type="button"
                 onClick={onToggle}
                 disabled={busy}
-                className="grid size-6 place-items-center rounded-[3px] text-ink-faint hover:bg-base-200 hover:text-base-content disabled:opacity-40"
+                className="grid size-6 place-items-center rounded-selector text-ink-faint hover:bg-base-200 hover:text-base-content disabled:opacity-40"
                 title={host.enabled ? "Disable this node" : "Enable this node"}
                 aria-label={host.enabled ? "Disable" : "Enable"}
               >
@@ -298,7 +298,7 @@ function NodeCard({
                 type="button"
                 onClick={onRemove}
                 disabled={busy}
-                className="grid size-6 place-items-center rounded-[3px] text-ink-faint hover:bg-st-failed/10 hover:text-st-failed disabled:opacity-40"
+                className="grid size-6 place-items-center rounded-selector text-ink-faint hover:bg-st-failed/10 hover:text-st-failed disabled:opacity-40"
                 title="Remove this node from the list"
                 aria-label="Remove"
               >
@@ -328,7 +328,7 @@ function NodeCard({
             Its jobs cannot be seen while it is unreachable. Check that the
             machine is up and that ssh works from this account:
           </p>
-          <code className="rounded-[3px] bg-base-200 px-1.5 py-1 font-mono t-meta">
+          <code className="rounded-selector bg-base-200 px-1.5 py-1 font-mono t-meta">
             ssh {host.user ? `${host.user}@` : ""}
             {host.hostname}
           </code>
