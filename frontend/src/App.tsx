@@ -48,7 +48,6 @@ import type {
   TiltSeriesDetail,
 } from "@/lib/types";
 import { JobActionsDialog } from "@/views/JobActionsDialog";
-import { SchedulePanel } from "@/views/SchedulePanel";
 import { JobDialog, type JobDialogTab } from "@/views/JobDialog";
 import { JobTypePicker } from "@/components/JobTypePicker";
 import type { NodeAction } from "@/components/NodeMenu";
@@ -98,7 +97,6 @@ export function App() {
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
-  const [scheduleOpen, setScheduleOpen] = useState(false);
 
   // Attaching an upstream node preselects a job type and fills its input.
   /** Jobs being built. They live on the canvas until queued or discarded. */
@@ -799,38 +797,31 @@ export function App() {
   const counts = countStatuses(graph);
 
   return (
-    <div className="grid h-svh grid-rows-[2.25rem_minmax(0,1fr)_1.5rem] overflow-hidden">
-      <TopBar
-        project={activeProject}
-        onProjects={() => setMode("projects")}
-        onSchedule={() => setScheduleOpen(true)}
-        onNewJob={() =>
-          window.dispatchEvent(new CustomEvent("relion:pick-job"))
-        }
-        mode={mode}
-        layout={layout}
-        onLayout={setLayout}
-      />
+    <div className="relative grid h-svh grid-rows-[minmax(0,1fr)_auto] overflow-hidden">
+      {/* Breadcrumb floats above the content: the shell has no top bar, so
+          where the user is points with a chip instead of a whole bar. */}
+      <div className="pointer-events-none absolute left-2.5 top-1.5 z-30 flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => setMode("projects")}
+          className="glass-chrome pointer-events-auto rounded-selector border border-frame-rule px-1.5 py-0.5 t-ui font-semibold tracking-tight text-frame-ink hover:underline"
+          title="All projects (P)"
+        >
+          RELION cryo-ET
+        </button>
+        {activeProject && (
+          <>
+            <span className="t-meta text-ink-faint" aria-hidden>
+              /
+            </span>
+            <span className="glass-chrome pointer-events-auto max-w-[20rem] truncate rounded-selector border border-frame-rule px-1.5 py-0.5 t-label text-frame-ink">
+              {basename(activeProject.project_directory)}
+            </span>
+          </>
+        )}
+      </div>
 
-      <div className="grid min-h-0 grid-cols-[2.5rem_minmax(0,1fr)] overflow-hidden">
-        <Rail
-          mode={mode}
-          onMode={setMode}
-          onProjects={() => setMode("projects")}
-          onShortcuts={() => setShortcutsOpen(true)}
-          onToggleTheme={toggle}
-          assistantAvailable={assistantAvailable}
-          assistantOpen={assistantOpen}
-          onAssistant={() => setAssistantOpen((value) => !value)}
-          theme={theme}
-          username={session?.username ?? null}
-          onSignOut={() => {
-            api
-              .post("/api/logout")
-              .catch(() => undefined)
-              .finally(() => window.location.replace("/"));
-          }}
-        />
+      <div className="relative grid min-h-0 overflow-hidden">
 
         <main className="relative min-h-0 overflow-hidden">
           {mode === "projects" ? (
@@ -1034,49 +1025,6 @@ export function App() {
             />
           )}
 
-          {scheduleOpen && activeProject && graph && (
-            <div
-              className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-[color-mix(in_srgb,var(--frame)_38%,transparent)] p-6"
-              onPointerDown={(event) => {
-                if (event.target === event.currentTarget)
-                  setScheduleOpen(false);
-              }}
-              role="dialog"
-              aria-modal
-              aria-label="Scheduler and data transfer"
-            >
-              <div className="glass-card glass-edge flex max-h-full w-[37.5rem] flex-col overflow-hidden rounded-box border border-rule-strong shadow-[0_24px_64px_-16px_rgb(0_0_0/0.45)]">
-                <div className="flex shrink-0 items-center gap-2 border-b border-rule px-4 py-2.5">
-                  <h2 className="flex-1 t-head font-semibold">
-                    Scheduler and data transfer
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={() => setScheduleOpen(false)}
-                    className="grid size-7 place-items-center rounded-field text-ink-faint hover:bg-base-200 hover:text-base-content"
-                    title="Close"
-                    aria-label="Close"
-                  >
-                    <X className="size-4" />
-                  </button>
-                </div>
-                <div className="min-h-0 flex-1 overflow-y-auto p-4">
-                  <SchedulePanel
-                    projectDirectory={activeProject.project_directory}
-                    processes={graph.processes}
-                    onDone={(message) => {
-                      notify(message);
-                      openProject(activeProject.project_directory).catch(
-                        () => undefined,
-                      );
-                    }}
-                    onError={(message) => notify(message, true)}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
           {assistantAvailable && (
             <AssistantPanel
               open={assistantOpen}
@@ -1131,14 +1079,31 @@ export function App() {
         </main>
       </div>
 
-      <StatusBar
-        jobs={graph?.processes.length ?? 0}
-        types={counts.types}
-        running={counts.running}
-        failed={counts.failed}
-        projectPath={activeProject?.project_directory ?? null}
+      <Dock
         mode={mode}
-        projects={projects.length}
+        onMode={setMode}
+        layout={layout}
+        onLayout={setLayout}
+        canNewJob={mode === "pipeline" && Boolean(graph && activeProject)}
+        onNewJob={() =>
+          window.dispatchEvent(new CustomEvent("relion:pick-job"))
+        }
+        counts={counts}
+        jobs={graph?.processes.length ?? 0}
+        projectsCount={projects.length}
+        assistantAvailable={assistantAvailable}
+        assistantOpen={assistantOpen}
+        onAssistant={() => setAssistantOpen((value) => !value)}
+        onShortcuts={() => setShortcutsOpen(true)}
+        onToggleTheme={toggle}
+        theme={theme}
+        username={session?.username ?? null}
+        onSignOut={() => {
+          api
+            .post("/api/logout")
+            .catch(() => undefined)
+            .finally(() => window.location.replace("/"));
+        }}
       />
 
       <NotificationStack items={notifications} onDismiss={dismiss} />
@@ -1152,34 +1117,56 @@ export function App() {
 
 /* ------------------------------------------------------------------ pieces */
 
-function Rail({
+
+/**
+ * The dock: the shell's single bar, at the bottom.
+ *
+ * It carries the four modes at the left, the primary action and the
+ * graph/cards switch in the middle — raised, because a dock with one
+ * highlighted control reads instantly — and figures (status counts), the
+ * assistant, shortcuts, theme and sign-out at the right. The Scheduler
+ * lives behind its keyboard shortcut; the bar is not its advertisement.
+ */
+function Dock({
   mode,
   onMode,
-  onProjects,
-  onShortcuts,
-  onToggleTheme,
+  layout,
+  onLayout,
+  canNewJob,
+  onNewJob,
+  counts,
+  jobs,
+  projectsCount,
   assistantAvailable,
   assistantOpen,
   onAssistant,
+  onShortcuts,
+  onToggleTheme,
   theme,
   username,
   onSignOut,
 }: {
   mode: Mode;
   onMode: (mode: Mode) => void;
-  onProjects: () => void;
-  onShortcuts: () => void;
-  onToggleTheme: () => void;
+  layout: "graph" | "cards";
+  onLayout: (layout: "graph" | "cards") => void;
+  canNewJob: boolean;
+  onNewJob: () => void;
+  counts: { running: number; failed: number };
+  jobs: number;
+  projectsCount: number;
   assistantAvailable: boolean;
   assistantOpen: boolean;
   onAssistant: () => void;
+  onShortcuts: () => void;
+  onToggleTheme: () => void;
   theme: string;
   username: string | null;
   onSignOut: () => void;
 }) {
-  const item = (active: boolean) =>
+  const tab = (active: boolean) =>
     cn(
-      "relative grid size-7 place-items-center rounded-field transition-colors",
+      "group/dock relative grid size-9 place-items-center rounded-field transition-colors",
       active
         ? "bg-frame-raise text-frame-ink"
         : "text-frame-muted hover:bg-frame-raise hover:text-frame-ink",
@@ -1187,94 +1174,156 @@ function Rail({
 
   return (
     <nav
-      className="glass-chrome flex flex-col items-center gap-0.5 border-r border-frame-rule py-1"
-      aria-label="Sections"
+      className="glass-chrome glass-edge flex items-center gap-1 border-t border-frame-rule px-2 py-1"
+      aria-label="Sections and actions"
     >
-
-      <RailButton
+      {/* modes */}
+      <DockButton
         active={mode === "projects"}
-        onClick={onProjects}
+        onClick={() => onMode("projects")}
         label="All projects"
-        hint="⌘K"
-        className={item(mode === "projects")}
+        hint="P"
+        className={tab(mode === "projects")}
       >
         <FolderTree className="size-4" />
-      </RailButton>
-      <RailButton
+      </DockButton>
+      <DockButton
         active={mode === "pipeline"}
         onClick={() => onMode("pipeline")}
         label="Pipeline"
-        className={item(mode === "pipeline")}
+        className={tab(mode === "pipeline")}
       >
         <Network className="size-4" />
-      </RailButton>
-      <RailButton
+      </DockButton>
+      <DockButton
         active={mode === "tilt"}
         onClick={() => onMode("tilt")}
         label="Tilt-series"
-        className={item(mode === "tilt")}
+        className={tab(mode === "tilt")}
       >
         <Image className="size-4" />
-      </RailButton>
-      <RailButton
+      </DockButton>
+      <DockButton
         active={mode === "nodes"}
         onClick={() => onMode("nodes")}
         label="GPU nodes"
-        className={item(mode === "nodes")}
+        className={tab(mode === "nodes")}
       >
         <Server className="size-4" />
-      </RailButton>
+      </DockButton>
+
+      <Separator orientation="vertical" className="mx-1.5 h-5 bg-frame-rule" />
+
+      {/* figures the pipeline mode reports, beside the navigation that owns
+          them - the old status bar's left half, kept cheap */}
+      {mode === "pipeline" && (
+        <span className="flex items-center gap-2.5 px-1 t-meta text-ink-faint">
+          <span>
+            <b className="font-semibold text-base-content">{jobs}</b> jobs
+          </span>
+          {counts.running > 0 && (
+            <span className="flex items-center gap-1">
+              <StatusDot status="Running" />
+              <b className="font-semibold text-st-running">
+                {counts.running}
+              </b>
+            </span>
+          )}
+          {counts.failed > 0 && (
+            <span className="flex items-center gap-1">
+              <StatusDot status="Failed" />
+              <b className="font-semibold text-st-failed">{counts.failed}</b>
+            </span>
+          )}
+        </span>
+      )}
+      {mode === "projects" && (
+        <span className="px-1 t-meta text-ink-faint">
+          <b className="font-semibold text-base-content">{projectsCount}</b>{" "}
+          {projectsCount === 1 ? "project" : "projects"}
+        </span>
+      )}
+
       <span className="flex-1" />
+
+      {mode === "pipeline" && (
+        <>
+          <div
+            className="flex overflow-hidden rounded-field border border-frame-rule"
+            role="group"
+            aria-label="Pipeline layout"
+          >
+            {(["graph", "cards"] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onLayout(value)}
+                aria-pressed={layout === value}
+                title={value === "graph" ? "Graph layout" : "Card grid layout"}
+                className={cn(
+                  "px-2 py-0.5 t-label capitalize",
+                  layout === value
+                    ? "bg-frame-raise text-frame-ink"
+                    : "text-frame-muted hover:text-frame-ink",
+                )}
+              >
+                {value}
+              </button>
+            ))}
+          </div>
+          <Separator orientation="vertical" className="mx-1.5 h-5 bg-frame-rule" />
+        </>
+      )}
+
+      {canNewJob && (
+        <DockButton
+          onClick={onNewJob}
+          label="New job"
+          hint="N"
+          className="group/dock relative"
+          primary
+        >
+          <span className="flex items-center gap-1.5 rounded-field bg-signal px-2.5 py-1 t-label font-medium text-white shadow-sm hover:bg-[oklch(34%_0.09_255)]">
+            New job
+          </span>
+        </DockButton>
+      )}
+
       {assistantAvailable && (
-        <RailButton
+        <DockIconButton
           active={assistantOpen}
           onClick={onAssistant}
           label="Assistant"
-          hint="AI"
-          className={item(assistantOpen)}
         >
           <Sparkles className="size-4" />
-        </RailButton>
+        </DockIconButton>
       )}
-      <RailButton
-        onClick={onShortcuts}
-        label="Keyboard shortcuts"
-        hint="?"
-        className={item(false)}
-      >
+      <DockIconButton onClick={onShortcuts} label="Keyboard shortcuts">
         <Command className="size-4" />
-      </RailButton>
-      <RailButton
+      </DockIconButton>
+      <DockIconButton
         onClick={onToggleTheme}
         label={theme === "dark" ? "Light theme" : "Dark theme"}
-        className={item(false)}
       >
-        {theme === "dark" ? (
-          <Sun className="size-4" />
-        ) : (
-          <Moon className="size-4" />
-        )}
-      </RailButton>
+        {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+      </DockIconButton>
       {username && (
-        <RailButton
-          onClick={onSignOut}
-          label={`Sign out ${username}`}
-          className={item(false)}
-        >
+        <DockIconButton onClick={onSignOut} label={`Sign out ${username}`}>
           <LogOut className="size-4" />
-        </RailButton>
+        </DockIconButton>
       )}
     </nav>
   );
 }
 
-/** One rail item: a real popover tip, because the native title is slow. */
-function RailButton({
+/** Dock tab: icon + popover tip above (the dock is at the bottom now). */
+function DockButton({
   active,
   onClick,
   label,
   hint,
   className,
+  primary,
   children,
 }: {
   active?: boolean;
@@ -1282,6 +1331,7 @@ function RailButton({
   label: string;
   hint?: string;
   className?: string;
+  primary?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -1290,14 +1340,14 @@ function RailButton({
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       aria-label={label}
-      className={cn(className, "group/rail")}
+      className={cn(className, "group/dock", primary && "primary")}
     >
-      {children}
+      {!primary && children}
       <span
         className={cn(
-          "pointer-events-none absolute left-[calc(100%+0.5rem)] z-50 hidden whitespace-nowrap rounded-field",
+          "pointer-events-none absolute bottom-[calc(100%+0.5rem)] z-50 hidden whitespace-nowrap rounded-field",
           "border border-frame-rule bg-frame-raise px-1.5 py-1 t-meta text-frame-ink shadow-lg",
-          "group-hover/rail:block",
+          "group-hover/dock:block",
         )}
         role="tooltip"
       >
@@ -1308,193 +1358,27 @@ function RailButton({
   );
 }
 
-function TopBar({
-  project,
-  onProjects,
-  onSchedule,
-  onNewJob,
-  mode,
-  layout,
-  onLayout,
-}: {
-  project: ProjectSummary | null;
-  onProjects: () => void;
-  onSchedule: () => void;
-  onNewJob: () => void;
-  mode: Mode;
-  layout: "graph" | "cards";
-  onLayout: (layout: "graph" | "cards") => void;
-}) {
-  const onPipeline = mode === "pipeline";
-
-  return (
-    <header className="glass-chrome flex items-center gap-1.5 border-b border-frame-rule px-2.5">
-      <button
-        type="button"
-        onClick={onProjects}
-        className="rounded-selector t-ui font-semibold tracking-tight text-frame-ink hover:underline"
-        title="All projects (P)"
-      >
-        RELION cryo-ET
-      </button>
-      <Separator orientation="vertical" className="h-3 bg-frame-rule" />
-
-      {/* Breadcrumb: projects / <project>. The first crumb is the way back up. */}
-      <nav aria-label="Breadcrumb" className="flex items-center gap-1">
-        <button
-          type="button"
-          onClick={onProjects}
-          className="rounded-selector px-1.5 py-0.5 t-label text-frame-muted hover:bg-frame-raise hover:text-frame-ink"
-          title="All projects"
-        >
-          projects
-        </button>
-        {project && (
-          <>
-            <span className="t-meta text-frame-muted" aria-hidden>
-              /
-            </span>
-            <span className="max-w-[20rem] truncate rounded-selector bg-frame-raise px-1.5 py-0.5 t-label text-frame-ink">
-              {basename(project.project_directory)}
-            </span>
-          </>
-        )}
-      </nav>
-
-      <span className="flex-1" />
-
-      {mode !== "projects" && (
-        <>
-          <TopBarButton onClick={onNewJob} title="Build a new job (N)" primary>
-            New job
-          </TopBarButton>
-          <TopBarButton
-            onClick={onSchedule}
-            title="Scheduler, export and import"
-          >
-            Scheduler
-          </TopBarButton>
-        </>
-      )}
-      {onPipeline && (
-        <div
-          className="flex overflow-hidden rounded-field border border-frame-rule"
-          role="group"
-          aria-label="Pipeline layout"
-        >
-          {(["graph", "cards"] as const).map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => onLayout(value)}
-              aria-pressed={layout === value}
-              title={value === "graph" ? "Graph layout" : "Card grid layout"}
-              className={cn(
-                "px-2 py-1 t-label capitalize",
-                layout === value
-                  ? "bg-frame-raise text-frame-ink"
-                  : "text-frame-muted hover:text-frame-ink",
-              )}
-            >
-              {value}
-            </button>
-          ))}
-        </div>
-      )}
-    </header>
-  );
-}
-
-function TopBarButton({
+/** Icon-only dock button with the same popover tip. */
+function DockIconButton({
+  active,
   onClick,
-  title,
-  primary,
+  label,
   children,
 }: {
+  active?: boolean;
   onClick: () => void;
-  title: string;
-  primary?: boolean;
+  label: string;
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
+    <DockButton
+      active={active}
       onClick={onClick}
-      title={title}
-      className={cn(
-        "rounded-field border px-2 py-0.5 t-label",
-        primary
-          ? "border-transparent bg-signal font-medium text-white hover:bg-[oklch(34%_0.09_255)]"
-          : "border-frame-rule text-frame-muted hover:border-frame-muted hover:text-frame-ink",
-      )}
+      label={label}
+      className="relative grid size-9 place-items-center rounded-field transition-colors"
     >
       {children}
-    </button>
-  );
-}
-
-function StatusBar({
-  jobs,
-  types,
-  running,
-  failed,
-  projectPath,
-  mode,
-  projects,
-}: {
-  jobs: number;
-  types: number;
-  running: number;
-  failed: number;
-  projectPath: string | null;
-  mode: Mode;
-  projects: number;
-}) {
-  return (
-    <footer className="glass-chrome flex items-center gap-3 border-t border-rule px-3 t-meta text-ink-faint">
-      {mode === "pipeline" ? (
-        <>
-          <Stat value={jobs} label="jobs" />
-          <Stat value={types} label="types" />
-          {running > 0 && (
-            <span className="flex items-center gap-1">
-              <StatusDot status="Running" />
-              <b className="font-semibold text-st-running">{running}</b> running
-            </span>
-          )}
-          {failed > 0 && (
-            <span className="flex items-center gap-1">
-              <StatusDot status="Failed" />
-              <b className="font-semibold text-st-failed">{failed}</b> failed
-            </span>
-          )}
-        </>
-      ) : mode === "tilt" ? (
-        <span>tilt-series</span>
-      ) : mode === "nodes" ? (
-        <span>cluster</span>
-      ) : (
-        <Stat
-          value={projects}
-          label={projects === 1 ? "project" : "projects"}
-        />
-      )}
-      <span className="flex-1" />
-      <span
-        className="max-w-[60%] truncate font-mono t-meta"
-        title={projectPath ?? undefined}
-      >
-        {projectPath ?? "no project open"}
-      </span>
-    </footer>
-  );
-}
-
-function Stat({ value, label }: { value: number; label: string }) {
-  return (
-    <span>
-      <b className="font-semibold text-base-content">{value}</b> {label}
-    </span>
+    </DockButton>
   );
 }
 
