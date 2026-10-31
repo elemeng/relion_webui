@@ -797,29 +797,37 @@ export function App() {
   const counts = countStatuses(graph);
 
   return (
-    <div className="relative grid h-svh grid-rows-[minmax(0,1fr)_auto] overflow-hidden">
-      {/* Breadcrumb floats above the content: the shell has no top bar, so
-          where the user is points with a chip instead of a whole bar. */}
-      <div className="pointer-events-none absolute left-2.5 top-1.5 z-30 flex items-center gap-1.5">
-        <button
-          type="button"
-          onClick={() => setMode("projects")}
-          className="glass-chrome pointer-events-auto rounded-selector border border-frame-rule px-1.5 py-0.5 t-ui font-semibold tracking-tight text-frame-ink hover:underline"
-          title="All projects (P)"
-        >
-          RELION cryo-ET
-        </button>
-        {activeProject && (
-          <>
-            <span className="t-meta text-ink-faint" aria-hidden>
-              /
-            </span>
-            <span className="glass-chrome pointer-events-auto max-w-[20rem] truncate rounded-selector border border-frame-rule px-1.5 py-0.5 t-label text-frame-ink">
-              {basename(activeProject.project_directory)}
-            </span>
-          </>
-        )}
-      </div>
+    <div className="relative grid h-svh grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
+      {/* Breadcrumb as a capsule: collapsed it names only where you are,
+          expanding on hover/focus to carry the way back up. Floating, since
+          the dock owns the top edge of the window. */}
+      <Dock
+        projectName={activeProject ? basename(activeProject.project_directory) : null}
+        mode={mode}
+        onMode={setMode}
+        layout={layout}
+        onLayout={setLayout}
+        canNewJob={mode === "pipeline" && Boolean(graph && activeProject)}
+        onNewJob={() =>
+          window.dispatchEvent(new CustomEvent("relion:pick-job"))
+        }
+        counts={counts}
+        jobs={graph?.processes.length ?? 0}
+        projectsCount={projects.length}
+        assistantAvailable={assistantAvailable}
+        assistantOpen={assistantOpen}
+        onAssistant={() => setAssistantOpen((value) => !value)}
+        onShortcuts={() => setShortcutsOpen(true)}
+        onToggleTheme={toggle}
+        theme={theme}
+        username={session?.username ?? null}
+        onSignOut={() => {
+          api
+            .post("/api/logout")
+            .catch(() => undefined)
+            .finally(() => window.location.replace("/"));
+        }}
+      />
 
       <div className="relative grid min-h-0 overflow-hidden">
 
@@ -1079,33 +1087,6 @@ export function App() {
         </main>
       </div>
 
-      <Dock
-        mode={mode}
-        onMode={setMode}
-        layout={layout}
-        onLayout={setLayout}
-        canNewJob={mode === "pipeline" && Boolean(graph && activeProject)}
-        onNewJob={() =>
-          window.dispatchEvent(new CustomEvent("relion:pick-job"))
-        }
-        counts={counts}
-        jobs={graph?.processes.length ?? 0}
-        projectsCount={projects.length}
-        assistantAvailable={assistantAvailable}
-        assistantOpen={assistantOpen}
-        onAssistant={() => setAssistantOpen((value) => !value)}
-        onShortcuts={() => setShortcutsOpen(true)}
-        onToggleTheme={toggle}
-        theme={theme}
-        username={session?.username ?? null}
-        onSignOut={() => {
-          api
-            .post("/api/logout")
-            .catch(() => undefined)
-            .finally(() => window.location.replace("/"));
-        }}
-      />
-
       <NotificationStack items={notifications} onDismiss={dismiss} />
 
       {shortcutsOpen && (
@@ -1128,6 +1109,7 @@ export function App() {
  * lives behind its keyboard shortcut; the bar is not its advertisement.
  */
 function Dock({
+  projectName,
   mode,
   onMode,
   layout,
@@ -1146,6 +1128,8 @@ function Dock({
   username,
   onSignOut,
 }: {
+  /** Location chip text: the open project's basename, or null. */
+  projectName: string | null;
   mode: Mode;
   onMode: (mode: Mode) => void;
   layout: "graph" | "cards";
@@ -1174,9 +1158,17 @@ function Dock({
 
   return (
     <nav
-      className="glass-chrome glass-edge flex items-center gap-1 border-t border-frame-rule px-2 py-1"
+      className="glass-chrome glass-edge flex items-center gap-1 border-b border-frame-rule px-2 py-1"
       aria-label="Sections and actions"
     >
+      {/* The location capsule: collapsed it names where you are; hovering
+          expands it into the breadcrumb so the way back up is visible. */}
+      <BreadcrumbCapsule
+        project={projectName}
+        onProjects={() => onMode("projects")}
+      />
+      <Separator orientation="vertical" className="mx-1.5 h-5 bg-frame-rule" />
+
       {/* modes */}
       <DockButton
         active={mode === "projects"}
@@ -1316,7 +1308,59 @@ function Dock({
   );
 }
 
-/** Dock tab: icon + popover tip above (the dock is at the bottom now). */
+/**
+ * The location capsule: the collapsed state is a single chip naming the
+ * current place ("projects" or a project's basename); hovering or focusing
+ * expands it into the breadcrumb, so the way back up is reachable without
+ * spending a bar on it. Pure CSS transition - no state, no measurement.
+ */
+function BreadcrumbCapsule({
+  project,
+  onProjects,
+}: {
+  project: string | null;
+  onProjects: () => void;
+}) {
+  return (
+    <div
+      className="group/crumb flex min-w-0 items-center"
+      onPointerEnter={undefined} // expansion is CSS-only; kept explicit
+    >
+      <button
+        type="button"
+        onClick={onProjects}
+        className="shrink-0 rounded-selector px-1.5 py-1 t-ui font-semibold tracking-tight text-frame-ink hover:underline"
+        title="All projects (P)"
+      >
+        RELION cryo-ET
+      </button>
+
+      <span
+        className={cn(
+          "flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap",
+          "border-l border-frame-rule rounded-selector t-label transition-all duration-150",
+          "group-hover/crumb:opacity-100 group-hover/crumb:max-w-56",
+          "group-focus-within/crumb:opacity-100 group-focus-within/crumb:max-w-56",
+        )}
+        aria-expanded={project !== null}
+      >
+        <span className="px-1.5 text-frame-muted" aria-hidden>
+          /
+        </span>
+        <span
+          className={cn(
+            "truncate text-frame-muted transition-colors",
+            "group-hover/crumb:text-frame-ink",
+          )}
+        >
+          {project ?? "projects"}
+        </span>
+      </span>
+    </div>
+  );
+}
+
+/** Dock tab: icon + popover tip above (the dock is at the top edge). */
 function DockButton({
   active,
   onClick,
