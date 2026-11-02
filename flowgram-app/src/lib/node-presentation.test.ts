@@ -14,7 +14,6 @@ import {
 import { nodeCatalog } from './node-catalog';
 import { staticPorts } from './control-nodes';
 import type { WorkflowNode } from './types';
-import type { ModelInventory } from './models';
 import { tx } from './i18n';
 
 const constant = (content: unknown) => ({ type: 'constant', content });
@@ -217,26 +216,20 @@ describe('canvas node presentation', () => {
     );
     expect(template.rows[1].tokens[0].text).toBe('Daily report');
   });
-  it('keeps model snapshots independent of current model defaults', () => {
-    const models = {
-      models: [{ id: 'current', name: 'Current model', parameters: {} }],
-      defaults: { workflow: 'current' },
-    } as ModelInventory;
+  it('describes a recorded model call without leaking prompts', () => {
     const llm = node('llm', { inputsValues: { prompt: constant('private instructions') } });
-    expect(presentNode(llm, { ...resources, models }).lines[0]).toBe('Current model');
-    expect(presentNode(llm, { ...resources, models, readOnly: true }).lines[0]).toBe(
-      tx('未采集模型配置')
-    );
+    // No inventory exists in this branch, so an unexecuted node has nothing to
+    // name; a recorded trace is the only source of truth.
+    expect(presentNode(llm, resources).lines[0]).toBe(tx('请选择模型'));
     const trace = {
       modelId: 'old',
       modelName: 'Pinned model',
-      upstreamModel: 'upstream',
-      connectionName: 'Original',
       parameters: { outputSchema: { type: 'object' } },
     };
-    expect(
-      presentNode(llm, { ...resources, models, readOnly: true, modelTraces: { node: trace } }).lines
-    ).toEqual(['Pinned model', tx('结构化输出')]);
+    expect(presentNode(llm, { ...resources, modelTraces: { node: trace } }).lines).toEqual([
+      'Pinned model',
+      tx('结构化输出'),
+    ]);
     expect(presentNode(llm, resources).lines.join()).not.toContain('private instructions');
   });
 });

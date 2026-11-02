@@ -8,7 +8,6 @@ import type { ReactNode } from 'react';
 import { Check, ChevronDown, Plug, Workflow } from 'lucide-react';
 
 import { Popover } from '../ui/popover';
-import { ModelPicker } from '../model-picker';
 import { BufferedInput, ValueEditor } from '../form/value-editor';
 import { FormSessionProvider, useFormSession } from '../form/session';
 import { FormField, FormSection, Select } from '../form/field';
@@ -17,7 +16,6 @@ import { BranchEditor, BranchMappingsEditor, NodeLinkEditor } from '../form/cont
 import { PathsEditor, PredicateEditor, RecordsEditor } from '../form/collection-editors';
 import { PathInput, SlotPicker } from '../form/relion-pickers';
 import { useProject } from '../../lib/project-context';
-import type { ModelSelection } from '../../lib/models';
 import { tx } from '../../lib/i18n';
 import type { Branch } from '../../lib/control-nodes';
 import {
@@ -43,15 +41,6 @@ function ResourcePicker({
 }) {
   const session = useFormSession();
   const { projectId } = useProject();
-  if (field.resource === 'model')
-    return (
-      <ModelPicker
-        value={(value || {}) as ModelSelection}
-        onChange={onChange}
-        projectId={projectId}
-        tools={session.node.type === 'agent'}
-      />
-    );
   const current = asValue(value).content;
   const selected = session.workflows.find((w) => w.id === current);
   return (

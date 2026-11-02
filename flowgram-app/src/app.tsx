@@ -18,7 +18,6 @@ import {
 
 import {
   emptyWorkbench,
-  sessionWorkspace,
   workbenchAction,
   type Workbench,
   type WorkbenchAction,
@@ -32,7 +31,6 @@ import { api, connectDesktop, subscribeEvents } from './lib/api';
 import { registerRelionJobs } from '../bridge/register';
 import { WorkspaceHeader } from './components/workspace-header';
 import { WorkflowPanel, type WorkflowPanelHandle } from './components/workflow-panel';
-import { WorkbenchTabs } from './components/workbench-tabs';
 import { Select } from './components/ui/select';
 import { Presence, useContentTransition } from './components/ui/presence';
 import { Input } from './components/ui/input';
@@ -47,7 +45,7 @@ import { ResizablePanel } from './components/resizable-panel';
 import { ProjectMenu, ProjectSidebar, type ProjectAction } from './components/project-navigation';
 import { ProjectManagement, type ProjectManagementAction } from './components/project-management';
 
-const empty: Snapshot = { projects: [], sessions: [], workflows: [], runs: [] };
+const empty: Snapshot = { projects: [], workflows: [], runs: [] };
 function readWorkbenches(): Record<string, Workbench> {
   try {
     const workbenches = JSON.parse(localStorage.getItem('flowgram.workbench.v3') || '{}') as Record<
@@ -103,7 +101,6 @@ export function App() {
   const view = bench.view;
   const destinationSurface = useRef<HTMLDivElement>(null);
   useContentTransition(destinationSurface, view.kind);
-  const workspace = sessionWorkspace(bench);
   // No in-app conversation surface: the assistant lives in an external harness
   // that connects over MCP (see components/handoff-dialog.tsx), so every
   // document opens in the main workbench area.
@@ -130,19 +127,11 @@ export function App() {
     if (scope) setSnapshots((current) => ({ ...current, [scope]: next }));
     if (scope)
       setWorkbenches((current) => {
-        let state = current[scope];
-        if (!state) return current;
-        for (const id of state.openedWorkflowIds) {
-          if (!next.workflows.some((item) => item.id === id))
-            state = workbenchAction(state, { type: 'remove-object', kind: 'workflow', id });
-        }
-        if (state.sessionId && !next.sessions.some((item) => item.id === state.sessionId))
-          state = workbenchAction(state, {
-            type: 'remove-object',
-            kind: 'session',
-            id: state.sessionId,
-          });
-        return state === current[scope] ? current : { ...current, [scope]: state };
+        const state = current[scope];
+        if (!state || state.view.kind !== 'workflow') return current;
+        if (next.workflows.some((item) => item.id === (state.view as { id: string }).id))
+          return current;
+        return { ...current, [scope]: workbenchAction(state, { type: 'view', view: { kind: 'workflows' } }) };
       });
     return next;
   }, []);
@@ -222,10 +211,10 @@ export function App() {
           ].includes(event.kind)
         ) {
           if (event.kind === 'object_archived' || event.kind === 'object_deleted') {
-            const object = JSON.parse(event.data) as { kind: 'session' | 'workflow'; id: string };
+            const object = JSON.parse(event.data) as { kind: 'workflow'; id: string };
             if (event.kind === 'object_deleted')
               forgetDeletedDraft(projectId, object.kind, object.id);
-            dispatch({ type: 'remove-object', ...object }, projectId);
+            dispatch({ type: 'remove-object', kind: 'workflow', id: object.id }, projectId);
           }
           clearTimeout(timer);
           timer = setTimeout(() => {
@@ -266,7 +255,8 @@ export function App() {
   const commands = useRef({ newSession: () => {}, settings: () => {}, search: () => {} });
   commands.current = {
     newSession: () => {
-      if (projectId) dispatch({ type: 'session', id: null });
+      // No chat any more: Cmd/Ctrl+N returns to the project's workflows.
+      if (projectId) dispatch({ type: 'view', view: { kind: 'workflows' } });
     },
     settings: () => setSettings(true),
     search: () => {
@@ -384,7 +374,7 @@ export function App() {
       };
     });
   }
-  function sessionDocument(doc: WorkspaceDocument, scope = projectId) {
+  function openDocument(doc: WorkspaceDocument, scope = projectId) {
     if (
       doc.kind === 'workflow' &&
       !snapshots[scope]?.workflows.some((item) => item.id === doc.id)
@@ -392,21 +382,15 @@ export function App() {
       report(tx('此工作流已归档或删除，请先在设置中恢复。'), scope);
       return;
     }
-    dispatch({ type: 'session-document', document: doc }, scope);
+    dispatch({ type: 'view', view: doc }, scope);
   }
-  async function archiveObject(kind: 'session' | 'workflow', id: string, scope = projectId) {
+  async function archiveObject(kind: 'workflow', id: string, scope = projectId) {
     const key = `${scope}:${kind}:${id}`;
     if (archiving.current.has(key)) return;
     archiving.current.add(key);
     try {
       if (kind === 'workflow') await editors.current.get(`${scope}:${id}`)?.flush();
-      await api(
-        `/api/${kind === 'session' ? 'sessions' : 'workflows'}/${id}/archive`,
-        'POST',
-        undefined,
-        undefined,
-        scope
-      );
+      await api(`/api/workflows/${id}/archive`, 'POST', undefined, undefined, scope);
       dispatch({ type: 'remove-object', kind, id }, scope);
       await refresh(scope);
       report(tx('已归档，可在设置中恢复。'), scope);
@@ -441,20 +425,6 @@ export function App() {
       )
     );
   }
-  function tabsFor(scope: string, state: Workbench, active: WorkspaceDocument) {
-    const owner = sessionWorkspace(state);
-    const snapshot = snapshots[scope] || empty;
-    return owner.documents.length > 1 ? (
-      <WorkbenchTabs
-        documents={owner.documents}
-        active={active}
-        workflows={snapshot.workflows}
-        runs={snapshot.runs}
-        onSelect={(doc) => sessionDocument(doc, scope)}
-        onClose={(doc) => dispatch({ type: 'close-document', document: doc }, scope)}
-      />
-    ) : undefined;
-  }
   return (
     <>
       <div
@@ -485,7 +455,7 @@ export function App() {
             onRuns={() => dispatch({ type: 'view', view: { kind: 'runs' } })}
             onResources={() => dispatch({ type: 'view', view: { kind: 'resources' } })}
             onSettings={() => setSettings(true)}
-            onArchive={(kind, id) => void archiveObject(kind, id)}
+            onArchive={(_, id) => void archiveObject('workflow', id)}
           />
         </ResizablePanel>
         <main className="relative flex min-h-0 min-w-0 flex-1">
@@ -519,68 +489,49 @@ export function App() {
                 data-active
                 inert={undefined}
               >
-                {Object.entries(workbenches).flatMap(([scope, state]) =>
-                  state.openedWorkflowIds.map((id) => {
-                    const snapshot = snapshots[scope];
-                    const workflow = snapshot?.workflows.find((item) => item.id === id);
+                {document?.kind === 'workflow' &&
+                  (() => {
+                    const workflow = data.workflows.find((item) => item.id === document.id);
                     if (!workflow) return null;
-                    const visible =
-                      scope === projectId && document?.kind === 'workflow' && document.id === id;
-                    const isPaired = false;
                     return (
                       <div
-                        key={`${scope}:${id}`}
+                        key={`${projectId}:${document.id}`}
                         className="workspace-document absolute inset-0 flex min-h-0"
-                        data-active={visible}
-                        inert={!visible || undefined}
+                        data-active
                       >
-                        <ProjectScope projectId={scope}>
+                        <ProjectScope projectId={projectId}>
                           <WorkflowPanel
                             ref={(handle) => {
-                              if (handle) editors.current.set(`${scope}:${id}`, handle);
-                              else editors.current.delete(`${scope}:${id}`);
+                              const key = `${projectId}:${document.id}`;
+                              if (handle) editors.current.set(key, handle);
+                              else editors.current.delete(key);
                             }}
-                            onArchive={() => void archiveObject('workflow', id, scope)}
+                            onArchive={() =>
+                              void archiveObject('workflow', document.id, projectId)
+                            }
                             workflow={workflow}
                             model={model}
                             onOpenSettings={() => setSettings(true)}
-                            workflows={snapshot.workflows}
-                            runs={snapshot.runs}
+                            workflows={data.workflows}
+                            runs={data.runs}
                             selectedRunId={null}
                             onSaved={saved}
-                            onClose={() =>
-                              dispatch(
-                                { type: 'close-document', document: { kind: 'workflow', id } },
-                                scope
-                              )
-                            }
-                            onCollapse={
-                              isPaired
-                                ? () => dispatch({ type: 'toggle-workbench' }, scope)
-                                : undefined
-                            }
-                            headerLeading={visible ? headerLeading() : undefined}
-                            documentTabs={
-                              isPaired ? tabsFor(scope, state, { kind: 'workflow', id }) : undefined
-                            }
+                            onClose={() => dispatch({ type: 'close-document', document }, projectId)}
+                            headerLeading={headerLeading()}
                             onInspectRun={(runId) =>
-                              isPaired
-                                ? sessionDocument({ kind: 'run', id: runId }, scope)
-                                : dispatch(
-                                    { type: 'view', view: { kind: 'run', id: runId } },
-                                    scope
-                                  )
+                              dispatch({ type: 'view', view: { kind: 'run', id: runId } }, projectId)
                             }
                             onRun={() => {
-                              void refresh(scope).catch((cause) => report(cause.message, scope));
+                              void refresh(projectId).catch((cause) =>
+                                report(cause.message, projectId)
+                              );
                             }}
-                            error={(message) => report(message, scope)}
+                            error={(message) => report(message, projectId)}
                           />
                         </ProjectScope>
                       </div>
                     );
-                  })
-                )}
+                  })()}
                 {document?.kind === 'workflow' &&
                   !data.workflows.some((item) => item.id === document.id) && (
                     <div className="flex h-full flex-col">
@@ -599,12 +550,7 @@ export function App() {
                     <RunPage
                       key={`${projectId}:${document.id}`}
                       id={document.id}
-                      onDebugPrepared={async (workflow) => {
-                        await refresh(projectId);
-                        dispatch({ type: 'workflow', id: workflow.id });
-                      }}
                       workflows={data.workflows}
-                      sessions={data.sessions}
                       headerLeading={headerLeading()}
                       
                       onClose={() => dispatch({ type: 'close-document', document })}
@@ -613,11 +559,6 @@ export function App() {
                         if (!data.workflows.some((item) => item.id === id))
                           report(tx('此工作流已归档或删除，请先在设置中恢复。'));
                         else dispatch({ type: 'workflow', id });
-                      }}
-                      onSession={(id) => {
-                        if (data.sessions.some((item) => item.id === id))
-                          dispatch({ type: 'session', id });
-                        else report(tx('此会话已归档或删除，请先在设置中恢复。'));
                       }}
                     />
                   </ProjectScope>
@@ -754,21 +695,6 @@ export function App() {
               >
                 <WorkflowIcon size={15} />
                 {item.name}
-              </button>
-            ))}
-          {data.sessions
-            .filter((item) => item.title.toLowerCase().includes(search.toLowerCase()))
-            .map((item) => (
-              <button
-                key={item.id}
-                className="sidebar-row"
-                onClick={() => {
-                  dispatch({ type: 'session', id: item.id });
-                  setSearchOpen(false);
-                }}
-              >
-                <MessageCircle size={15} />
-                {item.title}
               </button>
             ))}
         </div>

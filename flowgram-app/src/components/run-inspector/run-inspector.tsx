@@ -23,7 +23,7 @@ import { MenuButton } from '../ui/menu-button';
 import { Button } from '../ui/button';
 import { ResizablePanel } from '../resizable-panel';
 import { flattenNodes } from '../node-inspector/model';
-import type { Session, Workflow } from '../../lib/types';
+import type { Workflow } from '../../lib/types';
 import {
   aggregateStatus,
   duration,
@@ -39,27 +39,14 @@ import { errorText, tx } from '../../lib/i18n';
 import { scopeFor } from '../../lib/control-nodes';
 import { useRunInspection } from './use-run-inspection';
 import { TraceCanvas } from './trace-canvas';
-import type { RunRef } from './run-comparison';
 import { ExecutionTree, StatusIcon } from './execution-tree';
 import { ExecutionDetail } from './execution-detail';
 import './trace.css';
 
-const RunComparison = lazy(() =>
-  import('./run-comparison').then((module) => ({ default: module.RunComparison }))
-);
-const ComparePicker = lazy(() =>
-  import('./compare-picker').then((module) => ({ default: module.ComparePicker }))
-);
-const DebugDialog = lazy(() =>
-  import('./debug-dialog').then((module) => ({ default: module.DebugDialog }))
-);
-
 export interface RunInspectorProps {
   id: string;
   workflows?: Workflow[];
-  sessions?: Session[];
   onWorkflow?: (id: string) => void;
-  onSession?: (id: string) => void;
   headerLeading?: ReactNode;
   documentTabs?: ReactNode;
   onClose?: () => void;
@@ -70,15 +57,12 @@ export interface RunInspectorProps {
   onProjection?: (detail: TraceDetail) => void;
   onSelectExecution?: (entry: Execution) => void;
   requestRoot?: string;
-  onDebugPrepared?: (workflow: Workflow) => void | Promise<void>;
   compact?: boolean;
 }
 export function RunInspector({
   id,
   workflows = [],
-  sessions = [],
   onWorkflow,
-  onSession,
   headerLeading,
   documentTabs,
   onClose,
@@ -89,7 +73,6 @@ export function RunInspector({
   focusRequest,
   onSelectExecution,
   requestRoot,
-  onDebugPrepared,
   compact = false,
 }: RunInspectorProps) {
   const [at, setAt] = useState<number>();
@@ -119,9 +102,6 @@ export function RunInspector({
   const container = useRef<HTMLDivElement>(null);
   const [visited, setVisited] = useState<Record<string, Workflow>>({});
   const [actionError, setActionError] = useState('');
-  const [debug, setDebug] = useState<'run' | 'node' | null>(null);
-  const [comparePicker, setComparePicker] = useState(false);
-  const [comparison, setComparison] = useState<RunRef | null>(null);
   const [stopping, setStopping] = useState(false);
   useEffect(() => {
     const element = container.current;
@@ -319,19 +299,6 @@ export function RunInspector({
           }
           compact={compact}
           onSource={selectNode}
-          onNodeTest={
-            onDebugPrepared &&
-            selected?.kind === 'node' &&
-            selectedNode &&
-            ![
-              'control.join',
-              'control.merge-branches',
-              'control.break',
-              'control.continue',
-            ].includes(selectedNode.type)
-              ? () => setDebug('node')
-              : undefined
-          }
           onDependency={
             selectedNode?.type === 'subworkflow' && selected
               ? () =>
@@ -357,12 +324,7 @@ export function RunInspector({
       className={`trace-inspector ${compact ? 'trace-compact' : ''}`}
       aria-label={tx('运行详情')}
     >
-      <div
-        className="flex h-full min-h-0 flex-1 flex-col"
-        inert={!!comparison}
-        aria-hidden={!!comparison}
-        style={{ visibility: comparison ? 'hidden' : 'visible' }}
-      >
+      <div className="flex h-full min-h-0 flex-1 flex-col">
         {!compact && (
           <WorkspaceHeader leading={headerLeading} title={documentTabs || title}>
             {(onCollapse || onClose) && (
@@ -471,32 +433,13 @@ export function RunInspector({
                     workflows.some((workflow) => workflow.id === detail.run.workflowId)
                       ? [{ id: 'current', label: tx('打开当前工作流') }]
                       : []),
-                    { id: 'compare', label: tx('比较运行') },
-                    ...(detail.trace.origin ? [{ id: 'origin', label: tx('与原运行比较') }] : []),
                   ]}
                   onCommand={(command) => {
                     if (command === 'current') onWorkflow?.(detail.run.workflowId);
-                    if (command === 'compare') setComparePicker(true);
-                    if (command === 'origin' && detail.trace.origin)
-                      setComparison({
-                        id: detail.trace.origin.runId,
-                        requestRoot: detail.trace.origin.requestRoot,
-                      });
                   }}
                 >
                   <MoreHorizontal />
                 </MenuButton>
-              )}
-              {!compact && onDebugPrepared && (
-                <Button
-                  variant="outline"
-                  size={width < 760 ? 'icon' : 'sm'}
-                  aria-label={tx('用本次输入调试')}
-                  title={tx('用本次输入调试')}
-                  onClick={() => setDebug('run')}
-                >
-                  {width < 760 ? <FlaskConical /> : tx('用本次输入调试')}
-                </Button>
               )}
               {runStatus === 'running' && (
                 <Button
@@ -772,67 +715,9 @@ export function RunInspector({
                 </>
               )}
             </div>
-            {!compact &&
-              detail.run.sessionId &&
-              onSession &&
-              sessions.some((session) => session.id === detail.run.sessionId) && (
-                <button
-                  type="button"
-                  className="border-t border-border px-4 py-2 text-left text-[10px] text-muted-foreground hover:bg-secondary"
-                  onClick={() => onSession(detail.run.sessionId!)}
-                >
-                  {tx('来自会话')} ·{' '}
-                  {sessions.find((session) => session.id === detail.run.sessionId)?.title}
-                  <ArrowUpRight size={11} className="ml-1 inline" />
-                </button>
-              )}
           </>
         )}
-        {detail && debug && onDebugPrepared && (
-          <Suspense fallback={null}>
-            <DebugDialog
-              detail={detail}
-              entry={debug === 'node' ? selected : null}
-              workflows={workflows}
-              requestRoot={requestRoot}
-              onClose={() => setDebug(null)}
-              onPrepared={onDebugPrepared}
-            />
-          </Suspense>
-        )}
-        {detail && comparePicker && (
-          <Suspense fallback={null}>
-            <ComparePicker
-              id={id}
-              onClose={() => setComparePicker(false)}
-              onPick={(other) => {
-                setComparePicker(false);
-                setComparison({ id: other, requestRoot });
-              }}
-            />
-          </Suspense>
-        )}
       </div>
-      {comparison && (
-        <div className="absolute inset-0 z-40 bg-background">
-          <Suspense fallback={<p className="p-5 text-xs text-muted-foreground">{tx('加载中…')}</p>}>
-            <RunComparison
-              left={comparison}
-              right={{ id, requestRoot }}
-              onBack={() => {
-                setComparison(null);
-                requestAnimationFrame(() =>
-                  container.current
-                    ?.querySelector<HTMLButtonElement>(
-                      '.trace-summary button[aria-haspopup="menu"]'
-                    )
-                    ?.focus()
-                );
-              }}
-            />
-          </Suspense>
-        </div>
-      )}
     </section>
   );
 }

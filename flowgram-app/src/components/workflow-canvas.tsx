@@ -50,7 +50,7 @@ import { nodeFamily, NODE_LAYOUT } from '../lib/node-layout';
 import type { CanvasExecution } from '../lib/node-execution';
 import { nodeCatalog, nodeSpec } from '../lib/node-catalog';
 import { motionDuration, observeMotionPreference } from '../lib/motion';
-import { useModels, type ModelTrace } from '../lib/models';
+import type { ModelTrace } from '../lib/node-presentation';
 import { tx, useLocale } from '../lib/i18n';
 import {
   isLoop,
@@ -397,17 +397,15 @@ export const WorkflowCanvas = memo(
     const root = useRef<HTMLDivElement>(null);
     const portSignature = portModelSignature(schema);
     const locale = useLocale();
-    const modelInventory = useModels();
     const resources = useMemo<NodeResources>(
       () => ({
         names: nodeNames(schema),
         owners: loopOwners(schema),
         workflows: workflowNames,
-        models: modelInventory,
         modelTraces,
         readOnly,
       }),
-      [schema, workflowNames, modelInventory, modelTraces, readOnly, locale]
+      [schema, workflowNames, modelTraces, readOnly, locale]
     );
     const [now, setNow] = useState(() => Date.now());
     const activeExecution = Object.values(statuses).some((status) => status === 'running');

@@ -15,15 +15,19 @@ import {
   type Schema,
 } from '../components/node-inspector/model';
 import type { WorkflowNode, WorkflowSchema } from './types';
-import type { ModelInventory, ModelTrace } from './models';
 import { tx } from './i18n';
 import { nodeSpec } from './node-catalog';
 import { summaryFields, type NodePreviewRow, type NodePreviewToken } from './node-preview';
 
+/** A recorded model call, for nodes that show one (LLM/agent nodes). */
+export interface ModelTrace {
+  modelName?: string;
+  parameters: { outputSchema?: unknown };
+}
+
 export interface NodeResources {
   names: Record<string, string>;
   workflows: Record<string, string>;
-  models?: ModelInventory;
   modelTraces?: Record<string, ModelTrace>;
   readOnly?: boolean;
   owners?: Record<string, { title: string; type: string }>;
@@ -360,14 +364,10 @@ export function presentNode(node: WorkflowNode, resources: NodeResources) {
   }
   if (['llm', 'agent'].includes(node.type)) {
     const trace = resources.modelTraces?.[node.id];
-    const selected =
-      (data.model as { modelId?: string })?.modelId || resources.models?.defaults.workflow;
-    const model = resources.models?.models.find((model) => model.id === selected);
-    const name = trace?.modelName || (!resources.readOnly && model?.name);
+    const name = trace?.modelName;
     const schema =
       trace?.parameters.outputSchema ||
-      (data.model as { parameters?: { outputSchema?: unknown } })?.parameters?.outputSchema ||
-      (!resources.readOnly && model?.parameters.outputSchema);
+      (data.model as { parameters?: { outputSchema?: unknown } })?.parameters?.outputSchema;
     return present(
       [
         row([
@@ -389,7 +389,7 @@ export function presentNode(node: WorkflowNode, resources: NodeResources) {
           ),
         ]),
       ],
-      issue || (!resources.readOnly && !model ? tx('请选择模型') : undefined)
+      issue
     );
   }
   if (node.type === 'subworkflow') {

@@ -297,7 +297,7 @@ export function createNode(type: string, index: number): WorkflowNode {
   // process yet, and the prefix is what the bridge uses to tell the two apart
   // (see bridge/workspaces.ts). When the queue promotes it, the id becomes the
   // reserved process name.
-  const id = `draft:${type.replace(/[^a-zA-Z0-9_.-]/g, "_")}_${crypto.randomUUID().slice(0, 8)}`;
+  const id = `draft:${type.replace(/[^a-zA-Z0-9_-]/g, "_")}_${crypto.randomUUID().slice(0, 8)}`;
   const node: WorkflowNode = {
     id,
     type,

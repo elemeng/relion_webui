@@ -9,13 +9,6 @@ export interface Project {
   createdAt: string;
   directory: string;
 }
-export interface Session {
-  id: string;
-  projectId: string;
-  title: string;
-  status: string;
-  createdAt: string;
-}
 export interface WorkflowNode {
   id: string;
   type: string;
@@ -62,7 +55,6 @@ export interface RuntimeEvent {
 }
 export interface Snapshot {
   projects: Project[];
-  sessions: Session[];
   workflows: Workflow[];
   runs: Run[];
 }
@@ -71,70 +63,4 @@ export interface ModelSettings {
   displayName: string;
   configured: boolean;
   hasApiKey: boolean;
-}
-
-export type DeliveryMode = 'queue' | 'steer';
-export interface ConversationInput {
-  model?: import('./models').ModelSelection | null;
-  id: string;
-  clientInputId: string;
-  sessionId: string;
-  content: string;
-  references: import('./mentions').WorkflowReferences | null;
-  deliveryMode: DeliveryMode;
-  turnId: string | null;
-  status: 'queued' | 'pending' | 'accepted' | 'cancelled' | 'rejected';
-  revision: number;
-  createdAt: string;
-  error: string | null;
-}
-export interface Turn {
-  origin?: 'agent' | 'authored';
-  estimatedDurationMs?: number | null;
-  model?: import('./models').ModelTrace | null;
-  id: string;
-  sessionId: string;
-  initiatingInputId: string;
-  ordinal: number;
-  status: 'running' | 'stopping' | 'completed' | 'failed' | 'interrupted';
-  phase: string;
-  revision: number;
-  startedAt: string;
-  endedAt: string | null;
-  finalItemId: string | null;
-  error: string | null;
-}
-export interface ConversationItem {
-  id: string;
-  sessionId: string;
-  turnId: string;
-  ordinal: number;
-  kind: 'user' | 'assistant' | 'tool';
-  phase: string;
-  status: string;
-  revision: number;
-  content: string;
-  payload: {
-    name?: string;
-    callId?: string;
-    arguments?: unknown;
-    result?: Record<string, unknown>;
-    startedAt?: string;
-    endedAt?: string;
-    isError?: boolean;
-    references?: import('./mentions').WorkflowReferences | null;
-    attempt?: number;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
-export interface ConversationSnapshot {
-  modelSelection?: import('./models').ModelSelection;
-  sessionId: string;
-  turns: Turn[];
-  items: ConversationItem[];
-  inputs: ConversationInput[];
-  paused: boolean;
-  watermark: number;
-  nextBefore: number | null;
 }

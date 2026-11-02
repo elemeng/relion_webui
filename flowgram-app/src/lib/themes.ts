@@ -5,7 +5,6 @@
 
 import { useSyncExternalStore } from 'react';
 
-import { syncWindowTheme } from './window-theme';
 
 export type ColorMode = 'light' | 'dark';
 export type ThemeMode = ColorMode | 'system';
@@ -380,9 +379,6 @@ function applyTheme() {
   root.style.colorScheme = mode;
   for (const [key, value] of Object.entries(themeVariables(theme[mode], mode)))
     root.style.setProperty(key, value);
-  void syncWindowTheme(preferences.mode, theme[mode].background).catch((error) =>
-    console.error('Unable to synchronize the native window theme', error)
-  );
 }
 function publish(next: ThemePreferences) {
   preferences = next;
