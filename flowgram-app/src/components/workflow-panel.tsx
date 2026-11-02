@@ -617,8 +617,23 @@ export function WorkflowPanel({
         }
       }
       await flush();
+      // Send the canvas parameters alongside the intent. The run dialog only
+      // collects what to run and on which GPU; each job's own parameters were
+      // edited on the node and live in its `inputsValues`.
+      const parameters: Record<string, Record<string, unknown>> = {};
+      for (const node of workflow.schema.nodes) {
+        const values = (node.data?.inputsValues ?? {}) as Record<string, unknown>;
+        if (!Object.keys(values).length) continue;
+        parameters[node.id] = Object.fromEntries(
+          Object.entries(values).map(([key, binding]) => [
+            key,
+            (binding as { content?: unknown })?.content ?? binding,
+          ]),
+        );
+      }
       const result = await api<Run>(`/api/workflows/${workflow.id}/run`, 'POST', {
         inputs,
+        parameters,
         ...(debugOrigin ? { origin: debugOrigin } : {}),
       });
       setRun(result);

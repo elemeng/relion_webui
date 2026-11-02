@@ -13,7 +13,10 @@ export function defaultRunInputs(schema: WorkflowSchema): Record<string, unknown
   const properties =
     (
       schema.nodes.find((node) => node.type === 'start')?.data.outputs as {
-        properties?: Record<string, { type?: string; default?: unknown }>;
+        properties?: Record<
+          string,
+          { type?: string; default?: unknown; title?: string; enum?: unknown[] }
+        >;
       }
     )?.properties || {};
   return Object.fromEntries(
@@ -55,7 +58,14 @@ export function RunInputForm({
 }) {
   const start = schema.nodes.find((node) => node.type === 'start');
   const properties =
-    (start?.data.outputs as { properties?: Record<string, { type?: string }> })?.properties || {};
+    (
+      start?.data.outputs as {
+        properties?: Record<
+          string,
+          { type?: string; title?: string; enum?: unknown[]; enumNames?: string[]; description?: string }
+        >;
+      }
+    )?.properties || {};
   let inputs: Record<string, unknown> = {};
   try {
     const parsed: unknown = JSON.parse(value);
@@ -75,8 +85,21 @@ export function RunInputForm({
     <div className="space-y-4">
       {fields.map((key) => (
         <label key={key} className="block space-y-2 text-xs text-muted-foreground">
-          {key}
-          {properties[key].type === 'boolean' ? (
+          {properties[key].title || key}
+          {properties[key].enum?.length ? (
+            <Select
+              className="settings-select w-full"
+              aria-label={tx('运行输入 {0}', [key])}
+              value={String(inputs[key] ?? properties[key].enum[0])}
+              onValueChange={(selectedValue) =>
+                onChange(JSON.stringify({ ...inputs, [key]: selectedValue }, null, 2))
+              }
+              options={properties[key].enum.map((option, index) => ({
+                value: String(option),
+                label: properties[key].enumNames?.[index] ?? String(option),
+              }))}
+            />
+          ) : properties[key].type === 'boolean' ? (
             <Select
               className="settings-select w-full"
               aria-label={tx('运行输入 {0}', [key])}

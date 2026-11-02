@@ -30,6 +30,7 @@ import { workflowTemplates } from './lib/node-catalog';
 import { errorText, getSystemLocale, t, tx, useLocale } from './lib/i18n';
 import type { PublishIntent } from './lib/deployment';
 import { api, connectDesktop, subscribeEvents } from './lib/api';
+import { registerRelionJobs } from '../bridge/register';
 import { WorkspaceHeader } from './components/workspace-header';
 import { WorkflowPanel, type WorkflowPanelHandle } from './components/workflow-panel';
 import { WorkbenchTabs } from './components/workbench-tabs';
@@ -159,6 +160,10 @@ export function App() {
     let disposed = false;
     void connectDesktop()
       .then(async () => {
+        // Register RELION job types as node definitions before a pipeline can
+        // render. The inspector is the stock component; it only needs to know
+        // which fields each node type has.
+        await registerRelionJobs();
         await api('/api/projects/initialize', 'POST', { locale: getSystemLocale() });
         const next = await refresh('');
         if (disposed) return;

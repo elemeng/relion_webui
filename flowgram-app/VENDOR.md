@@ -72,7 +72,18 @@ Upstream asks the Tauri shell for the spawned backend's endpoint and bearer
 token. In the browser there is no shell and no token: requests go to the same
 origin, and the dev server proxies `/api` and `/ws` to the RELION agent.
 
-### 3. Node catalogue paths
+### 3. Three small UI-adjacent changes for RELION
+
+These touch vendored components. They are all additive, reuse FlowGram's own
+widgets and class names, and introduce no new visual language.
+
+| File | Change | Why |
+|---|---|---|
+| `src/components/node-inspector/definitions.ts` | `registerNodeDefinitions()` + lookup in `definitionFor` | RELION's 33 job types are generated at runtime from `/api/job-schema`; the inspector needs to resolve their field tables. A data registry, no component. |
+| `src/components/form/run-input-form.tsx` | honour `title` and `enum`/`enumNames` from the start node's schema | The stock form rendered every non-boolean field as a text box labelled with the raw key, so an execution intent could not be expressed as a dropdown. Uses the existing `Select` and `settings-select` class. |
+| `src/components/workflow-panel.tsx` | include node `inputsValues` in the run request body | The run dialog collects only the intent; each job's parameters live on its node. Serialising them at submit is one loop. |
+
+### 4. Node catalogue paths
 
 | File | Change |
 |---|---|
@@ -84,7 +95,7 @@ origin, and the dev server proxies `/api` and `/ws` to the RELION agent.
 The JSON files live in `flowgram-app/catalog/`, copied from
 `apps/desktop-backend/catalog/`.
 
-### 4. Configuration
+### 5. Configuration
 
 | File | Note |
 |---|---|
@@ -111,7 +122,6 @@ cd flowgram.ai && git fetch && git checkout <newer commit>
 diff -rq ../flowgram-app/src apps/desktop/src     # see what upstream changed
 ```
 
-Re-copy files that changed, then re-apply the four changes above. They are
-small and localised by design: one no-op function, four import paths, four
-catalogue paths. Nothing in the canvas, node system or form renderer was
-touched.
+Re-copy files that changed, then re-apply the changes above: one no-op
+function, four import paths, four catalogue paths, and the three additive
+edits in section 3. Nothing in the canvas or the node renderer was touched.

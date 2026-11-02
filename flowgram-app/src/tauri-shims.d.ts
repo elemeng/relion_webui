@@ -26,7 +26,7 @@ declare module '@tauri-apps/plugin-dialog' {
     directory?: boolean;
     multiple?: boolean;
   }): Promise<string | string[] | null>;
-  export function save(options: {
+  export function save(options?: {
     defaultPath?: string;
     title?: string;
     filters?: { name: string; extensions: string[] }[];

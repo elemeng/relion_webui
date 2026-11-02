@@ -294,8 +294,30 @@ export const nodeDefinitions: Record<string, NodeDefinition> = localized({
     },
   };
 });
+/**
+ * Definitions contributed from outside this file.
+ *
+ * The table above covers FlowGram's own node types. RELION's job types are
+ * generated at runtime from `/api/job-schema` (see `bridge/jobs.ts`) and
+ * registered here, so the stock inspector renders their forms without this
+ * module knowing what a RELION job is.
+ *
+ * This is the only hook added to the vendored code: a lookup plus a setter.
+ * No component, no styling, no layout.
+ */
+const externalDefinitions = new Map<string, NodeDefinition>();
+
+export function registerNodeDefinitions(definitions: Record<string, NodeDefinition>): void {
+  for (const [type, definition] of Object.entries(definitions)) {
+    externalDefinitions.set(type, definition);
+  }
+}
+
 export function definitionFor(node: WorkflowNode): NodeDefinition {
-  return nodeDefinitions[node.type] || { fields: [], output: () => ({ type: 'object' }) };
+  return (
+    nodeDefinitions[node.type] ||
+    externalDefinitions.get(node.type) || { fields: [], output: () => ({ type: 'object' }) }
+  );
 }
 export function visibleFields(node: WorkflowNode) {
   return definitionFor(node).fields.filter((field) => {

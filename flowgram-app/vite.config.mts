@@ -7,7 +7,8 @@
  *    the RELION agent, so neither side has to learn the other's vocabulary
  */
 
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
+import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
@@ -24,10 +25,10 @@ const AGENT = process.env.RELION_WEB_API ?? 'http://127.0.0.1:8765';
  * the bridge recognises never reaches the agent's own (differently shaped)
  * routes, and everything it does not recognise falls through to the proxy.
  */
-function relionBridge() {
+function relionBridge(): Plugin {
   return {
     name: 'relion-bridge',
-    configureServer(server: { middlewares: { use: (fn: unknown) => void } }) {
+    configureServer(server) {
       server.middlewares.use(bridge());
     },
   };
@@ -37,6 +38,13 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), relionBridge()],
   resolve: {
     dedupe: ['react', 'react-dom'],
+    alias: {
+      // The bridge imports this repository's own layout engine rather than
+      // copying it, so both UIs place the pipeline identically. The main app
+      // resolves `@/` to its own src; this alias makes the same specifier work
+      // from here.
+      '@': fileURLToPath(new URL('../frontend/src', import.meta.url)),
+    },
   },
   server: {
     host: '127.0.0.1',
