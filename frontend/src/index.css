@@ -144,6 +144,8 @@
   --mica-solid: oklch(99.3% 0.004 95);
   --mica-rim: oklch(100% 0 0 / 80%);
   --acrylic-panel: oklch(100% 0 0);
+  /* The modal scrim: the page tone, fully opaque. */
+  --scrim: oklch(95.6% 0.006 255);
 
   /* Card sizes step by viewport; 21" 1920x1080 is the reference at 17rem.
      rem (px/16) so the 120% root scales cards with their type. */
@@ -229,6 +231,8 @@
   --mica-solid: oklch(25.5% 0.014 262);
   --mica-rim: oklch(70% 0.02 262 / 22%);
   --acrylic-panel: oklch(30% 0.016 262);
+  /* Night scrim: the page tone, opaque. */
+  --scrim: oklch(19% 0.014 264);
 }
 
 /* ---- responsive card sizes ----------------------------------------------
@@ -428,6 +432,15 @@
      dark, so a menu or dialog separates from the canvas by tone alone. */
   .acrylic-panel {
     background-color: var(--acrylic-panel);
+  }
+
+  /* The scrim behind a modal. Opaque on purpose: it is there to take the work
+     out of sight while a dialog is open, not to be looked through. A partly
+     transparent scrim over text reads as the dialog itself being transparent -
+     the complaint that started this - and it leaves two competing text layers
+     visible at once. */
+  .bg-scrim {
+    background-color: var(--scrim);
   }
 
   /* The window edge: the hairline and shadow a Mica surface carries against

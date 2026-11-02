@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import {
   MIN_READABLE_SCALE,
   MINI_SCALE,
+  MINI_HEIGHT,
   MINI_WIDTH,
   NODE_HEIGHT,
   NODE_WIDTH,
@@ -375,10 +376,17 @@ export function PipelineCanvas({
             transition: panning ? "none" : "transform 200ms ease-out",
           }}
         >
+          {/* Sized in world units via `style`, not the width/height attributes.
+              The attributes are CSS pixels, so the browser would clip this
+              layer to layout.width x layout.height *screen* pixels - smaller
+              than the world once the canvas is zoomed in - and the right/bottom
+              edges would be cut off, reading as detached from their nodes.
+              `overflow-visible` does not help: the clip is on the element box.
+              As a style the SVG rides the parent's scale transform with the
+              cards, so edges and nodes stay locked together at any zoom. */}
           <svg
             className="pointer-events-none absolute top-0 left-0 overflow-visible"
-            width={layout.width}
-            height={layout.height}
+            style={{ width: layout.width, height: layout.height }}
             aria-hidden
           >
             {layout.edges.map((edge) => {
@@ -470,10 +478,19 @@ function CanvasNode({
 }) {
   // The card is shared with the grid view, so the two cannot drift apart; only
   // the positioning differs.
+  //
+  // `height` is pinned to the layout constant, not left to the content. Edge
+  // paths are computed from `node.height` (layout.ts derives every endpoint
+  // from y + height/2), so a card that renders shorter than that constant puts
+  // every arrow endpoint below the card's real centre - the gap grows with the
+  // zoom factor, which is why it only reads as detached once zoomed in. Pinning
+  // it makes the geometry true by construction rather than by coincidence; the
+  // grid view keeps its natural height.
   const position = {
     left: node.x,
     top: node.y,
     width: mini ? MINI_WIDTH : NODE_WIDTH,
+    height: mini ? MINI_HEIGHT : NODE_HEIGHT,
   };
 
   if (mini) {

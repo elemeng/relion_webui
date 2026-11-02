@@ -122,7 +122,7 @@ export function SlotPicker({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-[color-mix(in_srgb,var(--frame)_38%,transparent)] p-4"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-scrim p-4"
       onPointerDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}

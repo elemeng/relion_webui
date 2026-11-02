@@ -173,7 +173,7 @@ export function NewJobDialog({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-stretch justify-end bg-[color-mix(in_srgb,var(--frame)_30%,transparent)] p-3"
+      className="fixed inset-0 z-40 flex items-stretch justify-end bg-scrim p-3"
       onPointerDown={(event) => {
         if (event.target === event.currentTarget) onPostpone();
       }}

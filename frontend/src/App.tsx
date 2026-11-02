@@ -1457,7 +1457,7 @@ function ShortcutsSheet({ onClose }: { onClose: () => void }) {
   ];
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-[color-mix(in_srgb,var(--frame)_50%,transparent)] p-6"
+      className="fixed inset-0 z-50 grid place-items-center bg-scrim p-6"
       onPointerDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}

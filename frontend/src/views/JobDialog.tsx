@@ -151,7 +151,7 @@ export function JobDialog({
   // outside it - the rail, the canvas' own floating controls - stays on top.
   return createPortal(
     <div
-      className="fixed inset-0 z-40 flex items-stretch bg-[color-mix(in_srgb,var(--frame)_45%,transparent)] p-5"
+      className="fixed inset-0 z-40 flex items-stretch bg-scrim p-5"
       onPointerDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
