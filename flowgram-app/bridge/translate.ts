@@ -261,8 +261,26 @@ interface JobSchemaEntry {
 
 let jobSchema: { jobs: JobSchemaEntry[] } | null = null;
 
-export function rememberJobSchema(schema: { jobs: JobSchemaEntry[] }): void {
+export function rememberJobSchema(schema: {
+  jobs: JobSchemaEntry[];
+  categories?: Array<{ title: string; job_types: string[] }>;
+}): void {
   jobSchema = schema;
+  jobCategories = schema.categories ?? null;
+}
+
+/** The agent's picker categories (`{title, job_types}`), or null before boot. */
+let jobCategories: Array<{ title: string; job_types: string[] }> | null = null;
+
+export function rememberJobCategories(
+  categories: Array<{ title: string; job_types: string[] }>,
+): void {
+  jobCategories = categories;
+}
+
+/** RELION's category per job type, in schema order. */
+export function categoryForJobType(jobType: string): string | null {
+  return jobCategories?.find((category) => category.job_types.includes(jobType))?.title ?? null;
 }
 
 /**
@@ -283,6 +301,18 @@ export function jobNodeType(typeLabel: string): string {
  */
 export function defaultValues(typeLabel: string): Record<string, unknown> {
   const job = jobForLabel(typeLabel);
+  if (!job) return {};
+  return Object.fromEntries(
+    job.fields.map((field) => [
+      field.variable,
+      { type: 'constant', content: field.default ?? '' },
+    ]),
+  );
+}
+
+/** The same defaults, keyed by the schema's own job type (palette registry). */
+export function valuesForJobType(jobType: string): Record<string, unknown> {
+  const job = jobSchema?.jobs.find((candidate) => candidate.job_type === jobType);
   if (!job) return {};
   return Object.fromEntries(
     job.fields.map((field) => [

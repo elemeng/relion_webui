@@ -48,6 +48,28 @@ export interface RelionJobType {
 }
 
 /**
+ * The palette's RELION categories, keyed by the agent's English titles.
+ *
+ * The agent already groups job types for its picker (`/api/job-schema`'s
+ * `categories`); these are their Chinese labels - the palette's group
+ * vocabulary is Chinese, so the two read as one surface.
+ */
+export const RELION_NODE_GROUP: Record<string, string> = {
+  'Import and preprocess': '导入与预处理',
+  'Align and reconstruct': '对齐与重建',
+  'Enhance and pick': '增强与拾取',
+  'Subtomogram averaging': '亚颗粒平均',
+  'Refine and reconstruct': '精修与重建',
+  Select: '筛选',
+  'Post-process and interpret': '后处理与解读',
+  Utilities: '工具',
+  Other: '其它',
+};
+
+/** The fallback group for a category this table does not know. */
+export const RELION_OTHER_GROUP = RELION_NODE_GROUP.Other;
+
+/**
  * The editor vocabulary comes from the vendored inspector, not from a copy:
  * a second declaration here would silently drift from the one the form
  * renderer switches on.
@@ -142,4 +164,25 @@ export function jobDefinition(job: RelionJobType): NodeDefinition {
 /** Node type id for a RELION job type. Namespaced so it cannot collide. */
 export function nodeTypeFor(jobType: string): string {
   return `relion.${jobType}`;
+}
+
+/**
+ * The full title a variant label needs in the palette.
+ *
+ * Variants of one job share the pipeline label (`relion.importtomo`); the
+ * schema title disambiguates them ("Import (SerialEM tilt-series)").
+ */
+export function paletteTitle(job: RelionJobType): string {
+  return job.title || job.job_type;
+}
+
+/** A one-line description from the job's first text field's help, or its kind. */
+export function paletteDescription(job: RelionField[] | RelionJobType): string {
+  const fields = (job as RelionJobType).fields ?? [];
+  const first = fields.find((field) => field.help && field.kind !== 'boolean');
+  if (first) {
+    const help = (first.help ?? '').trim();
+    return help.length > 90 ? `${help.slice(0, 88)}…` : help;
+  }
+  return `${fields.length} 个参数`;
 }

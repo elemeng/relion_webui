@@ -25,6 +25,7 @@ import {
 import type { WorkflowNode, WorkflowSchema } from "./types";
 import { atomicNodes } from "./atomic-nodes";
 import { controlNodes, isLoop } from "./control-nodes";
+import { Table2, Wrench } from "lucide-react";
 
 const constant = (content: unknown) => ({ type: "constant", content });
 const reference = (...content: string[]) => ({ type: "ref", content });
@@ -37,7 +38,51 @@ export interface NodeCatalogEntry {
   tone: string;
   defaults: Record<string, unknown>;
   hidden?: boolean;
+  /** RELION category order, for sorting inside the palette's group view. */
+  relionOrder?: number;
 }
+
+/**
+ * RELION's job types as palette entries, registered at boot.
+ *
+ * The static catalog above is FlowGram's data-flow vocabulary; a cryo-ET
+ * pipeline is built from RELION's job types instead, so the palette's main
+ * body comes from the agent's job schema. `registerRelionCatalogEntries` is
+ * called from `bridge/register.ts` once `/api/job-schema` has loaded - the
+ * bundle ships with an empty table, and a pipeline that renders before the
+ * schema arrives still resolves through `nodeSpec`'s fallback.
+ *
+ * The entries reuse the vendored entry shape (type/title/group/defaults), so
+ * the palette, the canvas registries and `nodeSpec`'s presentation all treat
+ * a RELION job as an ordinary step node.
+ */
+let registeredRelion = false;
+
+export function registerRelionCatalogEntries(
+  entries: Array<{
+    type: string;
+    title: string;
+    group: string;
+    description: string;
+    order: number;
+    defaults: Record<string, unknown>;
+  }>,
+): void {
+  if (registeredRelion) return;
+  registeredRelion = true;
+  for (const entry of entries) {
+    // Push, not rebuild: the palette and the canvas snapshot the array by
+    // reference, so a rebuilt array would leave them with the static view.
+    nodeCatalog.push({
+      ...entry,
+      // One tone keeps the RELION groups visually one family, distinct from
+      // the amber control group and the blue data group.
+      icon: entry.group === tx('工具') ? Wrench : Table2,
+      tone: 'green',
+    });
+  }
+}
+
 export const nodeCatalog: NodeCatalogEntry[] = localized(([
   {
     type: "start",
@@ -207,11 +252,26 @@ export const nodeCatalog: NodeCatalogEntry[] = localized(([
     tone: "amber",
     defaults: { inputsValues: { durationMs: constant(1000) } },
   },
-] as NodeCatalogEntry[]).filter((node) => !controlNodes.some((control) => control.type === node.type)).map<NodeCatalogEntry>((node) => ({ ...node, hidden: ['assign', 'template', 'json-parse', 'json-stringify', 'text', 'array'].includes(node.type) })).concat([...atomicNodes, ...controlNodes].map((node) => ({
-  type: node.type, title: node.title, group: node.group, description: node.description,
-  tone: 'blue', icon: node.group === tx("流程控制") ? GitBranch : node.group === tx("列表与表格") ? ListFilter : node.group === tx("文本与数值") ? Type : Braces,
-  defaults: node.defaults,
-})))) ;
+] as NodeCatalogEntry[])
+  .filter((node) => !controlNodes.some((control) => control.type === node.type))
+  .map<NodeCatalogEntry>((node) => ({
+    ...node,
+    hidden: ['assign', 'template', 'json-parse', 'json-stringify', 'text', 'array', 'llm', 'agent', 'http'].includes(node.type),
+  }))
+  // RELION 的数据加工在 cryo-ET 流程里没有对应物，所以数据组原生节点只留流程控制；
+  // RELION 作业类型由 registerRelionCatalogEntries 在启动时补充（见下方）。
+  .concat(
+    [...atomicNodes, ...controlNodes].map((node) => ({
+      type: node.type, title: node.title, group: node.group, description: node.description,
+      tone: 'blue',
+      icon: node.group === tx("流程控制") ? GitBranch : node.group === tx("列表与表格") ? ListFilter : node.group === tx("文本与数值") ? Type : Braces,
+      defaults: node.defaults,
+      hidden:
+        node.group === tx('对象与数据') ||
+        node.group === tx('列表与表格') ||
+        node.group === tx('文本与数值'),
+    })),
+  ));
 export function nodeSpec(type: string) {
   if (type === "block-start") return { ...nodeCatalog[0], title: tx("当前项") };
   if (type === "block-end") return { ...nodeCatalog[1], title: tx("本项结果") };

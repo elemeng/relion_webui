@@ -2103,5 +2103,13 @@
   "正在读取节点指标…": "Reading node metrics…",
   "name=hostname[:port]，可选 user@。需要从 agent 账号免密 ssh 到该节点。": "name=hostname[:port], optional user@. Requires key-based ssh from the agent's account.",
   "集群与队列": "Cluster and queue",
-  "Add node": "Add host"
+  "Add node": "Add host",
+  "导入与预处理": "Import and preprocess",
+  "对齐与重建": "Align and reconstruct",
+  "增强与拾取": "Enhance and pick",
+  "亚颗粒平均": "Subtomogram averaging",
+  "精修与重建": "Refine and reconstruct",
+  "后处理与解读": "Post-process and interpret",
+  "工具": "Utilities",
+  "其它": "Other"
 }

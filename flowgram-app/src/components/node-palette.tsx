@@ -20,12 +20,16 @@ import { isJoin } from '../lib/control-nodes';
 import { nodeDefinitions } from './node-inspector/definitions';
 
 const groups: Record<string, string> = {
-  AI: '模型与 Agent',
-  连接: '网络与工具',
+  导入与预处理: '导入与预处理',
+  对齐与重建: '对齐与重建',
+  增强与拾取: '增强与拾取',
+  亚颗粒平均: '亚颗粒平均',
+  精修与重建: '精修与重建',
+  筛选: '筛选',
+  后处理与解读: '后处理与解读',
+  工具: '工具',
+  其它: '其它',
   流程控制: '流程控制',
-  对象与数据: '对象与数据',
-  列表与表格: '列表与表格',
-  文本与数值: '文本与数值',
 };
 const readSaved = (key: string): string[] => {
   try {
