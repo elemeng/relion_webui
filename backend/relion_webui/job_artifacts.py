@@ -69,13 +69,17 @@ def write_job_star(
     job_directory.mkdir(parents=True, exist_ok=True)
     path = job_directory / JOB_STAR_FILENAME
 
-    header = pd.DataFrame(
-        {
-            COL_TYPE_LABEL: [type_label],
-            COL_IS_CONTINUE: [1 if is_continue else 0],
-            COL_IS_TOMO: [1 if is_tomo else 0],
-        }
-    )
+    # RELION writes the job header as a key-value block, not a loop:
+    # `MDhead.setIsList(true)` in RelionJob::write takes the `else // isList`
+    # branch of MetaDataTable::write, which emits `_label value` lines. Emitting
+    # a loop here still reads back (MetaDataTable::read dispatches on the tokens
+    # it sees), but it is not the shape RELION itself round-trips, so a file we
+    # write would look unlike one the GUI writes.
+    header = [
+        (COL_TYPE_LABEL, type_label),
+        (COL_IS_CONTINUE, '1' if is_continue else '0'),
+        (COL_IS_TOMO, '1' if is_tomo else '0'),
+    ]
     values = pd.DataFrame(
         {
             COL_OPTION_VARIABLE: list(options.keys()),
@@ -89,13 +93,9 @@ def write_job_star(
         '',
         f'data_{JOB_TABLE}',
         '',
-        'loop_',
-        *[
-            f'_{column} #{index}'
-            for index, column in enumerate(header.columns, start=1)
-        ],
-        ' '.join(str(header.iloc[0][column]) for column in header.columns),
+        *[f'_{column} {_quote(str(value))}' for column, value in header],
         '',
+        # The options table is a genuine loop: one row per option.
         f'data_{JOB_OPTIONS_TABLE}',
         '',
         'loop_',
@@ -149,6 +149,25 @@ def read_job_star(job_directory) -> Optional[Dict[str, str]]:
     }
 
 
+def _first_row(table) -> Optional[dict]:
+    """The first row of a job.star data block, as a plain dict.
+
+    RELION writes the ``job`` block as a single-row loop
+    (``MDhead.setIsList(true)`` in ``pipeline_jobs.cpp``), which starfile reads
+    back as a DataFrame. Hand-written or older files can carry the same block as
+    plain key-value pairs, which starfile reads back as a dict. Both are valid
+    STAR, and a reader that knows only one of them crashes on the other - so
+    this is the single place that knows both.
+    """
+    if table is None:
+        return None
+    if isinstance(table, dict):
+        return table or None
+    if len(table) == 0:
+        return None
+    return table.iloc[0].to_dict()
+
+
 def read_job_type_label(job_directory) -> Optional[str]:
     """The pipeline type label recorded in job.star, or None."""
     import starfile
@@ -160,11 +179,13 @@ def read_job_type_label(job_directory) -> Optional[str]:
         tables = starfile.read(path, always_dict=True)
     except (OSError, ValueError):
         return None
-    table = tables.get(JOB_TABLE)
-    if table is None or len(table) == 0:
+    row = _first_row(tables.get(JOB_TABLE))
+    if not row:
         return None
-    label = table.iloc[0].get(COL_TYPE_LABEL)
-    return None if pd.isna(label) else str(label)
+    label = row.get(COL_TYPE_LABEL)
+    if label is None or (not isinstance(label, str) and pd.isna(label)):
+        return None
+    return str(label)
 
 
 RUN_OUT_FILENAME = 'run.out'

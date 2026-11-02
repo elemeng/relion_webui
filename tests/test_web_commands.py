@@ -804,7 +804,9 @@ def test_variant_job_star_carries_the_branch_and_full_option_set(tmp_path):
     )
     assert values['do_split'] == 'Yes'
     assert values['do_select_values'] == 'No'
-    assert star['job'].iloc[0]['rlnJobTypeLabel'] == 'relion.select'
+    # `job` is a key-value block in RELION 5 (dict) and a loop in older
+    # files (DataFrame); read it through the one helper that knows both.
+    assert job_artifacts.read_job_type_label(path.parent) == 'relion.select'
 
 
 def test_api_alias_builds_the_same_command_as_its_target():

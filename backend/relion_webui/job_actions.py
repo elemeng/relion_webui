@@ -638,10 +638,12 @@ def _job_star_type_label(job_star: Path) -> Optional[str]:
         tables = starfile.read(job_star, always_dict=True)
     except (OSError, ValueError):
         return None
-    table = tables.get(job_artifacts.JOB_TABLE)
-    if table is None or len(table) == 0:
+    # `job` is a single-row loop in files RELION writes and a plain key-value
+    # block in some hand-written ones; job_artifacts._first_row accepts both.
+    row = job_artifacts._first_row(tables.get(job_artifacts.JOB_TABLE))
+    if not row:
         return None
-    return str(table.iloc[0].get(job_artifacts.COL_TYPE_LABEL, ''))
+    return str(row.get(job_artifacts.COL_TYPE_LABEL, '') or '')
 
 
 def _read_deleted_pipeline(directory: Path):

@@ -180,6 +180,76 @@ def test_read_job_star_is_none_without_the_file(tmp_path):
     assert job_artifacts.read_job_type_label(directory) is None
 
 
+def test_job_block_is_written_as_key_value_pairs_like_relion5(tmp_path):
+    """RELION 5 writes the job block as `_label value` lines, not a loop.
+
+    A loop still parses (MetaDataTable::read dispatches on the tokens it sees),
+    but it is not the shape the GUI writes, so a file of ours would not look
+    like one of theirs. This pins the shape.
+    """
+    from relion_webui import job_artifacts
+
+    directory = tmp_path / 'Tomograms' / 'job003'
+    job_artifacts.write_job_star(
+        directory, 'relion.reconstructtomograms', {'rlnTomoName': '/data/x'}
+    )
+
+    text = (directory / 'job.star').read_text()
+    job_block = text.split('data_joboptions_values')[0]
+    assert '_rlnJobTypeLabel relion.reconstructtomograms' in job_block
+    assert 'loop_' not in job_block
+    assert job_artifacts.read_job_type_label(directory) == 'relion.reconstructtomograms'
+
+
+def test_job_type_label_reads_a_loop_shaped_job_block(tmp_path):
+    """Older writers may carry the header as a single-row loop.
+
+    starfile returns a DataFrame for that shape and a dict for key-value pairs.
+    Reading only one of them raised AttributeError and 500'd the job-options
+    endpoint on a real project.
+    """
+    from relion_webui import job_artifacts
+
+    directory = tmp_path / 'Tomograms' / 'job004'
+    directory.mkdir(parents=True)
+    (directory / 'job.star').write_text(
+        '\n'
+        '# version 50001\n'
+        '\n'
+        'data_job\n'
+        '\n'
+        'loop_\n'
+        '_rlnJobTypeLabel #1\n'
+        '_rlnJobIsContinue #2\n'
+        '_rlnJobIsTomo #3\n'
+        'relion.reconstructtomograms 0 1\n'
+        '\n'
+        'data_joboptions_values\n'
+        '\n'
+        'loop_\n'
+        '_rlnJobOptionVariable #1\n'
+        '_rlnJobOptionValue #2\n'
+        'rlnTomoName /data/x\n'
+        '\n'
+    )
+    assert job_artifacts.read_job_type_label(directory) == 'relion.reconstructtomograms'
+    assert job_artifacts.read_job_star(directory) == {'rlnTomoName': '/data/x'}
+
+
+def test_job_type_label_without_the_label_reads_as_none(tmp_path):
+    """A header missing rlnJobTypeLabel must read as "no label", not raise."""
+    from relion_webui import job_artifacts
+
+    directory = tmp_path / 'Tomograms' / 'job005'
+    directory.mkdir(parents=True)
+    (directory / 'job.star').write_text(
+        '\ndata_job\n\n_rlnJobIsContinue 0\n\ndata_joboptions_values\n\n'
+        'loop_\n_rlnJobOptionVariable #1\n_rlnJobOptionValue #2\nfoo bar\n\n'
+    )
+    assert job_artifacts.read_job_type_label(directory) is None
+    assert job_artifacts.read_job_star(directory) == {'foo': 'bar'}
+
+
 # ------------------------------------------------------------ config location
 def test_the_project_list_lives_beside_relions_own_config(tmp_path, monkeypatch):
     """`$HOME/.relion_web`, next to the `$HOME/.relion` RELION itself writes."""

@@ -230,9 +230,15 @@ def test_job_star_matches_gui_schema(tmp_path):
     )
     star = starfile.read(path, always_dict=True)
     assert 'job' in star and 'joboptions_values' in star
+    # RELION 5 writes the header as a key-value block (starfile: dict), not a
+    # loop; older files are the other way round. Both must be accepted.
     header = star['job']
-    assert header.iloc[0]['rlnJobTypeLabel'] == 'relion.reconstructtomograms'
-    assert int(header.iloc[0]['rlnJobIsTomo']) == 1
+    if isinstance(header, dict):
+        assert header['rlnJobTypeLabel'] == 'relion.reconstructtomograms'
+        assert int(header['rlnJobIsTomo']) == 1
+    else:
+        assert header.iloc[0]['rlnJobTypeLabel'] == 'relion.reconstructtomograms'
+        assert int(header.iloc[0]['rlnJobIsTomo']) == 1
 
     values = star['joboptions_values']
     assert list(values.columns) == ['rlnJobOptionVariable', 'rlnJobOptionValue']
@@ -417,14 +423,20 @@ def test_column_indices_are_sequential(tmp_path):
         proj / 'ReconstructTomograms' / 'job001' / 'RELION_OUTPUT_NODES.star',
     ):
         text = path.read_text()
-        # Reset the counter at every loop_ and check the run is 1..n.
+        # Counters are a loop-column convention: `_label #n` headers must run
+        # 1..n within each loop_. A key-value block (RELION 5's `job` table)
+        # legitimately carries no `#n` suffix, so only inspect loops.
         current = 0
+        in_loop = False
         for line in text.splitlines():
             stripped = line.strip()
             if stripped.startswith('loop_'):
-                current = 0
+                in_loop, current = True, 0
                 continue
-            if stripped.startswith('_'):
+            if stripped.startswith('data_'):
+                in_loop, current = False, 0
+                continue
+            if in_loop and stripped.startswith('_'):
                 current += 1
                 assert stripped.endswith(f'#{current}'), (path.name, stripped)
 
@@ -545,7 +557,7 @@ def test_submit_registers_job_in_existing_project(project, tmp_path):
         job_dir = project / 'Tomograms' / 'job008'
         assert (job_dir / 'job.star').is_file()
         star = starfile.read(job_dir / 'job.star', always_dict=True)
-        assert star['job'].iloc[0]['rlnJobTypeLabel'] == 'relion.reconstructtomograms'
+        assert job_artifacts.read_job_type_label(job_dir) == 'relion.reconstructtomograms'
         options = dict(
             zip(
                 star['joboptions_values']['rlnJobOptionVariable'],
