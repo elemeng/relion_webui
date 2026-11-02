@@ -4,9 +4,6 @@
  */
 
 import {
-  Boxes,
-  Loader2,
-  MessageCircle,
   MoreHorizontal,
   PanelLeftClose,
   Plus,
@@ -79,7 +76,6 @@ export function ProjectSidebar({
   onNewWorkflow,
   onWorkflow,
   onRuns,
-  onResources,
   onSettings,
   onArchive,
 }: {
@@ -94,7 +90,6 @@ export function ProjectSidebar({
   onNewWorkflow: () => void;
   onWorkflow: (id: string) => void;
   onRuns: () => void;
-  onResources: () => void;
   onSettings: () => void;
   onArchive: (kind: 'session' | 'workflow', id: string) => void;
 }) {
@@ -135,26 +130,10 @@ export function ProjectSidebar({
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
         <nav className="mb-5 mt-3" aria-label={tx('项目操作')}>
-          {[
-            { label: tx('搜索'), icon: Search, action: onSearch },
-            {
-              label: tx('项目资源'),
-              icon: Boxes,
-              action: onResources,
-              selected: bench.view.kind === 'resources',
-            },
-          ].map(({ label, icon: Icon, action, selected }) => (
-            <button
-              key={label}
-              className={cn('sidebar-row', selected && projectId && 'sidebar-selected')}
-              disabled={!projectId}
-              aria-current={selected && projectId ? 'page' : undefined}
-              onClick={action}
-            >
-              <Icon size={16} strokeWidth={1.6} />
-              <span className="truncate">{label}</span>
-            </button>
-          ))}
+          <button className="sidebar-row" disabled={!projectId} onClick={onSearch}>
+            <Search size={16} strokeWidth={1.6} />
+            <span className="truncate">{tx('搜索')}</span>
+          </button>
         </nav>
         {projectId ? (
           <>

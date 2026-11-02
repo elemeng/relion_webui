@@ -55,7 +55,7 @@ import { useProjectApi } from '../lib/project-context';
 import { canvasExecutions, type CanvasExecution } from '../lib/node-execution';
 import { tx, errorText } from '../lib/i18n';
 import { t } from '../lib/i18n';
-import { eventData, executionLabel, sampleBindings } from '../lib/execution-samples';
+import { eventData, sampleBindings } from '../lib/execution-samples';
 import { takeDebugIntent, type DebugOrigin } from '../lib/debug-intent';
 import { isLoop, mapScope, editControlConfiguration, scopeFor } from '../lib/control-nodes';
 const WorkflowCanvas = lazy(() =>

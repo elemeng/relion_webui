@@ -25,21 +25,21 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 /** One node as the UI stores it (FlowGram's shape). */
-export interface DraftNode {
+interface DraftNode {
   id: string;
   type: string;
   meta?: { position?: { x: number; y: number } };
   data: Record<string, unknown>;
 }
 
-export interface DraftEdge {
+interface DraftEdge {
   sourceNodeID: string;
   targetNodeID: string;
   sourcePortID?: string;
   targetPortID?: string;
 }
 
-export interface Workspace {
+interface Workspace {
   id: string;
   projectId: string;
   name: string;
@@ -218,12 +218,12 @@ export async function promoteDraft(
 }
 
 /** A draft node id is namespaced so it cannot collide with a process name. */
-export function isPipelineNode(node: DraftNode): boolean {
+function isPipelineNode(node: DraftNode): boolean {
   return !node.id.startsWith('draft:');
 }
 
 /** Titles the user renamed on the canvas, keyed by node id. */
-export function collectTitles(nodes: DraftNode[]): Record<string, string> {
+function collectTitles(nodes: DraftNode[]): Record<string, string> {
   const titles: Record<string, string> = {};
   for (const node of nodes) {
     if (isPipelineNode(node) && typeof node.data?.title === 'string')
@@ -238,7 +238,7 @@ export function collectTitles(nodes: DraftNode[]): Record<string, string> {
  * Only constants are recorded: a reference depends on the graph around it and
  * is resolved at submit time, so it must not be frozen into the overlay.
  */
-export function collectParameterEdits(
+function collectParameterEdits(
   nodes: DraftNode[],
 ): Record<string, Record<string, unknown>> {
   const edits: Record<string, Record<string, unknown>> = {};

@@ -10,13 +10,10 @@ import {
   Check,
   Keyboard,
   Palette,
-  Plug,
   Settings2,
   Wrench,
   Info,
-  Rocket,
   Server,
-  Archive,
 } from 'lucide-react';
 
 import { Select } from './ui/select';

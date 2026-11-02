@@ -8,7 +8,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Check,
-  ChevronRight,
   Loader2,
   Maximize2,
   Minimize2,
@@ -37,7 +36,6 @@ import {
   accessibleNodes,
   executionSignature,
   readPath,
-  signature,
   type Data,
   type Schema,
 } from './model';

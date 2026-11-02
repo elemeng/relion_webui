@@ -15,7 +15,7 @@
 export type WorkspaceDocument = { kind: 'workflow' | 'run'; id: string };
 
 export type DocumentView =
-  | { kind: 'workflows' | 'runs' | 'resources' }
+  | { kind: 'workflows' | 'runs' }
   | WorkspaceDocument;
 
 export interface Workbench {

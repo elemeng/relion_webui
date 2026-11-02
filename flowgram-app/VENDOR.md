@@ -40,27 +40,20 @@ Everything below is the complete diff against the upstream commit above. Run
 
 ### 1. Tauri removed
 
-The app no longer runs inside a Tauri shell. Four modules were imported in
-branches that only execute in the shell; they are now local no-op stubs so the
-bundler can resolve them and the browser never executes them.
+The app no longer runs inside a Tauri shell. The four modules imported in
+shell-only branches (`@tauri-apps/plugin-dialog`, `plugin-opener`, `api/core`,
+`api/window`) were first replaced by local stubs; every call site has since been
+replaced with a real browser-side capability, so the stubs and the module
+declarations are gone too:
 
-| File | Change |
+| Call site | Replacement |
 |---|---|
-| `src/app.tsx` | `chooseDirectory()` imports `./tauri-stub/dialog` |
-| `src/components/project-management.tsx` | "reveal in file manager" imports `../tauri-stub/opener` |
-| `src/components/project-transfer.tsx` | import/export dialogs import `../tauri-stub/dialog` |
-| `src/lib/window-theme.ts` | native window theme imports `../tauri-stub/window` |
-| `src/tauri-stub/*.ts` | **new** — no-op stand-ins |
-| `src/tauri-shims.d.ts` | **new** — module declarations so `tsc` resolves the specifiers |
+| `app.tsx` "choose directory" | `components/form/path-browser.tsx` over the agent's `/api/browse` |
+| `project-management.tsx` "reveal in file manager" | removed (the directory path is already copyable) |
+| `project-transfer.tsx` | file removed; projects are created/opened through the agent's own endpoints |
+| `lib/window-theme.ts` | file removed; the palette is applied in CSS only |
 
-Why stubs and not `catch()`: Vite resolves `import('literal')` statically and
-fails the build when the specifier does not exist. A `.catch()` handles a
-runtime failure, not a missing module. Aliasing `@tauri-apps/*` to stubs in
-`vite.config.mts` was tried first and does **not** apply to dynamic-import
-specifiers here; rewriting the import paths in source does.
-
-The browser consequence: there is no native directory/file picker. The project
-creation dialog keeps its editable path field, which is the intended fallback.
+Nothing under `src/` imports a `@tauri-apps/*` specifier any more.
 
 ### 2. Backend connection
 
@@ -103,17 +96,26 @@ The JSON files live in `flowgram-app/catalog/`, copied from
 | `vite.config.mts` | **rewritten** — no `connection.json`, proxies to `RELION_WEB_API` (default `127.0.0.1:8765`) |
 | `tsconfig.json`, `index.html` | copied unchanged |
 
-## What still does not work
+## What was removed from upstream
 
-The app loads and renders, but most of it calls FlowGram's own backend API,
-which does not exist here:
+The vendored copy is no longer a faithful port of the desktop app: the
+assistant stack was removed on purpose (see `../flowgram/HARNESS.md`). Gone:
 
-- `GET /api/bootstrap` 404s — the app cannot list projects
-- no `/api/workflows`, `/api/sessions`, `/api/runs`, `/api/settings/model`
+- conversation UI and sessions (`conversation-*`, `session-panel`,
+  `mention-input`, `mentions`)
+- model providers and publishing (`model-settings`, `model-picker`, `models`,
+  `deployment-*`, `publication-*`, `services`)
+- archive settings and project import/export (`archive-settings`,
+  `project-transfer`)
+- the run-inspector views the bridge does not serve (comparison, debug)
+- FlowGram's multi-document session workbench (`workbench.ts` is now a
+  single-document state)
+- every Tauri entry point and its stubs
 
-Bridging those to the RELION agent is the next piece of work, not a defect in
-this vendoring. See `CAPABILITY-MAP.md` for which FlowGram APIs map to which
-RELION endpoints.
+What remains is the canvas, the node form, the palette, run inspection and the
+cluster page - driven by the RELION agent through `../bridge/`. The assistant is
+an external harness over MCP; the canvas offers its configuration from the
+"外部 agent" button.
 
 ## Updating from upstream
 
@@ -122,6 +124,7 @@ cd flowgram.ai && git fetch && git checkout <newer commit>
 diff -rq ../flowgram-app/src apps/desktop/src     # see what upstream changed
 ```
 
-Re-copy files that changed, then re-apply the changes above: one no-op
-function, four import paths, four catalogue paths, and the three additive
-edits in section 3. Nothing in the canvas or the node renderer was touched.
+Re-copy files that changed, then re-apply the changes above. Section 1 is now
+a deletion rather than a stub: do not re-introduce a `@tauri-apps/*` import, and
+do not restore the assistant surface listed under "What was removed from
+upstream" - both are deliberate.

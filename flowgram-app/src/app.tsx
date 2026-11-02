@@ -8,9 +8,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   FolderOpen,
   Loader2,
-  MessageCircle,
   PanelLeft,
-  PanelRightClose,
   Plus,
   Workflow as WorkflowIcon,
   X,
@@ -25,13 +23,11 @@ import {
 } from './lib/workbench';
 import type { ModelSettings, Project, Snapshot, Workflow } from './lib/types';
 import { ProjectScope } from './lib/project-context';
-import { workflowTemplates } from './lib/node-catalog';
 import { errorText, getSystemLocale, t, tx, useLocale } from './lib/i18n';
 import { api, connectDesktop, subscribeEvents } from './lib/api';
 import { registerRelionJobs } from '../bridge/register';
 import { WorkspaceHeader } from './components/workspace-header';
 import { WorkflowPanel, type WorkflowPanelHandle } from './components/workflow-panel';
-import { Select } from './components/ui/select';
 import { Presence, useContentTransition } from './components/ui/presence';
 import { Input } from './components/ui/input';
 import { Dialog } from './components/ui/dialog';
@@ -40,7 +36,6 @@ import { Button } from './components/ui/button';
 import { SettingsPage } from './components/settings-page';
 import { RunPage } from './components/run-page';
 import { RunList } from './components/run-inspector/run-list';
-import { ResourcesPage } from './components/resources-page';
 import { ResizablePanel } from './components/resizable-panel';
 import { ProjectMenu, ProjectSidebar, type ProjectAction } from './components/project-navigation';
 import { ProjectManagement, type ProjectManagementAction } from './components/project-management';
@@ -374,16 +369,6 @@ export function App() {
       };
     });
   }
-  function openDocument(doc: WorkspaceDocument, scope = projectId) {
-    if (
-      doc.kind === 'workflow' &&
-      !snapshots[scope]?.workflows.some((item) => item.id === doc.id)
-    ) {
-      report(tx('此工作流已归档或删除，请先在设置中恢复。'), scope);
-      return;
-    }
-    dispatch({ type: 'view', view: doc }, scope);
-  }
   async function archiveObject(kind: 'workflow', id: string, scope = projectId) {
     const key = `${scope}:${kind}:${id}`;
     if (archiving.current.has(key)) return;
@@ -453,7 +438,6 @@ export function App() {
             onNewWorkflow={() => openCreate('workflow')}
             onWorkflow={(id) => dispatch({ type: 'workflow', id })}
             onRuns={() => dispatch({ type: 'view', view: { kind: 'runs' } })}
-            onResources={() => dispatch({ type: 'view', view: { kind: 'resources' } })}
             onSettings={() => setSettings(true)}
             onArchive={(_, id) => void archiveObject('workflow', id)}
           />
@@ -545,6 +529,16 @@ export function App() {
                       </p>
                     </div>
                   )}
+                {view.kind === 'runs' && (
+                  <div className="flex h-full min-h-0 flex-col">
+                    <WorkspaceHeader title={tx('运行记录')} leading={headerLeading()} />
+                    <RunList
+                      onOpen={(runId) =>
+                        dispatch({ type: 'view', view: { kind: 'run', id: runId } }, projectId)
+                      }
+                    />
+                  </div>
+                )}
                 {document?.kind === 'run' && (
                   <ProjectScope projectId={projectId}>
                     <RunPage
@@ -568,6 +562,17 @@ export function App() {
           )}
         </main>
       </div>
+      {ready && (
+        <Presence open={settings} keepMounted className="settings-presence fixed inset-0 z-40">
+          <SettingsPage
+            visible={settings}
+            close={() => setSettings(false)}
+            model={model}
+            saved={setModel}
+            online={online}
+          />
+        </Presence>
+      )}
       {notice && (notice.projectId === null || notice.projectId === projectId) && !settings && (
         <div role="alert" className="app-notice">
           <span className="min-w-0 text-sm">{errorText(notice.message)}</span>
@@ -580,6 +585,27 @@ export function App() {
             <X />
           </Button>
         </div>
+      )}
+      {projectManagement && (
+        <ProjectManagement
+          key={`${projectManagement.action}:${projectManagement.project.id}`}
+          action={projectManagement.action}
+          project={projectManagement.project}
+          close={() => setProjectManagement(null)}
+          renamed={(updated) => {
+            setProjects((current) =>
+              current.map((item) => (item.id === updated.id ? updated : item))
+            );
+            setProjectManagement(null);
+          }}
+          deleted={async (id) => {
+            await api(`/api/projects?path=${encodeURIComponent(id)}`, 'DELETE');
+            setProjects((current) => current.filter((item) => item.id !== id));
+            if (projectId === id) setProjectId('');
+            setProjectManagement(null);
+            await refresh('').catch((cause) => report(cause.message, null));
+          }}
+        />
       )}
       <Dialog
         open={!!createKind}

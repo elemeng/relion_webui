@@ -27,7 +27,7 @@
  */
 
 /** One field as `/api/job-schema` returns it. */
-export interface RelionField {
+interface RelionField {
   variable: string;
   label: string;
   kind: 'boolean' | 'radio' | 'slider' | 'string' | 'path' | 'input_node' | string;
@@ -122,7 +122,7 @@ function looksMultiline(field: RelionField): boolean {
   return help.includes('comma') || help.includes('separated') || help.includes('one per line');
 }
 
-export function fieldDefinition(field: RelionField, required: boolean): FieldDefinition {
+function fieldDefinition(field: RelionField, required: boolean): FieldDefinition {
   const help = field.help?.trim() || undefined;
   const base = {
     // RELION options live under `data.inputsValues`, the same place FlowGram's
@@ -203,7 +203,7 @@ const COMPUTE_TAB = 'Compute';
 /** Tabs in the compute tail, before 计算资源; selection ranks compute the same. */
 const COMPUTE_HEAD = new Set([COMPUTE_TAB]);
 
-export function sectionsFor(
+function sectionsFor(
   job: RelionJobType & { tabs?: Array<{ title: string; fields: string[] }> },
 ): { sectionOf: (variable: string) => string | undefined; order: string[] } {
   const tabs = job.tabs ?? [];

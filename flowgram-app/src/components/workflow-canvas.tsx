@@ -781,7 +781,7 @@ export const WorkflowCanvas = memo(
           if (reason && !silent) handlers.current.onConnectionError(reason);
           return !reason;
         },
-        async onDragLineEnd(ctx, params) {
+        async onDragLineEnd(_ctx, params) {
           if (readOnly) return;
           lineCanceled.current =
             !Number.isFinite(params.mousePos.x) || !Number.isFinite(params.mousePos.y);

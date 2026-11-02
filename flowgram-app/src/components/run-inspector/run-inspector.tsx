@@ -2,7 +2,7 @@
  * Copyright (c) 2025 Bytedance Ltd. and/or its affiliates
  * SPDX-License-Identifier: MIT
  */
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import {
   ArrowLeft,
@@ -10,7 +10,6 @@ import {
   Columns2,
   ListTree,
   MoreHorizontal,
-  FlaskConical,
   Loader2,
   PanelRightClose,
   Square,
@@ -72,7 +71,6 @@ export function RunInspector({
   onProjection,
   focusRequest,
   onSelectExecution,
-  requestRoot,
   compact = false,
 }: RunInspectorProps) {
   const [at, setAt] = useState<number>();

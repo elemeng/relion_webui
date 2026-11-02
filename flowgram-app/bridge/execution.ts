@@ -112,11 +112,3 @@ export function queueBody(
 export function runIdFor(projectPath: string, entryIds: string[]): string {
   return `relion:${encodeURIComponent(projectPath)}:${entryIds.join(',')}`;
 }
-
-export function parseRunId(runId: string): { projectPath: string; entries: string[] } | null {
-  const match = /^relion:([^:]+):(.*)$/.exec(runId);
-  if (!match) return null;
-  const projectPath = decodeURIComponent(match[1] ?? '');
-  const entries = (match[2] ?? '').split(',').filter(Boolean);
-  return { projectPath, entries };
-}

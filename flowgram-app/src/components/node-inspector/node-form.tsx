@@ -31,16 +31,13 @@ import {
 import { definitionFor, visibleFields, type FieldDefinition } from './definitions';
 
 function ResourcePicker({
-  field,
   value,
   onChange,
 }: {
-  field: FieldDefinition;
   value: unknown;
   onChange: (value: unknown) => void;
 }) {
   const session = useFormSession();
-  const { projectId } = useProject();
   const current = asValue(value).content;
   const selected = session.workflows.find((w) => w.id === current);
   return (
@@ -287,7 +284,7 @@ export function NodeForm({ onChange }: { onChange: (data: Data) => void }) {
         );
         break;
       case 'resource':
-        editor = <ResourcePicker field={field} value={raw} onChange={update} />;
+        editor = <ResourcePicker value={raw} onChange={update} />;
         break;
       case 'tools':
         editor = <ToolSet tools={field.tools || []} />;

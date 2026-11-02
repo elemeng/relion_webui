@@ -321,13 +321,6 @@ interface JobSchemaEntry {
 
 let jobSchema: { jobs: JobSchemaEntry[] } | null = null;
 
-/** The tab titles of a job type, in the schema's order ("I/O", "Run", ...). */
-export function tabsForJobType(jobType: string): Array<{ title: string; fields: string[] }> {
-  return (
-    jobSchema?.jobs.find((candidate) => candidate.job_type === jobType)?.tabs ?? []
-  );
-}
-
 export function rememberJobSchema(schema: {
   jobs: JobSchemaEntry[];
   categories?: Array<{ title: string; job_types: string[] }>;

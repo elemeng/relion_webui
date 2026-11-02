@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { Copy, FolderOpen, Loader2, Trash2 } from 'lucide-react';
+import { Copy, Loader2, Trash2 } from 'lucide-react';
 
 import type { Project } from '../lib/types';
 import { errorText, getLocale, t, tx } from '../lib/i18n';
@@ -217,21 +217,6 @@ export function ProjectManagement({
                 <Copy />
                 {tx('复制路径')}
               </Button>
-              {'__TAURI_INTERNALS__' in window && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    void import('../tauri-stub/opener')
-                      .then(({ revealItemInDir }) => revealItemInDir(current.directory))
-                      .catch((cause) => setError(cause.message))
-                  }
-                >
-                  <FolderOpen />
-                  {tx('在文件管理器中显示')}
-                </Button>
-              )}
               <Button type="button" onClick={close}>
                 {tx('完成')}
               </Button>

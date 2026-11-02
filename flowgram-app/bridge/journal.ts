@@ -160,6 +160,16 @@ export function runsForProject(projectPath: string): RunRecord[] {
   return list.slice(0, 50);
 }
 
+/** Every run the journal holds, newest first, for the run list view. */
+export function allRuns(): Array<RunRecord & { workflowName: string }> {
+  const list = [...runs.values()].map((entry) => ({
+    ...entry.run,
+    workflowName: entry.run.workflowId.replace(/^pipeline:/, '').split('/').pop() ?? 'Pipeline',
+  }));
+  list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return list.slice(0, 200);
+}
+
 /** Events after a sequence, optionally filtered to one run. */
 export function eventsAfter(after: number, objectId?: string): JournalEvent[] {
   const out: JournalEvent[] = [];

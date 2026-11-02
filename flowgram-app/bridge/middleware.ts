@@ -24,6 +24,7 @@ import {
 } from './translate';
 import { agentJson } from './agent';
 import {
+  allRuns,
   eventsAfter,
   getRun,
   openRun,
@@ -41,8 +42,6 @@ import {
   promoteDraft,
   saveWorkspace,
 } from './workspaces';
-
-const AGENT = process.env.RELION_WEB_API ?? 'http://127.0.0.1:8765';
 
 // Queue states that end an entry - mirrored from queue_system.TERMINAL_STATES.
 const TERMINAL_STATES = new Set(['succeeded', 'failed', 'cancelled']);
@@ -590,6 +589,44 @@ export function bridge(): Connect.NextHandleFunction {
           revision: workflow.revision,
           createdAt: new Date().toISOString(),
           sessionId: null,
+        });
+        return;
+      }
+
+      if (route.kind === 'run-list') {
+        // The run list is the journal's own record: runs this bridge submitted,
+        // plus jobs queued elsewhere that it watched. Shape matches what the
+        // vendored list expects (`{runs, total, next, workflows, environments}`).
+        const runs = allRuns();
+        send(200, {
+          runs: runs.map((run) => ({
+            id: run.id,
+            workflowId: run.workflowId,
+            workflowName: run.workflowName,
+            revision: run.revision,
+            testNodeId: null,
+            status: run.status,
+            source: 'manual',
+            createdAt: run.createdAt,
+            endedAt: run.status === 'running' ? null : run.createdAt,
+            durationMs: null,
+            error: run.error,
+            callbackStatus: null,
+            callbackAttempts: null,
+            callbackError: null,
+            environment: null,
+            releaseVersion: null,
+            operation: null,
+            requestId: null,
+            businessId: run.id,
+          })),
+          total: runs.length,
+          next: null,
+          workflows: [...new Set(runs.map((run) => run.workflowId))].map((id) => ({
+            id,
+            name: id.replace(/^pipeline:/, '').split('/').pop() ?? 'Pipeline',
+          })),
+          environments: [],
         });
         return;
       }
