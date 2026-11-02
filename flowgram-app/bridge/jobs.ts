@@ -164,24 +164,42 @@ export function fieldDefinition(field: RelionField, required: boolean): FieldDef
  */
 const RESOURCE_TAB = 'Run';
 const RESOURCE_SECTION = '计算资源';
+const COMPUTE_TAB = 'Compute';
+/** Tabs in the compute tail, before 计算资源; selection ranks compute the same. */
+const COMPUTE_HEAD = new Set([COMPUTE_TAB]);
 
 export function sectionsFor(
   job: RelionJobType & { tabs?: Array<{ title: string; fields: string[] }> },
 ): { sectionOf: (variable: string) => string | undefined; order: string[] } {
   const tabs = job.tabs ?? [];
   const sectionOf = new Map<string, string>();
-  const order: string[] = [];
+  const ioSet = new Set(['I/O']);
+  const io: string[] = [];
+  const middle: string[] = [];
+  const compute: string[] = [];
+  let hasResources = false;
   for (const tab of tabs) {
-    const title = tab.title === RESOURCE_TAB ? RESOURCE_SECTION : tab.title;
+    const title =
+      tab.title === RESOURCE_TAB
+        ? RESOURCE_SECTION
+        : tab.title === COMPUTE_TAB
+        ? '计算'
+        : tab.title;
     for (const variable of tab.fields) {
       if (!sectionOf.has(variable)) sectionOf.set(variable, title);
     }
-    order.push(title);
+    if (title === RESOURCE_SECTION) hasResources = true;
+    else if (ioSet.has(tab.title)) {
+      if (!io.includes(title)) io.push(title);
+    } else if (COMPUTE_HEAD.has(tab.title)) {
+      if (!compute.includes(title)) compute.push(title);
+    } else if (!middle.includes(title)) middle.push(title);
   }
-  // 计算资源 renders last regardless of where Run sat in the C++ table.
-  const sorted = order.filter((title) => title !== RESOURCE_SECTION);
-  if (sectionOf.size && tabs.some((tab) => tab.title === RESOURCE_TAB))
-    sorted.push(RESOURCE_SECTION);
+  // Fixed reading order regardless of where the C++ table put each tab:
+  // I/O first, the algorithm tabs in their own order, compute second-to-last
+  // (RELION's "Compute" GPU section, renamed 计算)，计算资源 last.
+  const sorted = [...io, ...middle, ...compute];
+  if (hasResources) sorted.push(RESOURCE_SECTION);
   return { sectionOf: (variable) => sectionOf.get(variable), order: sorted };
 }
 
@@ -195,11 +213,26 @@ export function jobDefinition(
   job: RelionJobType & { tabs?: Array<{ title: string; fields: string[] }> },
 ): NodeDefinition {
   const required = new Set(job.required ?? []);
-  const { sectionOf } = sectionsFor(job);
+  const { sectionOf, order } = sectionsFor(job);
+  // Sort by section (I/O → algorithm → resources); within a section the
+  // schema's own field order stands. Fields with no tab stay first, before
+  // every section, which is where shared switches like a variant's branch
+  // selector belong.
+  const rank = new Map(order.map((title, index) => [title, index]));
   return {
     fields: job.fields
-      .map((field) => fieldDefinition(field, required.has(field.variable)))
-      .map((definition) => ({
+      .map((field, index) => ({
+        definition: fieldDefinition(field, required.has(field.variable)),
+        index,
+      }))
+      .sort((a, b) => {
+        const sectionA = sectionOf(a.definition.key);
+        const sectionB = sectionOf(b.definition.key);
+        const rankA = sectionA === undefined ? -1 : (rank.get(sectionA) ?? order.length);
+        const rankB = sectionB === undefined ? -1 : (rank.get(sectionB) ?? order.length);
+        return rankA - rankB || a.index - b.index;
+      })
+      .map(({ definition }) => ({
         ...definition,
         section: sectionOf(definition.key),
       })),
