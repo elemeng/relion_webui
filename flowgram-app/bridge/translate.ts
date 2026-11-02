@@ -219,12 +219,10 @@ export function translate(method: string, path: string): { kind: string; id?: st
   if (path === '/api/projects/initialize') return { kind: 'noop' };
   if (path === '/api/settings/model') return { kind: 'model-settings' };
   if (path === '/api/tools') return { kind: 'tools' };
-  // Server-sent events. The agent pushes job state over its own WebSocket, so
-  // this stream stays open and silent; a 404 here makes the client retry in a
-  // tight loop and the boot sequence never completes.
+  // Server-sent events from the journal (see bridge/journal.ts).
   if (path === '/api/events') return { kind: 'events' };
   if (path === '/api/sessions') return { kind: 'empty-list' };
-  if (path === '/api/runs') return { kind: 'empty-list' };
+  if (path === '/api/runs') return { kind: 'run-list' };
 
   const workflowRun = /^\/api\/workflows\/(.+)\/run$/.exec(path);
   if (workflowRun && method === 'POST') {
@@ -233,6 +231,10 @@ export function translate(method: string, path: string): { kind: string; id?: st
   const workflow = /^\/api\/workflows\/(.+)$/.exec(path);
   if (workflow && method === 'GET') {
     return { kind: 'workflow', id: decodeURIComponent(workflow[1] ?? '') };
+  }
+  const runCancel = /^\/api\/runs\/(.+)\/cancel$/.exec(path);
+  if (runCancel && method === 'POST') {
+    return { kind: 'run-cancel', id: decodeURIComponent(runCancel[1] ?? '') };
   }
   const run = /^\/api\/runs\/(.+)$/.exec(path);
   if (run && method === 'GET') {
