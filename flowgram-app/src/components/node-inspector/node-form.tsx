@@ -229,6 +229,7 @@ export function NodeForm({ onChange }: { onChange: (data: Data) => void }) {
           <PathInput
             value={pathValue}
             placeholder={field.placeholder}
+            projectId={projectId}
             onChange={(next) => update({ type: 'constant', content: next })}
             slots={
               <SlotPicker
@@ -250,6 +251,7 @@ export function NodeForm({ onChange }: { onChange: (data: Data) => void }) {
           <PathInput
             value={pathValue}
             placeholder={field.placeholder}
+            projectId={projectId}
             onChange={(next) => update({ type: 'constant', content: next })}
           />
         );

@@ -8,6 +8,7 @@ import { createPortal } from 'react-dom';
 import { FolderOpen, ListTree } from 'lucide-react';
 
 import { api } from '../../lib/api';
+import { PathBrowser } from './path-browser';
 import { tx } from '../../lib/i18n';
 
 /**
@@ -229,12 +230,18 @@ export function PathInput({
   onChange,
   placeholder,
   slots,
+  projectId,
+  filter = 'all',
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   slots?: ReactNode;
+  /** The project root; browsing opens there and picks are stored relative. */
+  projectId?: string;
+  filter?: 'all' | 'directory' | 'star';
 }) {
+  const [browsing, setBrowsing] = useState(false);
   return (
     <div className="nf-path-input">
       <input
@@ -249,17 +256,23 @@ export function PathInput({
         type="button"
         className="nf-slot-trigger"
         aria-label={tx('浏览文件')}
-        title={tx('浏览文件夹')}
+        title={tx('浏览文件或文件夹')}
         onClick={(event) => {
           event.preventDefault();
-          // Real file picking needs a filesystem bridge; the field itself
-          // stays the source of truth. The button is where the OS picker will
-          // attach once the bridge exists (v2, tauri-free).
+          setBrowsing(true);
         }}
       >
         <FolderOpen size={13} />
       </button>
       {slots}
+      <PathBrowser
+        open={browsing}
+        onOpenChange={setBrowsing}
+        value={value}
+        projectId={projectId}
+        filter={filter}
+        onPick={onChange}
+      />
     </div>
   );
 }

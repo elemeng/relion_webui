@@ -241,3 +241,25 @@
 .nf-candidate-row[data-pending] .nf-candidate-state{color:var(--warning, #b8860b)}
 .nf-candidate-row[data-pending] .nf-candidate-file{opacity:.85}
 .nf-slot-empty{font-size:12px;color:var(--muted-foreground);padding:8px 2px}
+/* File browser dialog: the agent's filesystem, in the inspector's surface
+   language. Rows are ordinary buttons; the picked target is echoed in the
+   footer so a directory selection is never ambiguous. */
+.nf-browser{display:flex;flex-direction:column;gap:10px;min-height:0}
+.nf-browser-bar{display:flex;align-items:center;gap:6px}
+.nf-browser-crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:2px;font-size:11px;color:var(--muted-foreground)}
+.nf-browser-crumb{display:inline-flex;align-items:center;gap:2px}
+.nf-browser-crumb button{border:0;background:transparent;color:var(--muted-foreground);font-size:11px;padding:2px 3px;border-radius:4px;cursor:pointer}
+.nf-browser-crumb button:hover{background:var(--secondary);color:var(--foreground)}
+.nf-browser-locations{display:flex;gap:6px;flex-wrap:wrap}
+.nf-browser-locations button{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border);background:transparent;color:var(--muted-foreground);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer}
+.nf-browser-locations button:hover{background:var(--secondary);color:var(--foreground)}
+.nf-browser-list{height:min(46vh,380px);overflow:auto;border:1px solid var(--border);border-radius:8px;padding:4px;display:flex;flex-direction:column}
+.nf-browser-row{display:flex;align-items:center;gap:8px;width:100%;border:0;border-radius:6px;background:transparent;padding:6px 8px;text-align:left;font-size:12px;color:var(--foreground);cursor:pointer}
+.nf-browser-row:hover{background:var(--secondary)}
+.nf-browser-row[data-selected]{background:var(--secondary)}
+.nf-browser-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nf-browser-tag{font-size:9px;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--border);border-radius:4px;padding:0 4px;color:var(--muted-foreground)}
+.nf-browser-size{font-size:10px;color:var(--muted-foreground);white-space:nowrap;min-width:52px;text-align:right}
+.nf-browser-empty{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted-foreground);padding:14px 10px}
+.nf-browser-footer{display:flex;align-items:center;gap:8px}
+.nf-browser-target{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--muted-foreground)}
