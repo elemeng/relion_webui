@@ -15,6 +15,7 @@ import { FormField, FormSection, Select } from '../form/field';
 import { ConditionBuilder, MappingEditor, SchemaEditor } from '../form/editors';
 import { BranchEditor, BranchMappingsEditor, NodeLinkEditor } from '../form/control-editors';
 import { PathsEditor, PredicateEditor, RecordsEditor } from '../form/collection-editors';
+import { PathInput, SlotPicker } from '../form/relion-pickers';
 import { useProject } from '../../lib/project-context';
 import type { ModelSelection } from '../../lib/models';
 import { tx } from '../../lib/i18n';
@@ -136,6 +137,7 @@ export function OutputTree({ schema, path = '' }: { schema: Schema; path?: strin
 export function NodeForm({ onChange }: { onChange: (data: Data) => void }) {
   const session = useFormSession();
   const { node } = session;
+  const { projectId } = useProject();
   const fields = visibleFields(node);
   const itemScope = () => {
     const input = asValue((node.data.inputsValues as Data)?.items);
@@ -216,6 +218,43 @@ export function NodeForm({ onChange }: { onChange: (data: Data) => void }) {
       case 'node-select':
         editor = <NodeLinkEditor field={field.key} value={raw} onChange={update} />;
         break;
+      case 'node-input': {
+        // RELION's input slot: a path field with the schema's grey
+        // placeholder, the slots picker over the project's .Nodes, and the
+        // browsing button. The value is a plain string in constant mode -
+        // refs stay available through the generic value editor when needed.
+        const current = asValue(raw);
+        const pathValue = current.type === 'constant' ? String(current.content ?? '') : '';
+        editor = (
+          <PathInput
+            value={pathValue}
+            placeholder={field.placeholder}
+            onChange={(next) => update({ type: 'constant', content: next })}
+            slots={
+              <SlotPicker
+                jobType={node.type.replace(/^relion\./, '')}
+                variable={field.key}
+                projectId={projectId}
+                label={tx('选择输入')}
+                choose={(chosen) => update({ type: 'constant', content: chosen })}
+              />
+            }
+          />
+        );
+        break;
+      }
+      case 'path-input': {
+        const current = asValue(raw);
+        const pathValue = current.type === 'constant' ? String(current.content ?? '') : '';
+        editor = (
+          <PathInput
+            value={pathValue}
+            placeholder={field.placeholder}
+            onChange={(next) => update({ type: 'constant', content: next })}
+          />
+        );
+        break;
+      }
       case 'number':
         editor = (
           <BufferedInput

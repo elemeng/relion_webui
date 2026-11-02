@@ -218,3 +218,26 @@
 .nf-tip-trigger{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:0;border-radius:4px;background:transparent;color:var(--muted-foreground);cursor:help;transition:background-color var(--motion-fast),color var(--motion-fast);padding:0}
 .nf-tip-trigger:hover,.nf-tip-trigger:focus-visible{background:var(--secondary);color:var(--foreground)}
 .nf-tip-popover{position:fixed;z-index:86;top:var(--tip-top,auto);left:var(--tip-left,auto);max-width:340px;background:var(--surface-panel);color:var(--foreground);border:1px solid var(--border);border-radius:8px;padding:8px 10px;box-shadow:0 8px 28px rgb(0 0 0 / .1);font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;pointer-events:none}
+/* RELION path input: value field with the file/slots buttons inside its
+   right edge. The grey placeholder is RELION's own file pattern. */
+.nf-path-input{display:flex;align-items:center;border:1px solid var(--border);border-radius:8px;background:var(--surface-panel);padding-right:2px;transition:border-color var(--motion-fast)}
+.nf-path-input:focus-within{outline:2px solid var(--ring);outline-offset:2px}
+.nf-path-field{flex:1;min-width:0;border:0;background:transparent;color:var(--foreground);padding:8px 0 8px 10px;font:inherit;font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+.nf-path-field:focus-visible{outline:none}
+.nf-path-field::placeholder{color:var(--muted-foreground)}
+.nf-slot-trigger,.nf-path-input .nf-slot-trigger{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:26px;height:26px;margin-right:4px;border:0;border-radius:5px;background:transparent;color:var(--muted-foreground);cursor:pointer;transition:background-color var(--motion-fast),color var(--motion-fast)}
+.nf-slot-trigger:hover,.nf-path-input .nf-slot-trigger:hover{background:var(--secondary);color:var(--foreground)}
+.nf-slot-anchor{position:relative;display:inline-flex}
+/* Slots popover: RELION's .Nodes candidate list */
+.nf-slot-panel{position:fixed;z-index:86;width:380px;max-height:min(420px,calc(100vh - 32px));overflow:auto;background:var(--surface-panel);color:var(--foreground);border:1px solid var(--border);border-radius:10px;padding:10px;box-shadow:0 8px 28px rgb(0 0 0 / .1);font-size:12px}
+.nf-slot-heading{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted-foreground);margin:2px 0 8px}
+.nf-slot-heading code{font-size:11px;color:var(--foreground)}
+.nf-slot-list{display:flex;flex-direction:column}
+.nf-candidate-row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;gap:8px;align-items:center;width:100%;text-align:left;border:0;border-radius:6px;background:transparent;padding:7px 8px;cursor:pointer;color:var(--foreground)}
+.nf-candidate-row:hover{background:var(--secondary)}
+.nf-candidate-file{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nf-candidate-meta{font-size:11px;color:var(--muted-foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nf-candidate-state{font-size:10px;color:var(--muted-foreground);white-space:nowrap}
+.nf-candidate-row[data-pending] .nf-candidate-state{color:var(--warning, #b8860b)}
+.nf-candidate-row[data-pending] .nf-candidate-file{opacity:.85}
+.nf-slot-empty{font-size:12px;color:var(--muted-foreground);padding:8px 2px}

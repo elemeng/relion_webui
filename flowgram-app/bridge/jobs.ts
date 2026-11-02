@@ -38,6 +38,10 @@ export interface RelionField {
   options?: Array<{ value?: string; label?: string }> | string[];
   help?: string;
   section?: string;
+  /** The file-pattern hint the C++ window shows ("path/to/*.star"). */
+  pattern?: string;
+  /** For input_node fields: the .Nodes type this slot accepts. */
+  node_type?: string;
 }
 
 export interface RelionJobType {
@@ -47,6 +51,20 @@ export interface RelionJobType {
   required?: string[];
   /** RELION's job-window tabs; `fields` lists each tab's variables. */
   tabs?: Array<{ title: string; fields: string[] }>;
+  /**
+   * The program's full flag list (`cli_options`): the advanced panel's
+   * vocabulary. Flags the form does not already cover are what "other
+   * arguments" is for, so their usage text rides the other_args hint.
+   */
+  cli_options?: Array<{
+    flag: string;
+    kind: string;
+    usage: string | null;
+    default?: unknown;
+    hidden?: boolean;
+    used_by_form?: boolean;
+  }>;
+  cli_options_unavailable?: string[] | null;
 }
 
 /**
@@ -78,6 +96,7 @@ export const RELION_OTHER_GROUP = RELION_NODE_GROUP.Other;
  */
 export type { FieldDefinition, NodeDefinition } from '../src/components/node-inspector/definitions';
 import type { FieldDefinition, NodeDefinition } from '../src/components/node-inspector/definitions';
+import { tx } from '../src/lib/i18n';
 
 /** RELION labels carry a trailing colon; FlowGram's form adds its own. */
 function cleanLabel(label: string): string {
@@ -140,8 +159,14 @@ export function fieldDefinition(field: RelionField, required: boolean): FieldDef
         ...(typeof field.max === 'number' ? { max: field.max } : {}),
       };
 
-    case 'path':
     case 'input_node':
+      // A slot picker over the project's .Nodes, not free text: the editor
+      // renders RELION's own candidate list, typed by node_type.
+      return { ...base, editor: 'node-input', nodeType: field.node_type, placeholder: field.pattern };
+
+    case 'path':
+      return { ...base, editor: 'path-input', placeholder: field.pattern };
+
     case 'string':
     default:
       return {
@@ -214,6 +239,15 @@ export function jobDefinition(
 ): NodeDefinition {
   const required = new Set(job.required ?? []);
   const { sectionOf, order } = sectionsFor(job);
+  // The Run tab's other_args line is RELION's advanced panel. Naming the
+  // flags the form does not already cover - with their usage - turns it from
+  // a free box into a discoverable one. Long, so it rides the hover tip.
+  const advanced = (job.cli_options ?? [])
+    .filter((option) => !option.hidden && !option.used_by_form)
+    .map((option) => `${option.flag}${option.usage ? `  ${option.usage}` : ''}`);
+  const advancedTip = advanced.length
+    ? `${tx('除表单外的可用参数（写入 other_args）：\n')}  ${advanced.join('\n  ')}`
+    : undefined;
   // Sort by section (I/O → algorithm → resources); within a section the
   // schema's own field order stands. Fields with no tab stay first, before
   // every section, which is where shared switches like a variant's branch
@@ -234,6 +268,12 @@ export function jobDefinition(
       })
       .map(({ definition }) => ({
         ...definition,
+        // other_args collects the flags this form does not expose; its tip
+        // is where their vocabulary lives.
+        tip:
+          definition.key === 'other_args' && advancedTip
+            ? [definition.tip, advancedTip].filter(Boolean).join('\n\n')
+            : definition.tip,
         section: sectionOf(definition.key),
       })),
     output: () => ({ type: 'object', properties: {} }),

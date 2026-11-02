@@ -24,7 +24,9 @@ export type EditorId =
   | 'predicate'
   | 'branches'
   | 'branch-mappings'
-  | 'node-select';
+  | 'node-select'
+  | 'node-input'
+  | 'path-input';
 export interface FieldDefinition {
   key: string;
   label: string;
@@ -34,6 +36,10 @@ export interface FieldDefinition {
   hint?: string;
   /** Extended help shown as a hover tip next to the label (RELION). */
   tip?: string;
+  /** Grey placeholder for path inputs (RELION's C++ file pattern). */
+  placeholder?: string;
+  /** The .Nodes type an input_node slot accepts. */
+  nodeType?: string;
   multiline?: boolean;
   defaultValue?: unknown;
   valueType?: string;

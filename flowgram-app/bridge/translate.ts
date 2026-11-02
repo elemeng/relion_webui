@@ -123,8 +123,28 @@ export function workflowFromPipeline(
     }>;
     edges: Array<{ from: string; to: string }>;
   },
+  /**
+   * The pipeline's data nodes (`Import/job001/tilt_series.star`) and who
+   * consumes them. This is what lets a projection pre-fill an input_node
+   * field with the exact upstream path the pipeline edge already declares,
+   * instead of leaving every input empty until the user points it somewhere.
+   */
+  inputs?: {
+    nodes: Array<{ name: string; type_label: string; produced_by?: string }>;
+    edges?: { inputs?: Array<{ node: string; process: string }> };
+  },
 ) {
   const byName = new Map(graph.processes.map((p) => [p.name, p]));
+
+  // node name -> the process that writes it (per the pipeline's own record).
+  const producerOf = new Map((inputs?.nodes ?? []).map((node) => [node.name, node]));
+  // consumer process -> the pipeline nodes it names as inputs.
+  const consumedBy = new Map<string, string[]>();
+  for (const edge of inputs?.edges?.inputs ?? []) {
+    const list = consumedBy.get(edge.process) ?? [];
+    list.push(edge.node);
+    consumedBy.set(edge.process, list);
+  }
 
   const nodes = layout.nodes.map((box) => {
     const process = byName.get(box.primary);
@@ -144,8 +164,14 @@ export function workflowFromPipeline(
         title: `${label}${extra}`,
         // `inputsValues` is where FlowGram keeps a node's parameters. These
         // start at the schema defaults; editing them in the inspector writes
-        // here, and the submit path reads them back out.
-        inputsValues: defaultValues(process?.type_label ?? ''),
+        // here, and the submit path reads them back out. Input slots the
+        // pipeline edge already names start at that exact path - the user can
+        // change it, but "which file does this consume" is not a guess.
+        inputsValues: filledValues(
+          process?.type_label ?? '',
+          consumedBy.get(box.primary) ?? [],
+          producerOf,
+        ),
         status: STATUS[process?.status ?? ''] ?? 'pending',
         relion: {
           process: box.primary,
@@ -269,7 +295,13 @@ export function translate(method: string, path: string): { kind: string; id?: st
  */
 interface JobSchemaEntry {
   job_type: string;
-  fields: Array<{ variable: string; default?: unknown }>;
+  fields: Array<{
+    variable: string;
+    default?: unknown;
+    kind?: string;
+    /** For input_node fields: the .Nodes type this slot accepts. */
+    node_type?: string;
+  }>;
   /** RELION's own job-window tabs; `fields` name the variables per tab. */
   tabs?: Array<{ title: string; fields: string[] }>;
 }
@@ -364,6 +396,38 @@ let jobOutputs: Map<string, string[]> = new Map();
 /** A label's output filenames (empty when the job-types table has not loaded). */
 export function labelOutputs(typeLabel: string): string[] {
   return jobOutputs.get(typeLabel) ?? [];
+}
+
+/**
+ * Default values with the pipeline's own input paths filled in.
+ *
+ * For every `input_node` field, the node the pipeline edge names for that
+ * consumer becomes the value, when its type matches what the field accepts.
+ * The user edits as usual; nothing is invented - a slot whose producer the
+ * pipeline does not declare stays at its schema default (usually empty).
+ */
+export function filledValues(
+  typeLabel: string,
+  inputNodes: string[],
+  producerOf: Map<string, { name: string; type_label: string; produced_by?: string }>,
+): Record<string, unknown> {
+  const values = defaultValues(typeLabel);
+  const job = jobForLabel(typeLabel);
+  if (!job) return values;
+
+  for (const field of job.fields) {
+    if (field.kind !== 'input_node' || !field.node_type) continue;
+    const binding = values[field.variable] as { content: unknown } | undefined;
+    if (binding && typeof binding.content === 'string' && binding.content) continue;
+    const match = inputNodes.find((name) => {
+      const node = producerOf.get(name);
+      // A field's `node_type` is a prefix of the node's full type label
+      // (`TomogramGroupMetadata.star.relion` ⊂ `…relion.tomo.import`).
+      return node && node.type_label.startsWith(field.node_type!);
+    });
+    if (match) values[field.variable] = { type: 'constant', content: match };
+  }
+  return values;
 }
 
 export function rememberJobTypes(

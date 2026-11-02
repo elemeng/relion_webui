@@ -71,7 +71,11 @@ function currentRuns(projects: Array<{ path: string }>): unknown[] {
  * project path the pipeline guarantees (`<process>/<filename>`), and
  * everything else passes through for RELION to reject with its own message.
  */
-function unwrapArgument(value: unknown, all: Record<string, Record<string, unknown>>): unknown {
+function unwrapArgument(
+  value: unknown,
+  all: Record<string, Record<string, unknown>>,
+  depth = 0,
+): unknown {
   if (!value || typeof value !== 'object') return value;
   const binding = value as { type?: string; content?: unknown };
   if (binding.type === 'constant') return binding.content;
@@ -82,9 +86,16 @@ function unwrapArgument(value: unknown, all: Record<string, Record<string, unkno
       // enqueue time, so the path is valid whether or not the file exists.
       const processName = nodeId.replace(/^pipeline:/, '');
       if (processName.includes('/')) return `${processName}/${path[0]}`;
-      // A start-node reference (execution intent); unwrapping is the
-      // caller's business, so the raw array passes through.
-      void all;
+    }
+    if (nodeId && path.length >= 1 && depth < 4) {
+      // Chained references: a ref whose leaf is another node's input field
+      // resolves to *that field's* value, recursively - an input handed down
+      // a chain of jobs keeps pointing at the file at the head of the chain.
+      const upstream = all[nodeId]?.[path[0]];
+      if (upstream && typeof upstream === 'object' && path.length === 1) {
+        const resolved = unwrapArgument(upstream, all, depth + 1);
+        if (typeof resolved === 'string') return resolved;
+      }
     }
     return binding.content;
   }
@@ -145,7 +156,7 @@ async function pipelineWorkflow(projectPath: string) {
   const graph = (await agentJson(`/api/project/graph${query}`)) as never;
   const layout = layoutPipeline(graph);
   const project = { path: projectPath, name: projectPath.split('/').pop() ?? projectPath };
-  return workflowFromPipeline(project, graph, layout);
+  return workflowFromPipeline(project, graph, layout, graph);
 }
 
 /** Read and parse a JSON request body. */
