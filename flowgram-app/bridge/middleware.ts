@@ -61,6 +61,48 @@ function currentRuns(projects: Array<{ path: string }>): unknown[] {
   return out;
 }
 
+/**
+ * A canvas parameter value as the queue expects it.
+ *
+ * The inspector writes RELION's own binding shape (`{type, content}`), and a
+ * value may be a reference to an upstream node's declared output
+ * (`["AlignTiltSeries/job002", "tilt_series.star"]`). The queue wants plain
+ * option values: constants unwrap to their content, references resolve to the
+ * project path the pipeline guarantees (`<process>/<filename>`), and
+ * everything else passes through for RELION to reject with its own message.
+ */
+function unwrapArgument(value: unknown, all: Record<string, Record<string, unknown>>): unknown {
+  if (!value || typeof value !== 'object') return value;
+  const binding = value as { type?: string; content?: unknown };
+  if (binding.type === 'constant') return binding.content;
+  if (binding.type === 'ref' && Array.isArray(binding.content)) {
+    const [nodeId, ...path] = binding.content as string[];
+    if (nodeId && path.length === 1) {
+      // `<process>/<filename>` - the .Nodes entry the queue reserved at
+      // enqueue time, so the path is valid whether or not the file exists.
+      const processName = nodeId.replace(/^pipeline:/, '');
+      if (processName.includes('/')) return `${processName}/${path[0]}`;
+      // A start-node reference (execution intent); unwrapping is the
+      // caller's business, so the raw array passes through.
+      void all;
+    }
+    return binding.content;
+  }
+  return value;
+}
+
+function resolveArguments(
+  options: Record<string, unknown>,
+  all: Record<string, Record<string, unknown>>,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(options).map(([key, value]) => [
+      key,
+      unwrapArgument(value, all),
+    ]),
+  );
+}
+
 function safeParse(raw: string): Record<string, unknown> {
   try {
     return JSON.parse(raw) as Record<string, unknown>;
@@ -173,7 +215,10 @@ async function startRun(
           {
             process: process.name,
             jobType,
-            arguments: parameters[process.name] ?? {},
+            arguments: resolveArguments(
+              parameters[process.name] ?? {},
+              parameters as never,
+            ),
           },
           intent,
           [],

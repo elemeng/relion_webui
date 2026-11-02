@@ -368,7 +368,13 @@ export function NodeForm({ onChange }: { onChange: (data: Data) => void }) {
       editor = <FormSessionProvider value={itemScope()}>{editor}</FormSessionProvider>;
     if (bare) return <div key={field.key}>{editor}</div>;
     return (
-      <FormField key={field.key} label={field.label} required={field.required} hint={field.hint}>
+      <FormField
+        key={field.key}
+        label={field.label}
+        required={field.required}
+        hint={field.hint}
+        tip={field.tip}
+      >
         {editor}
       </FormField>
     );

@@ -153,6 +153,19 @@ export function workflowFromPipeline(
           pipelineStatus: process?.status ?? 'Scheduled',
           jobNumber: process?.job_number ?? null,
         },
+        // The files this job writes (`<process>/<filename>` per the job spec).
+        // Declaring them as the node's outputs is what makes the variable
+        // picker offer real upstream files, so an input field can point at
+        // "AlignTiltSeries/job002 / tilt_series.star" instead of free text.
+        outputs: {
+          type: 'object',
+          properties: Object.fromEntries(
+            labelOutputs(process?.type_label ?? '').map((filename) => [
+              filename,
+              { type: 'string' },
+            ]),
+          ),
+        },
       },
     };
   });
@@ -257,9 +270,18 @@ export function translate(method: string, path: string): { kind: string; id?: st
 interface JobSchemaEntry {
   job_type: string;
   fields: Array<{ variable: string; default?: unknown }>;
+  /** RELION's own job-window tabs; `fields` name the variables per tab. */
+  tabs?: Array<{ title: string; fields: string[] }>;
 }
 
 let jobSchema: { jobs: JobSchemaEntry[] } | null = null;
+
+/** The tab titles of a job type, in the schema's order ("I/O", "Run", ...). */
+export function tabsForJobType(jobType: string): Array<{ title: string; fields: string[] }> {
+  return (
+    jobSchema?.jobs.find((candidate) => candidate.job_type === jobType)?.tabs ?? []
+  );
+}
 
 export function rememberJobSchema(schema: {
   jobs: JobSchemaEntry[];
@@ -336,7 +358,24 @@ export function valuesForJobType(jobType: string): Record<string, unknown> {
  */
 let labelToJobType: Map<string, string> | null = null;
 
-export function rememberJobTypes(entries: Array<{ id: string; process_type_label?: string }>): void {
+/** Process label -> the filenames a job of that label writes. */
+let jobOutputs: Map<string, string[]> = new Map();
+
+/** A label's output filenames (empty when the job-types table has not loaded). */
+export function labelOutputs(typeLabel: string): string[] {
+  return jobOutputs.get(typeLabel) ?? [];
+}
+
+export function rememberJobTypes(
+  entries: Array<{
+    id: string;
+    process_type_label?: string;
+    /** Output filenames this job writes (`tilt_series.star`, ...). */
+    outputs?: string[];
+    directory?: string;
+    title?: string;
+  }>,
+): void {
   // Prefer ids the schema actually has a row for. The job-types table also
   // carries abstract ids (`tomo_align_tilt_series`, `tomo_denoise_tomograms`)
   // that the schema splits into concrete variants; picking one of those would
@@ -345,6 +384,7 @@ export function rememberJobTypes(entries: Array<{ id: string; process_type_label
   const map = new Map<string, string>();
   const skipped: Array<[string, string]> = [];
 
+  jobOutputs = new Map();
   for (const entry of entries) {
     const label = entry.process_type_label;
     if (!label) continue;
@@ -352,7 +392,13 @@ export function rememberJobTypes(entries: Array<{ id: string; process_type_label
       skipped.push([label, entry.id]);
       continue;
     }
-    if (!map.has(label)) map.set(label, entry.id);
+    if (!map.has(label)) {
+      map.set(label, entry.id);
+      // First variant of a label wins the defaults - and its output list,
+      // which is what the canvas nodes declare as their outputs so an
+      // upstream input can point at a real file rather than free text.
+      jobOutputs.set(label, entry.outputs ?? []);
+    }
   }
 
   // A label whose only ids are abstract still needs an answer: keep the first

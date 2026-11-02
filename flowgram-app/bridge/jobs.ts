@@ -45,6 +45,8 @@ export interface RelionJobType {
   title: string;
   fields: RelionField[];
   required?: string[];
+  /** RELION's job-window tabs; `fields` lists each tab's variables. */
+  tabs?: Array<{ title: string; fields: string[] }>;
 }
 
 /**
@@ -102,10 +104,15 @@ function looksMultiline(field: RelionField): boolean {
 }
 
 export function fieldDefinition(field: RelionField, required: boolean): FieldDefinition {
+  const help = field.help?.trim() || undefined;
   const base = {
     key: field.variable,
     label: cleanLabel(field.label || field.variable),
-    hint: field.help?.trim() || undefined,
+    // RELION's help is a paragraph per option; inline it bury the value, so
+    // it travels as `tip` (hover next to the label). A short first clause
+    // stays inline as a hint when the text is more than a full sentence.
+    hint: undefined as string | undefined,
+    tip: help,
     section: field.section,
     defaultValue: field.default,
     ...(required ? { required: true } : {}),
@@ -147,15 +154,55 @@ export function fieldDefinition(field: RelionField, required: boolean): FieldDef
 }
 
 /**
+ * The section a field belongs to, from RELION's own job-window tabs.
+ *
+ * The schema already groups every variable under a tab ("I/O", the
+ * algorithm's tab, "Run"). The form honours that grouping as collapsible
+ * sections instead of one 80-row list, with the resource tab (MPI, threads,
+ * queue, GPU) renamed and forced last so parameters read I/O → algorithm →
+ * resources.
+ */
+const RESOURCE_TAB = 'Run';
+const RESOURCE_SECTION = '计算资源';
+
+export function sectionsFor(
+  job: RelionJobType & { tabs?: Array<{ title: string; fields: string[] }> },
+): { sectionOf: (variable: string) => string | undefined; order: string[] } {
+  const tabs = job.tabs ?? [];
+  const sectionOf = new Map<string, string>();
+  const order: string[] = [];
+  for (const tab of tabs) {
+    const title = tab.title === RESOURCE_TAB ? RESOURCE_SECTION : tab.title;
+    for (const variable of tab.fields) {
+      if (!sectionOf.has(variable)) sectionOf.set(variable, title);
+    }
+    order.push(title);
+  }
+  // 计算资源 renders last regardless of where Run sat in the C++ table.
+  const sorted = order.filter((title) => title !== RESOURCE_SECTION);
+  if (sectionOf.size && tabs.some((tab) => tab.title === RESOURCE_TAB))
+    sorted.push(RESOURCE_SECTION);
+  return { sectionOf: (variable) => sectionOf.get(variable), order: sorted };
+}
+
+/**
  * One job type as a node definition.
  *
  * `output` returns an empty object schema: a RELION job's outputs are pipeline
  * nodes, not a value this node computes, so there is nothing honest to declare.
  */
-export function jobDefinition(job: RelionJobType): NodeDefinition {
+export function jobDefinition(
+  job: RelionJobType & { tabs?: Array<{ title: string; fields: string[] }> },
+): NodeDefinition {
   const required = new Set(job.required ?? []);
+  const { sectionOf } = sectionsFor(job);
   return {
-    fields: job.fields.map((field) => fieldDefinition(field, required.has(field.variable))),
+    fields: job.fields
+      .map((field) => fieldDefinition(field, required.has(field.variable)))
+      .map((definition) => ({
+        ...definition,
+        section: sectionOf(definition.key),
+      })),
     output: () => ({ type: 'object', properties: {} }),
     aliases: [job.title, job.job_type],
   };

@@ -32,6 +32,8 @@ export interface FieldDefinition {
   type?: string;
   required?: boolean;
   hint?: string;
+  /** Extended help shown as a hover tip next to the label (RELION). */
+  tip?: string;
   multiline?: boolean;
   defaultValue?: unknown;
   valueType?: string;

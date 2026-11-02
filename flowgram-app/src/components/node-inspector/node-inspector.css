@@ -211,3 +211,10 @@
 .nf-section>.nf-section-trigger{display:flex;align-items:center;gap:7px;width:100%;padding:0;min-height:44px;text-align:left;background:transparent;border:0;cursor:pointer}
 .nf-section-trigger>svg{color:var(--muted-foreground);transition:transform var(--motion-control) var(--ease-surface)}
 .nf-section-trigger[aria-expanded=true]>svg{transform:rotate(90deg)}
+/* Field label tips: RELION's per-option help paragraphs live here, not
+   under each field. The trigger is a quiet Info glyph on the label row; the
+   panel shares the popover surface so the two read as one system. */
+.nf-label-tip{position:relative;display:inline-flex;align-items:center}
+.nf-tip-trigger{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:0;border-radius:4px;background:transparent;color:var(--muted-foreground);cursor:help;transition:background-color var(--motion-fast),color var(--motion-fast);padding:0}
+.nf-tip-trigger:hover,.nf-tip-trigger:focus-visible{background:var(--secondary);color:var(--foreground)}
+.nf-tip-popover{position:fixed;z-index:86;top:var(--tip-top,auto);left:var(--tip-left,auto);max-width:340px;background:var(--surface-panel);color:var(--foreground);border:1px solid var(--border);border-radius:8px;padding:8px 10px;box-shadow:0 8px 28px rgb(0 0 0 / .1);font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;pointer-events:none}
