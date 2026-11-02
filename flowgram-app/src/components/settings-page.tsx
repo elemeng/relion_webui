@@ -15,6 +15,7 @@ import {
   Wrench,
   Info,
   Rocket,
+  Server,
   Archive,
 } from 'lucide-react';
 
@@ -46,12 +47,16 @@ const DeploymentPage = lazy(() =>
 const ArchiveSettings = lazy(() =>
   import('./archive-settings').then((module) => ({ default: module.ArchiveSettings }))
 );
+const ClusterPage = lazy(() =>
+  import('./cluster-page').then((module) => ({ default: module.ClusterPage }))
+);
 const sections = localized([
   { id: 'general', title: '通用', icon: Settings2 },
   { id: 'model', title: '模型', icon: Plug },
   { id: 'appearance', title: '外观与动效', icon: Palette },
   { id: 'tools', title: '工具与 MCP', icon: Wrench },
   { id: 'deployment', title: '部署', icon: Rocket },
+  { id: 'cluster', title: '集群与队列', icon: Server },
   { id: 'archive', title: '归档', icon: Archive },
   { id: 'keyboard', title: '快捷键', icon: Keyboard },
   { id: 'about', title: '关于', icon: Info },
@@ -184,6 +189,7 @@ export function SettingsPage({
               (
                 {
                   deployment: tx('管理项目发布、全局凭证与运行服务。'),
+                  cluster: tx('查看执行节点的负载与 GPU，管理作业队列。'),
                   archive: tx('管理已归档的会话与工作流，可恢复到原项目或彻底删除。'),
                   general: tx('管理工作区与本机运行环境。'),
                   model: tx('为对话助手与工作流节点连接模型。'),
@@ -206,6 +212,13 @@ export function SettingsPage({
               {errorText(error)}
             </p>
           )}
+          <div hidden={section !== 'cluster'}>
+            <Suspense
+              fallback={<p className="text-sm text-muted-foreground">{tx('正在加载')}</p>}
+            >
+              <ClusterPage active={visible && section === 'cluster'} />
+            </Suspense>
+          </div>
           <div hidden={section !== 'deployment'}>
             {deploymentVisited && (
               <Suspense
