@@ -1,0 +1,260 @@
+{
+  "id": "9f89234a-8fd0-4ab0-8000-1465e207b4d3",
+  "name": "RELION pipeline",
+  "projectId": "accb82e0-92f3-4a0d-b3fd-b0f58fda4859",
+  "revision": 1,
+  "schema": {
+    "nodes": [
+      {
+        "data": {
+          "outputs": {
+            "properties": {
+              "message": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "title": "Input"
+        },
+        "id": "start",
+        "meta": {
+          "position": {
+            "x": -291,
+            "y": 120
+          }
+        },
+        "type": "start"
+      },
+      {
+        "id": "Import/job001",
+        "type": "custom",
+        "meta": {
+          "position": {
+            "x": 29,
+            "y": 113
+          }
+        },
+        "data": {
+          "title": "48 tilt-series",
+          "content": "Import/job001 · Succeeded"
+        }
+      },
+      {
+        "id": "AlignTiltSeries/job002",
+        "type": "custom",
+        "meta": {
+          "position": {
+            "x": 327,
+            "y": 57.5
+          }
+        },
+        "data": {
+          "title": "aligned, 4.2 nm",
+          "content": "AlignTiltSeries/job002 · Succeeded"
+        }
+      },
+      {
+        "id": "Reconstruct/job010",
+        "type": "custom",
+        "meta": {
+          "position": {
+            "x": 327,
+            "y": 168.5
+          }
+        },
+        "data": {
+          "title": "still setting up",
+          "content": "Reconstruct/job010 · Aborted"
+        }
+      },
+      {
+        "id": "CtfFind/job003",
+        "type": "custom",
+        "meta": {
+          "position": {
+            "x": 625,
+            "y": 113
+          }
+        },
+        "data": {
+          "title": "median 3.1 A",
+          "content": "CtfFind/job003 · Succeeded"
+        }
+      },
+      {
+        "id": "Tomograms/job004",
+        "type": "custom",
+        "meta": {
+          "position": {
+            "x": 923,
+            "y": 57.5
+          }
+        },
+        "data": {
+          "title": "48 tomograms, bin 4",
+          "content": "Tomograms/job004 · Failed"
+        }
+      },
+      {
+        "id": "Tomograms/job005",
+        "type": "custom",
+        "meta": {
+          "position": {
+            "x": 923,
+            "y": 168.5
+          }
+        },
+        "data": {
+          "title": "48 tomograms, bin 4",
+          "content": "Tomograms/job005 · Succeeded"
+        }
+      },
+      {
+        "id": "Denoise/job006",
+        "type": "custom",
+        "meta": {
+          "position": {
+            "x": 1221,
+            "y": 113
+          }
+        },
+        "data": {
+          "title": "epoch 41/100",
+          "content": "Denoise/job006 · Running"
+        }
+      },
+      {
+        "id": "Denoise/job007",
+        "type": "custom",
+        "meta": {
+          "position": {
+            "x": 1519,
+            "y": 57.5
+          }
+        },
+        "data": {
+          "title": "48 denoised",
+          "content": "Denoise/job007 · Succeeded"
+        }
+      },
+      {
+        "id": "Picks/job008",
+        "type": "custom",
+        "meta": {
+          "position": {
+            "x": 1519,
+            "y": 168.5
+          }
+        },
+        "data": {
+          "title": "waiting on the model",
+          "content": "Picks/job008 · Scheduled"
+        }
+      },
+      {
+        "id": "Extract/job009",
+        "type": "custom",
+        "meta": {
+          "position": {
+            "x": 1817,
+            "y": 113
+          }
+        },
+        "data": {
+          "title": "no picks yet",
+          "content": "Extract/job009 · Scheduled"
+        }
+      },
+      {
+        "data": {
+          "inputs": {
+            "properties": {
+              "message": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "inputsValues": {
+            "message": {
+              "content": [
+                "start",
+                "message"
+              ],
+              "type": "ref"
+            }
+          },
+          "title": "Output"
+        },
+        "id": "end",
+        "meta": {
+          "position": {
+            "x": 2187,
+            "y": 120
+          }
+        },
+        "type": "end"
+      }
+    ],
+    "edges": [
+      {
+        "sourceNodeID": "Import/job001",
+        "targetNodeID": "AlignTiltSeries/job002"
+      },
+      {
+        "sourceNodeID": "AlignTiltSeries/job002",
+        "targetNodeID": "CtfFind/job003"
+      },
+      {
+        "sourceNodeID": "CtfFind/job003",
+        "targetNodeID": "Tomograms/job004"
+      },
+      {
+        "sourceNodeID": "CtfFind/job003",
+        "targetNodeID": "Tomograms/job005"
+      },
+      {
+        "sourceNodeID": "Tomograms/job005",
+        "targetNodeID": "Denoise/job006"
+      },
+      {
+        "sourceNodeID": "Denoise/job006",
+        "targetNodeID": "Denoise/job007"
+      },
+      {
+        "sourceNodeID": "Denoise/job006",
+        "targetNodeID": "Picks/job008"
+      },
+      {
+        "sourceNodeID": "Picks/job008",
+        "targetNodeID": "Extract/job009"
+      },
+      {
+        "sourceNodeID": "Import/job001",
+        "targetNodeID": "Reconstruct/job010"
+      },
+      {
+        "sourceNodeID": "start",
+        "targetNodeID": "Import/job001"
+      },
+      {
+        "sourceNodeID": "Reconstruct/job010",
+        "targetNodeID": "end"
+      },
+      {
+        "sourceNodeID": "Tomograms/job004",
+        "targetNodeID": "end"
+      },
+      {
+        "sourceNodeID": "Denoise/job007",
+        "targetNodeID": "end"
+      },
+      {
+        "sourceNodeID": "Extract/job009",
+        "targetNodeID": "end"
+      }
+    ]
+  },
+  "updatedAt": "2026-11-02T07:31:22.601177410+00:00"
+}
