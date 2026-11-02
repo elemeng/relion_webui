@@ -3,8 +3,16 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { localized } from './i18n';
-import catalog from '../../catalog/atomic-nodes.json';
+/**
+ * The shape a catalogue entry from `catalog/*.json` has.
+ *
+ * This module used to export `atomicNodes` - 29 FlowGram data-processing nodes
+ * (JSON mapping, list operations, text transforms). They were hidden from the
+ * palette in this branch and no RELION pipeline can produce them, so the data
+ * file and its loader are gone; only the type remains, because the control-node
+ * catalogue is the same shape.
+ */
+
 import type { FieldDefinition } from '../components/node-inspector/definitions';
 import type { Data, Schema } from '../components/node-inspector/model';
 
@@ -20,5 +28,3 @@ export interface AtomicNodeDefinition {
   outputsByOperation?: Record<string, Schema>;
   aliases?: string[];
 }
-// This is the exact resource embedded in Rust and returned by /api/nodes and MCP.
-export const atomicNodes = localized(catalog as unknown as AtomicNodeDefinition[]);

@@ -820,21 +820,30 @@ async def browse_locations() -> Dict[str, Any]:
 
 @router.get('/api/job-schema')
 async def job_schema(request: Request, job_type: Optional[str] = None) -> Dict[str, Any]:  # noqa: N803
-    """RELION's job form schema, for the node inspector and the palette.
+    """RELION's job options, already shaped for the node inspector.
 
-    The agent already serves this at /api/job-schema; under /fg it is the same
-    data so the canvas has one base URL to reason about.
+    The inspector renders a form from a data table; that table is built here
+    (see ``forms.py``) rather than in the browser, so the mapping from RELION's
+    option kinds to FlowGram's editors exists once.
     """
     from .. import job_commands
+    from . import forms
 
     await _schema_loaded(request)
     if job_type is not None:
         try:
-            return job_commands.form_schema(job_type)
+            schema = job_commands.form_schema(job_type)
         except KeyError as cause:
             raise HTTPException(404, detail=str(cause)) from cause
+        return {**schema, 'definition': forms.node_definition(schema)}
+
+    schemas = [
+        job_commands.form_schema(name)
+        for name in job_commands.selectable_job_types()
+    ]
     return {
-        'jobs': [job_commands.form_schema(name) for name in job_commands.selectable_job_types()],
+        'jobs': schemas,
+        'definitions': forms.definitions_for(schemas),
         'categories': job_commands.job_categories(),
     }
 
@@ -930,3 +939,200 @@ async def input_candidates(request: Request, job_type: str, variable: str, proje
         'node_type': node_type,
         'candidates': candidates,
     }
+
+
+# ------------------------------------------------------------ cluster & queue
+#
+# The canvas's cluster page is the agent's own hosts/queue views under /fg, so
+# one base URL answers everything the UI asks.
+
+
+@router.get('/api/hosts')
+async def list_hosts(request: Request, check: bool = False) -> Dict[str, Any]:
+    from .. import hosts as hosts_module
+
+    manager = request.app.state.jobs
+    entries = []
+    for host in manager.hosts.list():
+        entry = host.as_dict()
+        if check and not host.is_local and host.enabled:
+            ok, message = hosts_module.check_reachable(host)
+            entry['reachable'] = ok
+            if not ok:
+                entry['problem'] = message
+        entries.append(entry)
+    return {'hosts': entries, 'default': hosts_module.LOCAL_NAME}
+
+
+@router.post('/api/hosts', status_code=201)
+async def add_host(request: Request) -> Dict[str, Any]:
+    from .. import hosts as hosts_module
+
+    body = await request.json()
+    registry = request.app.state.jobs.hosts
+    try:
+        if body.get('spec'):
+            host = hosts_module.parse_host_spec(str(body['spec']))
+        else:
+            name = str(body.get('name') or '')
+            hostname = str(body.get('hostname') or '')
+            if not name or not hostname:
+                raise ValueError('give a spec, or both a name and a hostname')
+            host = hosts_module.ExecutionHost(
+                name=name,
+                hostname=hostname,
+                port=int(body.get('port') or 22),
+                user=body.get('user'),
+                note=str(body.get('note') or ''),
+            )
+        registry.add(host)
+    except ValueError as cause:
+        raise HTTPException(400, detail=str(cause)) from cause
+    return host.as_dict()
+
+
+@router.patch('/api/hosts/{name}')
+async def update_host(name: str, request: Request) -> Dict[str, Any]:
+    body = await request.json()
+    registry = request.app.state.jobs.hosts
+    host = registry.get(name)
+    if host is None:
+        raise HTTPException(404, detail=f'no host {name!r}')
+    if body.get('enabled') is not None:
+        host.enabled = bool(body['enabled'])
+    if body.get('note') is not None:
+        host.note = str(body['note'])
+    if body.get('hostname') is not None:
+        host.hostname = str(body['hostname'])
+    registry.add(host)
+    return host.as_dict()
+
+
+@router.delete('/api/hosts/{name}')
+async def remove_host(name: str, request: Request) -> Dict[str, Any]:
+    if not request.app.state.jobs.hosts.remove(name):
+        raise HTTPException(404, detail=f'no host named {name!r}')
+    return {'removed': name}
+
+
+@router.get('/api/nodes')
+async def node_samples(request: Request, local: bool = True) -> Dict[str, Any]:
+    """Live snapshots of every enabled node.
+
+    One ssh round trip per node, run concurrently, so a slow or down node does
+    not delay the others. Collection blocks, so it runs in a worker thread -
+    on the event loop one dead node would freeze every other request.
+    """
+    import anyio
+
+    from .. import node_metrics
+
+    wanted = [
+        host
+        for host in request.app.state.jobs.hosts.list()
+        if host.enabled and (local or not host.is_local)
+    ]
+    snapshots = await anyio.to_thread.run_sync(node_metrics.collect_many, wanted)
+    return {'nodes': [snapshot.as_dict() for snapshot in snapshots], 'count': len(snapshots)}
+
+
+@router.get('/api/queue')
+async def queue_snapshot(request: Request, project_directory: Optional[str] = None) -> Dict[str, Any]:  # noqa: N803
+    queue = request.app.state.queue
+    await queue.warm_capacity()
+    return queue.snapshot(project_directory)
+
+
+@router.delete('/api/queue/{entry_id}')
+async def cancel_queue_entry(entry_id: str, request: Request) -> Dict[str, Any]:
+    from .. import queue_system
+
+    queue = request.app.state.queue
+    try:
+        entry = await queue.cancel(entry_id)
+    except queue_system.QueueError as cause:
+        raise HTTPException(400, detail=str(cause)) from cause
+    return entry.as_dict()
+
+
+# ------------------------------------------------------------------ projects
+#
+# The project management dialog reads a project's details and renames or
+# removes it from the agent's list. Removing a project never touches its files:
+# it only stops the agent serving it, which is what "delete from list" means.
+
+
+@router.post('/api/projects', status_code=201)
+async def add_project(request: Request) -> Dict[str, Any]:
+    body = await request.json()
+    path = str(body.get('path') or '').strip()
+    if not path:
+        raise HTTPException(400, detail='path is required')
+    try:
+        entry = request.app.state.projects.add(path, name=body.get('name'))
+    except ValueError as cause:
+        raise HTTPException(400, detail=str(cause)) from cause
+    return translate_module.project_from_relion(entry.as_dict())
+
+
+@router.post('/api/projects/create', status_code=201)
+async def create_project(request: Request) -> Dict[str, Any]:
+    """Create a RELION project directory.
+
+    Writes only ``default_pipeline.star``, which is all RELION needs to open a
+    directory as a project. Registering it in the list is the caller's next
+    call, so creating and listing stay independent.
+    """
+    body = await request.json()
+    path = str(body.get('path') or '').strip()
+    if not path:
+        raise HTTPException(400, detail='path is required')
+    registry = request.app.state.projects
+    try:
+        return registry.create(path, name=body.get('name'))
+    except ValueError as cause:
+        raise HTTPException(400, detail=str(cause)) from cause
+
+
+@router.get('/api/projects/{project_id:path}')
+async def get_project(project_id: str, request: Request) -> Dict[str, Any]:
+    summary = request.app.state.projects.summarize()
+    entry = next((item for item in summary if item['path'] == project_id), None)
+    if entry is None:
+        raise HTTPException(404, detail=f'project not in the list: {project_id}')
+    counts = {
+        'jobs': entry.get('job_count') or 0,
+        'archived': 0,
+        'sessions': 0,
+    }
+    return {
+        'project': translate_module.project_from_relion(entry),
+        'counts': counts,
+    }
+
+
+@router.put('/api/projects/{project_id:path}')
+async def rename_project(project_id: str, request: Request) -> Dict[str, Any]:
+    body = await request.json()
+    name = str(body.get('name') or '').strip()
+    if not name:
+        raise HTTPException(400, detail='name is required')
+    registry = request.app.state.projects
+    entry = next(
+        (item for item in registry.summarize() if item['path'] == project_id), None
+    )
+    if entry is None:
+        raise HTTPException(404, detail=f'project not in the list: {project_id}')
+    try:
+        updated = registry.add(project_id, name=name)
+    except ValueError as cause:
+        raise HTTPException(400, detail=str(cause)) from cause
+    return translate_module.project_from_relion(updated.as_dict())
+
+
+@router.delete('/api/projects/{project_id:path}')
+async def remove_project(project_id: str, request: Request) -> Dict[str, Any]:
+    """Remove a project from the list. Its directory is untouched."""
+    if not request.app.state.projects.remove(project_id):
+        raise HTTPException(404, detail=f'project not in the list: {project_id}')
+    return {'removed': project_id}

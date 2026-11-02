@@ -5,11 +5,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 
-import { Input } from '../ui/input';
 import { signature, type Data } from '../node-inspector/model';
-import { errorText, tx } from '../../lib/i18n';
+import { tx } from '../../lib/i18n';
 import { ValueEditor } from './value-editor';
 import { clearEditorErrors, useFormSession } from './session';
 import { Select } from './field';
@@ -70,144 +69,6 @@ function useRows(
     }
   };
   return { rows, update, error: session.buffers[key]?.invalid };
-}
-export function RecordsEditor({
-  value,
-  columns,
-  onChange,
-  bufferKey,
-  label = tx('规则'),
-}: {
-  value: Data[];
-  columns: RecordColumn[];
-  onChange: (value: Data[]) => void;
-  bufferKey: string;
-  label?: string;
-}) {
-  const { rows, update, error } = useRows(value, onChange, bufferKey, columns);
-  const move = (index: number, offset: number) => {
-    const next = [...rows];
-    [next[index], next[index + offset]] = [next[index + offset], next[index]];
-    update(next);
-  };
-  return (
-    <div className="nf-collection">
-      {rows.map((row, index) => (
-        <div key={row.id} className="nf-collection-row">
-          <div className="nf-collection-actions">
-            <span>
-              {label} {index + 1}
-            </span>
-            <button
-              type="button"
-              className="nf-icon-button"
-              aria-label={tx('上移{0} {1}', [label, index + 1])}
-              disabled={!index}
-              onClick={() => move(index, -1)}
-            >
-              <ArrowUp size={13} />
-            </button>
-            <button
-              type="button"
-              className="nf-icon-button"
-              aria-label={tx('下移{0} {1}', [label, index + 1])}
-              disabled={index === rows.length - 1}
-              onClick={() => move(index, 1)}
-            >
-              <ArrowDown size={13} />
-            </button>
-            <button
-              type="button"
-              className="nf-icon-button"
-              aria-label={tx('移除{0} {1}', [label, index + 1])}
-              onClick={() => update(rows.filter((r) => r.id !== row.id))}
-            >
-              <Trash2 size={13} />
-            </button>
-          </div>
-          <div className="nf-collection-columns">
-            {columns.map((column) => {
-              const change = (value: string) =>
-                update(
-                  rows.map((r) =>
-                    r.id === row.id ? { ...r, value: { ...r.value, [column.key]: value } } : r
-                  )
-                );
-              return (
-                <label key={column.key}>
-                  <span>
-                    {column.label}
-                    {column.required ? ' *' : ''}
-                  </span>
-                  {column.choices ? (
-                    <Select
-                      aria-label={`${label} ${index + 1} ${column.label}`}
-                      value={String(row.value[column.key] ?? column.choices[0]?.[0] ?? '')}
-                      onValueChange={(selectedValue) => change(selectedValue)}
-                      options={[
-                        ...(column.choices.map(([value, label]) => ({
-                          value: value,
-                          label: label,
-                        })) || []),
-                      ]}
-                    />
-                  ) : (
-                    <Input
-                      aria-label={`${label} ${index + 1} ${column.label}`}
-                      value={String(row.value[column.key] ?? '')}
-                      placeholder={column.key === 'path' ? tx('空路径表示当前项') : ''}
-                      onChange={(e) => change(e.target.value)}
-                    />
-                  )}
-                </label>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-      {error && (
-        <p role="alert" className="nf-error">
-          {errorText(error)}
-        </p>
-      )}
-      <button
-        type="button"
-        className="nf-text-action"
-        onClick={() =>
-          update([
-            ...rows,
-            {
-              id: crypto.randomUUID(),
-              value: Object.fromEntries(columns.map((c) => [c.key, c.choices?.[0]?.[0] ?? ''])),
-            },
-          ])
-        }
-      >
-        <Plus size={14} />
-        {tx('添加')}
-        {label}
-      </button>
-    </div>
-  );
-}
-export function PathsEditor({
-  value,
-  onChange,
-  bufferKey,
-}: {
-  value: string[];
-  onChange: (value: string[]) => void;
-  bufferKey: string;
-}) {
-  return (
-    <RecordsEditor
-      value={value.map((path) => ({ path }))}
-      onChange={(rows) => onChange(rows.map((row) => String(row.path)))}
-      bufferKey={bufferKey}
-      label={tx('路径')}
-      columns={[{ key: 'path', label: tx('字段路径'), required: true }]}
-    />
-  );
 }
 export function PredicateEditor({
   value,

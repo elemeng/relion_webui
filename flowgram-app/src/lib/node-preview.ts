@@ -14,37 +14,15 @@ export interface NodePreviewRow {
   tokens: NodePreviewToken[];
 }
 
-export const summaryFields: Record<string, string[]> = {
-  'data.map-fields': ['mapping', 'inputsValues.preserve'],
-  'data.select-fields': ['inputsValues.operation', 'paths'],
-  'data.merge-objects': ['inputsValues.depth', 'inputsValues.conflict'],
-  'data.get-value': ['inputsValues.path', 'inputsValues.data'],
-  'data.default': ['inputsValues.replace', 'inputsValues.fallback'],
-  'data.convert': ['inputsValues.target', 'inputsValues.value'],
-  'data.parse-json': ['inputsValues.text', 'inputsValues.validate'],
-  'data.stringify-json': ['inputsValues.value', 'inputsValues.indent'],
-  'data.validate': ['schema', 'inputsValues.failure'],
-  'list.filter': ['predicate', 'inputsValues.items'],
-  'list.map': ['mapping', 'inputsValues.items'],
-  'list.sort': ['keys', 'inputsValues.items'],
-  'list.deduplicate': ['keys', 'inputsValues.keep'],
-  'list.slice': ['inputsValues.operation', 'inputsValues.length'],
-  'list.flatten': ['inputsValues.depth', 'inputsValues.items'],
-  'list.batch': ['inputsValues.size', 'inputsValues.remainder'],
-  'list.group': ['keys', 'inputsValues.items'],
-  'list.aggregate': ['keys', 'metrics'],
-  'list.concat': ['inputsValues.lists'],
-  'list.join': ['inputsValues.mode', 'inputsValues.leftKey'],
-  'list.set': ['inputsValues.operation', 'keys'],
-  'text.transform': ['inputsValues.operation', 'inputsValues.text'],
-  'text.regex': ['inputsValues.operation', 'inputsValues.pattern'],
-  'text.template': ['inputsValues.format', 'inputsValues.template'],
-  'value.math': ['inputsValues.operation', 'inputsValues.operands'],
-  'value.datetime': ['inputsValues.operation', 'inputsValues.timezone'],
-  'value.encode': ['inputsValues.operation', 'inputsValues.encoding'],
-  'value.hash': ['inputsValues.algorithm', 'inputsValues.encoding'],
-  'document.chunk': ['inputsValues.mode', 'inputsValues.size'],
-};
+/**
+ * Which fields a step node's card previews.
+ *
+ * Empty: every remaining built-in step node (condition, delay) has its own
+ * presentation branch, and RELION job nodes fall back to their first two
+ * visible fields - so there is no table to keep here any more. The 29 data
+ * nodes this used to describe are gone.
+ */
+export const summaryFields: Record<string, string[]> = {};
 
 // Geometry is derived from declared content slots, never DOM measurements or locale.
 export function previewRowCount(type: string): number {

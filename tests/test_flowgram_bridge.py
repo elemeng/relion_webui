@@ -328,3 +328,90 @@ def test_merge_applies_edits_without_losing_pipeline_nodes(tmp_path):
     assert imported['data']['inputsValues']['nr_mpi']['content'] == 8
     # The draft comes after the pipeline's own nodes.
     assert merged['schema']['nodes'][-1]['id'] == 'draft:x'
+
+
+# --------------------------------------------------------------------- forms
+
+
+def test_forms_map_relion_kinds_to_flowgram_editors():
+    """The mapping lives in one place now: Python, not TypeScript.
+
+    Every RELION option kind has exactly one FlowGram control, and a field the
+    form cannot render is a bug - the canvas would show an empty row.
+    """
+    from relion_webui.flowgram import forms
+
+    cases = {
+        'boolean': ('value', 'boolean'),
+        'radio': ('select', None),
+        'slider': ('number', 'number'),
+        'path': ('path-input', None),
+        'input_node': ('node-input', None),
+        'string': ('value', 'string'),
+    }
+    for kind, (editor, value_type) in cases.items():
+        field = {
+            'variable': 'v',
+            'label': 'V:',
+            'kind': kind,
+            'options': [{'value': 'a', 'label': 'A'}] if kind == 'radio' else None,
+            'min': 0,
+            'max': 10,
+        }
+        definition = forms.field_definition(field, required=False)
+        assert definition['editor'] == editor, kind
+        if value_type is not None:
+            assert definition['type'] == value_type, kind
+    # Labels lose RELION's trailing colon, and keys sit under inputsValues.
+    definition = forms.field_definition({'variable': 'nr_mpi', 'label': 'Number: ', 'kind': 'slider'}, False)
+    assert definition['label'] == 'Number'
+    assert definition['key'] == 'inputsValues.nr_mpi'
+
+
+def test_forms_order_sections_io_first_and_resources_last():
+    """A form reads I/O -> algorithm -> resources, whatever the C++ table says."""
+    from relion_webui.flowgram import forms
+
+    job = {
+        'job_type': 'x',
+        'fields': [
+            {'variable': 'nr_mpi', 'label': 'MPI', 'kind': 'slider'},
+            {'variable': 'box', 'label': 'Box', 'kind': 'slider'},
+            {'variable': 'in_tiltseries', 'label': 'In', 'kind': 'input_node',
+             'node_type': 'TomogramGroupMetadata.star.relion'},
+        ],
+        'tabs': [
+            {'title': 'Run', 'fields': ['nr_mpi']},
+            {'title': 'CTFFIND-4.1', 'fields': ['box']},
+            {'title': 'I/O', 'fields': ['in_tiltseries']},
+        ],
+    }
+    definition = forms.node_definition(job)
+    assert [field['section'] for field in definition['fields']] == [
+        'I/O',
+        'CTFFIND-4.1',
+        '计算资源',
+    ]
+
+
+def test_forms_put_the_advanced_flag_list_on_other_args():
+    """`other_args` is the advanced panel; its tip names what it accepts."""
+    from relion_webui.flowgram import forms
+
+    job = {
+        'job_type': 'x',
+        'fields': [
+            {'variable': 'other_args', 'label': 'Other', 'kind': 'string'},
+        ],
+        'tabs': [{'title': 'Run', 'fields': ['other_args']}],
+        'cli_options': [
+            {'flag': '--wanted', 'usage': 'does a thing', 'used_by_form': False},
+            {'flag': '--covered', 'usage': 'in the form', 'used_by_form': True},
+            {'flag': '--hidden', 'usage': 'internal', 'hidden': True},
+        ],
+    }
+    field = forms.node_definition(job)['fields'][0]
+    assert '--wanted' in field['tip']
+    assert 'does a thing' in field['tip']
+    assert '--covered' not in field['tip']
+    assert '--hidden' not in field['tip']

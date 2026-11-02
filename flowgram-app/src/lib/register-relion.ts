@@ -11,30 +11,56 @@
  * - with the palette, grouped by the agent's own picker categories, so "add
  *   node" offers RELION's job types as the primary vocabulary.
  *
- * Called once at boot, before any pipeline renders. The data comes from
- * ``/fg/api/job-schema`` - the agent serves it, and the projection there uses
- * the same tables, so the canvas and the server cannot disagree about which
- * fields a job has.
+ * Called once at boot, before any pipeline renders. Both payloads come from
+ * `/fg/api/job-schema`: the agent owns the mapping from RELION options to
+ * FlowGram editors (backend/relion_webui/flowgram/forms.py), so there is one
+ * definition of what a job's form looks like, not two that can drift.
  */
 import { api } from './api';
-import { registerNodeDefinitions } from '../components/node-inspector/definitions';
-import { registerRelionCatalogEntries } from './node-catalog';
 import {
-  RELION_NODE_GROUP,
-  RELION_OTHER_GROUP,
-  jobDefinition,
-  nodeTypeFor,
-  paletteDescription,
-  paletteTitle,
-  type RelionJobType,
-} from './relion-job-definitions';
+  registerNodeDefinitions,
+  type NodeDefinition,
+} from '../components/node-inspector/definitions';
+import { registerRelionCatalogEntries } from './node-catalog';
 
-let registered = false;
+/** RELION category -> palette group, in the palette's own vocabulary. */
+const GROUP: Record<string, string> = {
+  'Import and preprocess': '导入与预处理',
+  'Align and reconstruct': '对齐与重建',
+  'Enhance and pick': '增强与拾取',
+  'Subtomogram averaging': '亚颗粒平均',
+  'Refine and reconstruct': '精修与重建',
+  Select: '筛选',
+  'Post-process and interpret': '后处理与解读',
+  Utilities: '工具',
+};
+const OTHER_GROUP = '其它';
+
+interface SchemaJob {
+  job_type: string;
+  title: string;
+  fields: Array<{
+    variable: string;
+    default?: unknown;
+    help?: string;
+    kind?: string;
+    required?: boolean;
+  }>;
+  required?: string[];
+}
 
 interface JobSchemaResponse {
-  jobs: RelionJobType[];
+  jobs: SchemaJob[];
+  /**
+   * Node definitions, keyed by `relion.<job_type>`. What arrives is the data
+   * half - fields, tips, sections - because `output` is a function; the caller
+   * supplies the identity output below.
+   */
+  definitions?: Record<string, Omit<NodeDefinition, 'output'>>;
   categories?: Array<{ title: string; job_types: string[] }>;
 }
+
+let registered = false;
 
 export async function registerRelionJobs(): Promise<void> {
   if (registered) return;
@@ -42,51 +68,57 @@ export async function registerRelionJobs(): Promise<void> {
 
   try {
     const schema = await api<JobSchemaResponse>('/api/job-schema');
-    const definitions = Object.fromEntries(
-      schema.jobs.map((job) => [nodeTypeFor(job.job_type), jobDefinition(job)]),
-    );
-    registerNodeDefinitions(definitions);
+    if (schema.definitions) {
+      // The agent sends the data half of a node definition; `output` is a
+      // function and cannot cross JSON. A RELION job's outputs are pipeline
+      // nodes, not a value this node computes, so there is nothing to declare.
+      registerNodeDefinitions(
+        Object.fromEntries(
+          Object.entries(schema.definitions).map(([type, definition]) => [
+            type,
+            {
+              ...definition,
+              output: () => ({ type: 'object', properties: {} }),
+            },
+          ]),
+        ),
+      );
+    }
 
-    // The palette's RELION groups come from the agent's own picker categories;
-    // a job type absent from every category falls back to 其它.
     const categories = schema.categories ?? [];
+    const groupOrder = Object.values(GROUP);
+    const categoryOf = new Map<string, string>();
     const orderOf = new Map<string, number>();
     categories.forEach((category, index) => {
+      const group = GROUP[category.title] ?? OTHER_GROUP;
       for (const [position, jobType] of category.job_types.entries()) {
+        categoryOf.set(jobType, group);
         orderOf.set(
           jobType,
-          Object.values(RELION_NODE_GROUP).indexOf(
-            RELION_NODE_GROUP[category.title] ?? RELION_OTHER_GROUP,
-          ) *
-            1000 +
-            index * 100 +
-            position,
+          groupOrder.indexOf(group) * 1000 + index * 100 + position,
         );
       }
     });
-    const categoryOf = new Map(
-      categories.flatMap((category) =>
-        category.job_types.map((jobType) => [jobType, category.title] as const),
-      ),
-    );
+
     registerRelionCatalogEntries(
-      schema.jobs.map((job, position) => {
-        const category = categoryOf.get(job.job_type);
-        const group = RELION_NODE_GROUP[category ?? ''] ?? RELION_OTHER_GROUP;
-        return {
-          type: nodeTypeFor(job.job_type),
-          title: paletteTitle(job),
-          group,
-          description: paletteDescription(job),
-          order: orderOf.get(job.job_type) ?? categories.length * 1000 + position,
-          defaults: Object.fromEntries(
-            job.fields.map((field) => [
-              field.variable,
-              { type: 'constant', content: field.default ?? '' },
-            ]),
-          ),
-        };
-      }),
+      schema.jobs.map((job, position) => ({
+        type: `relion.${job.job_type}`,
+        title: job.title || job.job_type,
+        group: categoryOf.get(job.job_type) ?? OTHER_GROUP,
+        // The first field's help is the most useful one-liner a palette row
+        // has; falling back to the parameter count keeps rows uniform.
+        description:
+          (job.fields.find((field) => field.help && field.kind !== 'boolean')?.help ?? '')
+            .trim()
+            .slice(0, 90) || `${job.fields.length} 个参数`,
+        order: orderOf.get(job.job_type) ?? categories.length * 1000 + position,
+        defaults: Object.fromEntries(
+          job.fields.map((field) => [
+            field.variable,
+            { type: 'constant', content: field.default ?? '' },
+          ]),
+        ),
+      })),
     );
   } catch (cause) {
     // A missing schema must not stop the app booting; pipelines still render,

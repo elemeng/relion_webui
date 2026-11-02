@@ -13,7 +13,7 @@ import { FormSessionProvider, useFormSession } from '../form/session';
 import { FormField, FormSection, Select } from '../form/field';
 import { ConditionBuilder, MappingEditor, SchemaEditor } from '../form/editors';
 import { BranchEditor, BranchMappingsEditor, NodeLinkEditor } from '../form/control-editors';
-import { PathsEditor, PredicateEditor, RecordsEditor } from '../form/collection-editors';
+import { PredicateEditor } from '../form/collection-editors';
 import { PathInput, SlotPicker } from '../form/relion-pickers';
 import { useProject } from '../../lib/project-context';
 import { tx } from '../../lib/i18n';
@@ -254,22 +254,6 @@ export function NodeForm({ onChange }: { onChange: (data: Data) => void }) {
             label={field.label}
             min={field.min}
             max={field.max}
-          />
-        );
-        break;
-      case 'paths':
-        editor = (
-          <PathsEditor value={(raw || []) as string[]} onChange={update} bufferKey={field.key} />
-        );
-        break;
-      case 'records':
-        editor = (
-          <RecordsEditor
-            value={(raw || []) as Data[]}
-            columns={field.columns || []}
-            onChange={update}
-            bufferKey={field.key}
-            label={field.label}
           />
         );
         break;

@@ -5,14 +5,12 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { atomicNodes } from './atomic-nodes';
 import { controlNodes } from './control-nodes';
 import {
   errorText, getLanguagePreference, getLocale, getSystemLocale, localized, readLanguagePreference,
   resolveLocale, setLanguagePreference, t, tx,
 } from './i18n';
 import messages from './locales/messages.json';
-import atomicCatalog from '../../catalog/atomic-nodes.json';
 import controlCatalog from '../../catalog/control-nodes.json';
 
 const storage = new Map<string, string>();
@@ -67,11 +65,12 @@ describe('interface language and agent contract isolation', () => {
     expect(view.title).toBe('Map list');
     expect(t('settings')).toBe('Settings');
     expect(tx('分支 {0}', ['用户值'])).toBe('Branch 用户值');
-    const fields = atomicNodes[0].fields;
-    expect(fields[0].label).not.toMatch(/\p{Script=Han}/u);
+    const fields = controlNodes[0].fields;
+    const label = () => (fields[0].label as string);
+    expect(label()).not.toMatch(/\p{Script=Han}/u);
     language('zh-CN');
     expect(view.title).toBe('映射列表');
-    expect(fields[0].label).toMatch(/\p{Script=Han}/u);
+    expect(label()).toMatch(/\p{Script=Han}/u);
     expect(view.type).toBe(original.type);
     expect(view.defaults).toBe(original.defaults);
     expect(structuredClone(view.defaults)).toEqual(original.defaults);
@@ -79,8 +78,8 @@ describe('interface language and agent contract isolation', () => {
     expect(original.title).toBe('映射列表');
   });
   it('keeps every shared node contract English and its execution defaults identical across locales', () => {
-    expect(JSON.stringify([...atomicCatalog, ...controlCatalog])).not.toMatch(/\p{Script=Han}/u);
-    for (const node of [...atomicNodes, ...controlNodes]) {
+    expect(JSON.stringify(controlCatalog)).not.toMatch(/\p{Script=Han}/u);
+    for (const node of controlNodes) {
       language('en');
       const defaults = JSON.stringify(node.defaults);
       const executionFields = () => node.fields.map((field) => ({

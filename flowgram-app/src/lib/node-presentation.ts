@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: MIT
  */
 import {
-  definitionFor,
   visibleFields,
   type FieldDefinition,
 } from '../components/node-inspector/definitions';
@@ -285,7 +284,6 @@ function fieldTokens(properties: Record<string, Schema>): NodePreviewToken[] {
 export function presentNode(node: WorkflowNode, resources: NodeResources) {
   const data = node.data;
   const inputs = (data.inputsValues || {}) as Data;
-  const scalar = (key: string, fallback?: unknown) => asValue(inputs[key]).content ?? fallback;
   const text = (text: string): NodePreviewToken => ({ kind: 'text', text });
   const row = (tokens: NodePreviewToken[], label?: string): NodePreviewRow => ({ label, tokens });
   const fields = visibleFields(node);
@@ -320,31 +318,6 @@ export function presentNode(node: WorkflowNode, resources: NodeResources) {
     ),
     issue: diagnostic,
   });
-  if (node.type === 'http') {
-    const address = safeRequestAddress(inputs.url, resources);
-    const method = asValue(inputs.method);
-    return present(
-      [
-        row(
-          [
-            method.type === 'constant'
-              ? { kind: 'code', text: String(method.content ?? 'GET') }
-              : previewValue(inputs.method, resources),
-          ],
-          tx('方法')
-        ),
-        row(
-          [
-            asValue(inputs.url).type === 'constant'
-              ? { kind: 'text', text: address }
-              : previewValue(inputs.url, resources),
-          ],
-          tx('地址')
-        ),
-      ],
-      issue || ([tx('请求地址无效'), tx('请配置请求地址')].includes(address) ? address : undefined)
-    );
-  }
   if (['wait', 'delay'].includes(node.type)) {
     const value = asValue(inputs.durationMs);
     const duration =
@@ -361,50 +334,6 @@ export function presentNode(node: WorkflowNode, resources: NodeResources) {
         tx('时长')
       ),
     ]);
-  }
-  if (['llm', 'agent'].includes(node.type)) {
-    const trace = resources.modelTraces?.[node.id];
-    const name = trace?.modelName;
-    const schema =
-      trace?.parameters.outputSchema ||
-      (data.model as { parameters?: { outputSchema?: unknown } })?.parameters?.outputSchema;
-    return present(
-      [
-        row([
-          {
-            kind: 'resource',
-            text: name || (resources.readOnly ? tx('未采集模型配置') : tx('请选择模型')),
-          },
-        ]),
-        row([
-          text(
-            node.type === 'agent'
-              ? `${tx('{0} 个工具', [
-                  definitionFor(node).fields.find((field) => field.editor === 'tools')?.tools
-                    ?.length || 0,
-                ])} · ${tx('最多 {0} 轮', [scalar('maxSteps', 6) as number])}`
-              : schema
-              ? tx('结构化输出')
-              : tx('文本输出')
-          ),
-        ]),
-      ],
-      issue
-    );
-  }
-  if (node.type === 'subworkflow') {
-    const reference = asValue(inputs.workflowId);
-    const name =
-      reference.type === 'constant'
-        ? resources.workflows[String(reference.content)]
-        : describeValue(inputs.workflowId, resources);
-    return present(
-      [
-        row([{ kind: 'resource', text: name || tx('请选择工作流') }]),
-        row([text(tx('运行时固定依赖版本'))]),
-      ],
-      issue || (!name && !resources.readOnly ? tx('请选择工作流') : undefined)
-    );
   }
   if (node.type === 'loop')
     return present([

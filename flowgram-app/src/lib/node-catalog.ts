@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 
 import type { WorkflowNode, WorkflowSchema } from "./types";
-import { atomicNodes } from "./atomic-nodes";
 import { controlNodes, isLoop } from "./control-nodes";
 import { Table2, Wrench } from "lucide-react";
 
@@ -258,20 +257,20 @@ export const nodeCatalog: NodeCatalogEntry[] = localized(([
     ...node,
     hidden: ['assign', 'template', 'json-parse', 'json-stringify', 'text', 'array', 'llm', 'agent', 'http'].includes(node.type),
   }))
-  // RELION 的数据加工在 cryo-ET 流程里没有对应物，所以数据组原生节点只留流程控制；
-  // RELION 作业类型由 registerRelionCatalogEntries 在启动时补充（见下方）。
+  // RELION has no data-processing nodes, so the palette keeps only FlowGram's
+  // control-flow vocabulary; the job types are registered at boot.
   .concat(
-    [...atomicNodes, ...controlNodes].map((node) => ({
-      type: node.type, title: node.title, group: node.group, description: node.description,
+    controlNodes.map((node) => ({
+      type: node.type,
+      title: node.title,
+      group: node.group,
+      description: node.description,
       tone: 'blue',
-      icon: node.group === tx("流程控制") ? GitBranch : node.group === tx("列表与表格") ? ListFilter : node.group === tx("文本与数值") ? Type : Braces,
+      icon: node.group === tx('流程控制') ? GitBranch : Braces,
       defaults: node.defaults,
-      hidden:
-        node.group === tx('对象与数据') ||
-        node.group === tx('列表与表格') ||
-        node.group === tx('文本与数值'),
     })),
-  ));
+  ),
+);
 export function nodeSpec(type: string) {
   if (type === "block-start") return { ...nodeCatalog[0], title: tx("当前项") };
   if (type === "block-end") return { ...nodeCatalog[1], title: tx("本项结果") };
