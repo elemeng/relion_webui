@@ -267,6 +267,18 @@ export function translate(method: string, path: string): { kind: string; id?: st
   if (workflowRun && method === 'POST') {
     return { kind: 'workflow-run', id: decodeURIComponent(workflowRun[1] ?? '') };
   }
+  const workflowSave = /^\/api\/workflows\/(.+)$/.exec(path);
+  if (workflowSave && method === 'PUT') {
+    return { kind: 'workflow-save', id: decodeURIComponent(workflowSave[1] ?? '') };
+  }
+  const workflowArchive = /^\/api\/workflows\/(.+)\/archive$/.exec(path);
+  if (workflowArchive && method === 'POST') {
+    return { kind: 'workflow-archive', id: decodeURIComponent(workflowArchive[1] ?? '') };
+  }
+  const workflowValidate = /^\/api\/workflows\/(.+)\/validate$/.exec(path);
+  if (workflowValidate && method === 'POST') {
+    return { kind: 'workflow-validate', id: decodeURIComponent(workflowValidate[1] ?? '') };
+  }
   const workflow = /^\/api\/workflows\/(.+)$/.exec(path);
   if (workflow && method === 'GET') {
     return { kind: 'workflow', id: decodeURIComponent(workflow[1] ?? '') };
@@ -279,6 +291,7 @@ export function translate(method: string, path: string): { kind: string; id?: st
   if (run && method === 'GET') {
     return { kind: 'run', id: decodeURIComponent(run[1] ?? '') };
   }
+  if (path === '/api/workflows' && method === 'POST') return { kind: 'workflow-create' };
   if (path === '/api/workflows') return { kind: 'workflow-list' };
 
   return null;
@@ -504,4 +517,121 @@ function jobForLabel(typeLabel: string) {
   // picks the real variant in the inspector.
   const family = jobType.split('_').slice(0, 3).join('_');
   return jobSchema?.jobs.find((candidate) => candidate.job_type.startsWith(`${family}_`));
+}
+
+/* --------------------------------------------------------------- workspace */
+
+interface DraftLike {
+  id: string;
+  type: string;
+  meta?: { position?: { x: number; y: number } };
+  data: Record<string, unknown>;
+}
+
+interface EdgeLike {
+  id?: string;
+  sourceNodeID: string;
+  targetNodeID: string;
+  sourcePortID?: string;
+  targetPortID?: string;
+}
+
+/**
+ * A workspace: the project's live pipeline, plus what the canvas adds.
+ *
+ * The pipeline is read fresh on every call, so a job queued in RELION's own GUI
+ * appears here too. The overlay contributes only what the project cannot know:
+ * draft nodes (id `draft:…`, not queued yet), their edges, and the canvas
+ * edits to pipeline nodes. Merging is by node id, so promotion of a draft (the
+ * queue reserving a process name) collapses the two into one node without any
+ * bookkeeping here.
+ */
+export function mergeWorkspace(
+  workflow: {
+    id: string;
+    projectId: string;
+    name: string;
+    revision: number;
+    schema: { nodes: DraftLike[]; edges: EdgeLike[] };
+    updatedAt: string;
+  },
+  workspace: {
+    id: string;
+    name: string;
+    revision: number;
+    nodes: DraftLike[];
+    edges: EdgeLike[];
+    titles?: Record<string, string>;
+    paramEdits?: Record<string, Record<string, unknown>>;
+    updatedAt: string;
+  },
+): {
+  id: string;
+  projectId: string;
+  name: string;
+  revision: number;
+  schema: { nodes: DraftLike[]; edges: EdgeLike[] };
+  updatedAt: string;
+} {
+  const edits = workspace.paramEdits ?? {};
+  const titles = workspace.titles ?? {};
+  const nodes = workflow.schema.nodes.map((node) => {
+    if (node.id === EXECUTION_NODE_ID) return node;
+    const parameterEdits = edits[node.id];
+    const values = (node.data.inputsValues ?? {}) as Record<string, unknown>;
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        title: titles[node.id] ?? node.data.title,
+        ...(parameterEdits
+          ? {
+              inputsValues: {
+                ...values,
+                ...Object.fromEntries(
+                  Object.entries(parameterEdits).map(([key, content]) => [
+                    key,
+                    { type: 'constant', content },
+                  ]),
+                ),
+              },
+            }
+          : {}),
+      },
+    };
+  });
+  // Draft nodes keep their canvas position; a draft has no pipeline layout to
+  // derive it from, so the stored position is the only one there is.
+  const drafts = workspace.nodes.map((node) => ({
+    ...node,
+    data: {
+      ...node.data,
+      title: titles[node.id] ?? node.data.title,
+      ...(edits[node.id]
+        ? {
+            inputsValues: {
+              ...((node.data.inputsValues ?? {}) as Record<string, unknown>),
+              ...Object.fromEntries(
+                Object.entries(edits[node.id]!).map(([key, content]) => [
+                  key,
+                  { type: 'constant', content },
+                ]),
+              ),
+            },
+          }
+        : {}),
+    },
+  }));
+  return {
+    ...workflow,
+    id: workspace.id,
+    name: workspace.name,
+    revision: workspace.revision,
+    schema: {
+      // The execution start node stays first; draft nodes follow the pipeline.
+      nodes: [...nodes, ...drafts],
+      edges: [...workflow.schema.edges, ...(workspace.edges as EdgeLike[])],
+    },
+    updatedAt: workspace.updatedAt,
+  };
 }

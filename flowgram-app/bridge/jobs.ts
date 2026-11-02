@@ -125,7 +125,12 @@ function looksMultiline(field: RelionField): boolean {
 export function fieldDefinition(field: RelionField, required: boolean): FieldDefinition {
   const help = field.help?.trim() || undefined;
   const base = {
-    key: field.variable,
+    // RELION options live under `data.inputsValues`, the same place FlowGram's
+    // own nodes keep theirs. A bare key would make the form write
+    // `data.<variable>` and the canvas read `data.inputsValues.<variable>` -
+    // an edit would silently do nothing.
+    key: `inputsValues.${field.variable}`,
+    variable: field.variable,
     label: cleanLabel(field.label || field.variable),
     // RELION's help is a paragraph per option; inline it bury the value, so
     // it travels as `tip` (hover next to the label). A short first clause
@@ -176,6 +181,11 @@ export function fieldDefinition(field: RelionField, required: boolean): FieldDef
         ...(looksMultiline(field) ? { multiline: true } : {}),
       };
   }
+}
+
+/** The RELION variable a field key names (`inputsValues.nr_mpi` -> `nr_mpi`). */
+function variableOf(key: string): string {
+  return key.startsWith('inputsValues.') ? key.slice('inputsValues.'.length) : key;
 }
 
 /**
@@ -260,8 +270,8 @@ export function jobDefinition(
         index,
       }))
       .sort((a, b) => {
-        const sectionA = sectionOf(a.definition.key);
-        const sectionB = sectionOf(b.definition.key);
+        const sectionA = sectionOf(variableOf(a.definition.key));
+        const sectionB = sectionOf(variableOf(b.definition.key));
         const rankA = sectionA === undefined ? -1 : (rank.get(sectionA) ?? order.length);
         const rankB = sectionB === undefined ? -1 : (rank.get(sectionB) ?? order.length);
         return rankA - rankB || a.index - b.index;
@@ -271,10 +281,10 @@ export function jobDefinition(
         // other_args collects the flags this form does not expose; its tip
         // is where their vocabulary lives.
         tip:
-          definition.key === 'other_args' && advancedTip
+          variableOf(definition.key) === 'other_args' && advancedTip
             ? [definition.tip, advancedTip].filter(Boolean).join('\n\n')
             : definition.tip,
-        section: sectionOf(definition.key),
+        section: sectionOf(variableOf(definition.key)),
       })),
     output: () => ({ type: 'object', properties: {} }),
     aliases: [job.title, job.job_type],

@@ -83,6 +83,8 @@ interface JournalRun {
   logOffsets: Map<string, number>;
   /** The last state we emitted per entry, so transitions emit exactly once. */
   seenStates: Map<string, string>;
+  /** Queue entry ids this run submitted; empty means "watch the whole project". */
+  mine: Set<string>;
   finished: boolean;
 }
 
@@ -111,27 +113,30 @@ export function openRun(
   runId: string,
   projectId: string,
   inputs: Record<string, unknown>,
+  options: { workflowId?: string; entries?: string[]; revision?: number } = {},
 ): void {
   const existing = runs.get(runId);
   const run: RunRecord = existing
     ? { ...existing.run, status: 'running', error: null }
     : {
         id: runId,
-        workflowId: `pipeline:${projectId}`,
+        workflowId: options.workflowId ?? `pipeline:${projectId}`,
         projectId,
         status: 'running',
         inputs,
         outputs: null,
         error: null,
-        revision: 1,
+        revision: options.revision ?? 1,
         createdAt: now(),
       };
+  const mine = new Set(options.entries ?? existing?.mine ?? []);
   runs.set(runId, {
     run,
     events: existing?.events ?? [],
     entries: existing?.entries ?? new Map(),
     logOffsets: existing?.logOffsets ?? new Map(),
     seenStates: existing?.seenStates ?? new Map(),
+    mine,
     finished: false,
   });
   if (!existing) append(runId, event('run_started', runId, { inputs }));
@@ -233,18 +238,25 @@ async function tick(): Promise<void> {
     return;
   }
 
-  const live = snapshot.entries.filter(
-    (entry) => runs.has(runIdOf(entry.project)) || !TERMINAL.has(entry.state),
-  );
-  for (const entry of live) {
-    const runId = runIdOf(entry.project);
-    if (!runs.has(runId)) {
-      // A job queued outside this app (the desktop GUI enqueues too, and the
-      // queue survives restarts). Watch it under a derived id so the canvas
-      // still sees it - the run list simply gains one entry.
+  for (const entry of snapshot.entries) {
+    // Which journal owns this entry: the run that submitted it, else a
+    // per-project fallback for jobs queued from outside this app (the desktop
+    // GUI enqueues too, and the queue survives restarts). Attribution by entry
+    // id, not by project, is what lets two workspaces over one project each
+    // see only their own jobs.
+    const owner = [...runs.values()].find((journal) => journal.mine.has(entry.id));
+    const runId = owner?.run.id ?? runIdOf(entry.project);
+    if (!owner && runs.has(runId) && !runs.get(runId)!.mine.size) {
+      // The project fallback already exists; keep feeding it.
+    } else if (!owner && TERMINAL.has(entry.state)) {
+      // A finished entry nobody owns and no fallback is watching: nothing to
+      // report, and creating a run for it would invent history.
+      continue;
+    } else if (!owner && !runs.has(runId)) {
       openRun(runId, entry.project, {});
     }
     const journal = runs.get(runId)!;
+    if (owner && !owner.mine.has(entry.id)) continue;
     const previous = journal.entries.get(entry.id);
     journal.entries.set(entry.id, entry);
     const known = journal.seenStates.get(entry.id);

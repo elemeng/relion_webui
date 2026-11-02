@@ -234,7 +234,7 @@ export function NodeForm({ onChange }: { onChange: (data: Data) => void }) {
             slots={
               <SlotPicker
                 jobType={node.type.replace(/^relion\./, '')}
-                variable={field.key}
+                variable={field.key.replace(/^inputsValues\./, '')}
                 projectId={projectId}
                 label={tx('选择输入')}
                 choose={(chosen) => update({ type: 'constant', content: chosen })}

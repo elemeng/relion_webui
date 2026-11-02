@@ -621,7 +621,9 @@ export function WorkflowPanel({
       // collects what to run and on which GPU; each job's own parameters were
       // edited on the node and live in its `inputsValues`.
       const parameters: Record<string, Record<string, unknown>> = {};
-      for (const node of workflow.schema.nodes) {
+      // Use the *live* canvas, not the last saved workflow: a node just added
+      // or edited has to be part of the run it is being asked for.
+      for (const node of schema.nodes) {
         const values = (node.data?.inputsValues ?? {}) as Record<string, unknown>;
         if (!Object.keys(values).length) continue;
         parameters[node.id] = Object.fromEntries(
@@ -631,8 +633,15 @@ export function WorkflowPanel({
           ]),
         );
       }
+      // "selected" and "job" scopes refer to the node the canvas has selected;
+      // the run dialog cannot know it, so it travels with the intent.
+      const selectedNodeId =
+        inspector ?? (selectedIds.length === 1 ? selectedIds[0] : undefined);
       const result = await api<Run>(`/api/workflows/${workflow.id}/run`, 'POST', {
-        inputs,
+        inputs: {
+          ...(inputs as Record<string, unknown>),
+          ...(selectedNodeId ? { selectedNodeId } : {}),
+        },
         parameters,
         ...(debugOrigin ? { origin: debugOrigin } : {}),
       });

@@ -277,9 +277,27 @@ export function nodeSpec(type: string) {
   if (type === "block-end") return { ...nodeCatalog[1], title: tx("本项结果") };
   return nodeCatalog.find((node) => node.type === type) || nodeCatalog[2];
 }
+/** A RELION palette entry's defaults are its parameter table, not `data`. */
+function relionNodeData(spec: NodeCatalogEntry): Record<string, unknown> {
+  const defaults = structuredClone(spec.defaults);
+  if (!spec.type.startsWith('relion.')) return { title: spec.title, ...defaults };
+  // `relionPaletteEntries` fills `defaults` with `{variable: binding}`; the
+  // inspector reads and writes them under `data.inputsValues`.
+  return {
+    title: spec.title,
+    inputsValues: defaults,
+    relion: { process: null, kind: '', pipelineStatus: 'Scheduled', jobNumber: null },
+    outputs: { type: 'object', properties: {} },
+  };
+}
+
 export function createNode(type: string, index: number): WorkflowNode {
   const spec = nodeSpec(type);
-  const id = `${type.replace(/[^a-zA-Z0-9_-]/g, "_")}_${crypto.randomUUID().slice(0, 8)}`;
+  // Draft ids are namespaced: a node that has not been queued has no pipeline
+  // process yet, and the prefix is what the bridge uses to tell the two apart
+  // (see bridge/workspaces.ts). When the queue promotes it, the id becomes the
+  // reserved process name.
+  const id = `draft:${type.replace(/[^a-zA-Z0-9_.-]/g, "_")}_${crypto.randomUUID().slice(0, 8)}`;
   const node: WorkflowNode = {
     id,
     type,
@@ -289,7 +307,7 @@ export function createNode(type: string, index: number): WorkflowNode {
         y: 340 + Math.floor(index / 3) * 180,
       },
     },
-    data: { title: spec.title, ...structuredClone(spec.defaults) },
+    data: relionNodeData(spec),
   };
   if (isLoop(type)) {
     node.blocks = [

@@ -19,6 +19,7 @@ import {
   rememberJobSchema,
   rememberJobTypes,
   translate,
+  mergeWorkspace,
   workflowFromPipeline,
 } from './translate';
 import { agentJson } from './agent';
@@ -31,6 +32,15 @@ import {
   startJournal,
 } from './journal';
 import { layoutPipeline } from '../../frontend/src/lib/layout';
+import {
+  archiveWorkspace,
+  createWorkspace,
+  ensureDefaultWorkspace,
+  getWorkspace,
+  listWorkspaces,
+  promoteDraft,
+  saveWorkspace,
+} from './workspaces';
 
 const AGENT = process.env.RELION_WEB_API ?? 'http://127.0.0.1:8765';
 
@@ -159,6 +169,33 @@ async function pipelineWorkflow(projectPath: string) {
   return workflowFromPipeline(project, graph, layout, graph);
 }
 
+/**
+ * One workspace as the UI sees it: the project's pipeline plus the overlay.
+ *
+ * Every read re-projects the pipeline, so a job queued from the desktop GUI or
+ * the main web UI shows up here without a refresh of anything stored.
+ */
+async function workspaceWorkflow(projectPath: string, workspaceId?: string) {
+  const projection = await pipelineWorkflow(projectPath);
+  const workspace = workspaceId
+    ? await getWorkspace(workspaceId)
+    : await ensureDefaultWorkspace(projectPath);
+  if (!workspace) return projection;
+  return mergeWorkspace(projection as never, workspace as never);
+}
+
+/** The workspace a workflow id names, or the project's default. */
+async function resolveWorkspace(id: string | undefined, fallbackProject?: string) {
+  if (id && !id.startsWith('pipeline:')) {
+    const workspace = await getWorkspace(id);
+    if (workspace) return { workspace, projectId: workspace.projectId };
+  }
+  // `pipeline:<path>` is what an older client (and the projection itself) uses.
+  const projectId = (id ?? fallbackProject ?? '').replace(/^pipeline:/, '');
+  if (!projectId) return null;
+  return { workspace: await ensureDefaultWorkspace(projectId), projectId };
+}
+
 /** Read and parse a JSON request body. */
 function readBody(request: Connect.IncomingMessage): Promise<Record<string, unknown>> {
   return new Promise((resolve) => {
@@ -186,6 +223,7 @@ async function startRun(
   projectPath: string,
   inputs: Record<string, unknown>,
   parameters: Record<string, Record<string, unknown>> = {},
+  workspaceId?: string,
 ) {
   const intent = inputs as unknown as ExecutionIntent;
   // The label -> job-type table is a boot-time cache; a cold run must have
@@ -197,7 +235,30 @@ async function startRun(
     processes: Array<{ name: string; status?: string; type_label?: string }>;
   };
 
-  const wanted = new Set(processesFor(intent, graph.processes));
+  const workspace = workspaceId ? await getWorkspace(workspaceId) : null;
+  // Draft nodes are jobs that do not exist in the pipeline yet. They take part
+  // in `all`/selected/job runs exactly like a process: selecting one queues it,
+  // which is what promotes it.
+  const draftTypes = new Map(
+    (workspace?.nodes ?? []).map((node) => [node.id, node.type] as const),
+  );
+
+  const runnable = [
+    ...graph.processes.map((process) => ({
+      name: process.name,
+      typeLabel: process.type_label ?? '',
+      draft: false,
+      status: process.status,
+    })),
+    ...[...draftTypes].map(([id, type]) => ({
+      name: id,
+      typeLabel: `relion.${type.replace(/^relion\./, '')}`,
+      draft: true,
+      status: 'Scheduled',
+    })),
+  ];
+
+  const wanted = new Set(processesFor(intent, runnable));
   const entryIds: string[] = [];
   const failures: string[] = [];
 
@@ -211,11 +272,13 @@ async function startRun(
     return { runId: runIdFor(projectPath, entryIds), entryIds, failures };
   }
 
-  for (const process of graph.processes) {
-    if (!wanted.has(process.name)) continue;
-    const jobType = jobTypeForLabel(process.type_label ?? '');
+  for (const item of runnable) {
+    if (!wanted.has(item.name)) continue;
+    const jobType = item.draft
+      ? item.typeLabel.replace(/^relion\./, '')
+      : jobTypeForLabel(item.typeLabel);
     if (!jobType) {
-      failures.push(`${process.name}: no job type for ${process.type_label}`);
+      failures.push(`${item.name}: no job type for ${item.typeLabel}`);
       continue;
     }
     try {
@@ -224,20 +287,26 @@ async function startRun(
         body: queueBody(
           projectPath,
           {
-            process: process.name,
+            process: item.name,
             jobType,
             arguments: resolveArguments(
-              parameters[process.name] ?? {},
+              parameters[item.name] ?? {},
               parameters as never,
             ),
           },
           intent,
           [],
         ),
-      })) as { id: string };
+      })) as { id: string; process_name?: string };
       entryIds.push(entry.id);
+      // A promoted draft becomes a pipeline process: the overlay drops it and
+      // re-points its edges at the reserved name, so the next read shows one
+      // node where the user drew one.
+      if (item.draft && workspaceId && entry.process_name) {
+        await promoteDraft(workspaceId, item.name, entry.process_name).catch(() => {});
+      }
     } catch (cause) {
-      failures.push(`${process.name}: ${cause instanceof Error ? cause.message : cause}`);
+      failures.push(`${item.name}: ${cause instanceof Error ? cause.message : cause}`);
     }
   }
 
@@ -271,11 +340,22 @@ export function bridge(): Connect.NextHandleFunction {
           .map(projectFromRelion)
           .map((project) => ({ ...project, path: project.directory }));
 
-        // A workflow per open project, so the sidebar has something to show.
+        // Every workspace of every open project: a workspace is the soft
+        // grouping over one project's pipeline (see bridge/workspaces.ts), so
+        // one project can carry several canvases without touching its files.
         const workflows = [];
         for (const project of projects) {
           try {
-            workflows.push(await pipelineWorkflow(project.directory));
+            const listed = await listWorkspaces(project.directory);
+            if (!listed.length) {
+              // A project nobody has opened yet gets its default workspace, so
+              // the sidebar always offers a canvas for every project.
+              workflows.push(await workspaceWorkflow(project.directory));
+              continue;
+            }
+            for (const workspace of listed) {
+              workflows.push(await workspaceWorkflow(project.directory, workspace.id));
+            }
           } catch {
             // An unreadable project simply contributes no workflow; the
             // project row still appears so the user can see it failed.
@@ -380,7 +460,13 @@ export function bridge(): Connect.NextHandleFunction {
         for (const entry of listing.projects) {
           if (entry.readable === false) continue;
           try {
-            workflows.push(await pipelineWorkflow(entry.path));
+            const listed = await listWorkspaces(entry.path);
+            if (!listed.length) {
+              workflows.push(await workspaceWorkflow(entry.path));
+              continue;
+            }
+            for (const workspace of listed)
+              workflows.push(await workspaceWorkflow(entry.path, workspace.id));
           } catch {
             /* skip */
           }
@@ -389,8 +475,81 @@ export function bridge(): Connect.NextHandleFunction {
         return;
       }
 
+      if (route.kind === 'workflow-create') {
+        const body = await readBody(request);
+        const projectId = String(body.projectId ?? '');
+        const workspace = await createWorkspace(projectId, String(body.name ?? ''));
+        send(201, await workspaceWorkflow(projectId, workspace.id));
+        return;
+      }
+
+      if (route.kind === 'workflow-save') {
+        const body = await readBody(request);
+        const saved = await saveWorkspace(route.id ?? '', {
+          name: body.name === undefined ? undefined : String(body.name),
+          schema: body.schema as never,
+        });
+        if (!saved) {
+          send(404, { error: { code: 'not_found', message: 'unknown workspace' } });
+          return;
+        }
+        // The overlay is saved; the response is the merged view, so the canvas
+        // gets the authoritative revision and every node in one read.
+        send(200, await workspaceWorkflow(saved.projectId, saved.id));
+        return;
+      }
+
+      if (route.kind === 'workflow-archive') {
+        const archived = await archiveWorkspace(route.id ?? '');
+        if (!archived) {
+          send(404, { error: { code: 'not_found', message: 'unknown workspace' } });
+          return;
+        }
+        send(200, { id: route.id, archived: true });
+        return;
+      }
+
+      if (route.kind === 'workflow-validate') {
+        // Validation is RELION's own, run against the draft jobs' parameters.
+        // A workspace has no job of its own yet, so each draft node is checked
+        // with its job type and edited arguments.
+        const workspace = await getWorkspace(route.id ?? '');
+        if (!workspace) {
+          send(404, { error: { code: 'not_found', message: 'unknown workspace' } });
+          return;
+        }
+        const problems: string[] = [];
+        for (const node of workspace.nodes) {
+          const jobType = node.type.replace(/^relion\./, '');
+          if (!jobType || jobType === node.type) continue;
+          const values = (node.data?.inputsValues ?? {}) as Record<string, unknown>;
+          const args = Object.fromEntries(
+            Object.entries(values)
+              .filter(([, binding]) => (binding as { type?: string }).type === 'constant')
+              .map(([key, binding]) => [key, (binding as { content?: unknown }).content]),
+          );
+          try {
+            const result = (await agentJson('/api/job-validate', {
+              method: 'POST',
+              body: { job_type: jobType, arguments: args, project_directory: workspace.projectId },
+            })) as { problems?: string[]; warnings?: string[] };
+            for (const problem of result.problems ?? []) problems.push(`${node.id}: ${problem}`);
+            for (const warning of result.warnings ?? []) problems.push(`${node.id}: ${warning}`);
+          } catch (cause) {
+            problems.push(`${node.id}: ${cause instanceof Error ? cause.message : cause}`);
+          }
+        }
+        send(200, { valid: !problems.length, errors: problems });
+        return;
+      }
+
       if (route.kind === 'workflow-run') {
-        const projectPath = (route.id ?? '').replace(/^pipeline:/, '');
+        const resolved = await resolveWorkspace(route.id);
+        if (!resolved) {
+          send(404, { error: { code: 'not_found', message: 'unknown workflow' } });
+          return;
+        }
+        const projectPath = resolved.projectId;
         const body = await readBody(request);
         const result = await startRun(
           projectPath,
@@ -399,9 +558,10 @@ export function bridge(): Connect.NextHandleFunction {
           // only collects the execution intent; the parameters live on the
           // canvas where the user edited them.
           (body.parameters ?? {}) as Record<string, Record<string, unknown>>,
+          resolved.workspace.id,
         );
         await ensureJobSchema();
-        const workflow = await pipelineWorkflow(projectPath);
+        const workflow = await workspaceWorkflow(projectPath, resolved.workspace.id);
         const status =
           result.failures.length && !result.entryIds.length ? 'failed' : 'running';
         const error = result.failures.length ? result.failures.join('; ') : null;
@@ -409,7 +569,16 @@ export function bridge(): Connect.NextHandleFunction {
           // The journal watches by project, so the id it derives must be the
           // same one the UI just received - otherwise its first tick would
           // open a second, anonymous journal for the same jobs.
-          openRun(runIdFor(projectPath, result.entryIds), projectPath, (body.inputs ?? {}) as Record<string, unknown>);
+          openRun(
+            runIdFor(projectPath, result.entryIds),
+            projectPath,
+            (body.inputs ?? {}) as Record<string, unknown>,
+            {
+              workflowId: workflow.id,
+              entries: result.entryIds,
+              revision: workflow.revision,
+            },
+          );
         }
         send(200, {
           id: result.runId,
@@ -546,9 +715,12 @@ export function bridge(): Connect.NextHandleFunction {
       }
 
       if (route.kind === 'workflow') {
-        // `id` is `pipeline:<project path>`, assigned in workflowFromPipeline.
-        const projectPath = (route.id ?? '').replace(/^pipeline:/, '');
-        send(200, await pipelineWorkflow(projectPath));
+        const resolved = await resolveWorkspace(route.id);
+        if (!resolved) {
+          send(404, { error: { code: 'not_found', message: 'unknown workflow' } });
+          return;
+        }
+        send(200, await workspaceWorkflow(resolved.projectId, resolved.workspace.id));
         return;
       }
 
