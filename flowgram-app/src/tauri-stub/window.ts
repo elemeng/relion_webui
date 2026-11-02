@@ -1,0 +1,1 @@
+export { getCurrentWindow } from './noop';

@@ -62,3 +62,7 @@ frontend/yarn.lock
 
 # FlowGram upstream checkout (cloned locally, not part of this distribution)
 flowgram.ai/
+
+# vendored app dependencies
+flowgram-app/node_modules/
+flowgram-app/dist/
