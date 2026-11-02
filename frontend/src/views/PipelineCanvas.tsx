@@ -348,7 +348,7 @@ export function PipelineCanvas({
         <div className="pointer-events-none absolute inset-x-0 top-2.5 z-10 flex justify-center px-3">
           <DraftStrip
             drafts={drafts}
-            className="pointer-events-auto max-w-full rounded-full border border-rule bg-base-100/95 px-2 py-1 shadow-sm backdrop-blur-sm"
+            className="pointer-events-auto max-w-full rounded-full border border-rule bg-base-100 px-2 py-1 shadow-sm"
           />
         </div>
       )}

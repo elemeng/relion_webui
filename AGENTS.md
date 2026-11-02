@@ -231,6 +231,18 @@ Never re-introduce a px font size or px control dimension; if you need an
 arbitrary length, use `rem` (px/16 at the 120% root). The `t-*` type utilities
 `index.css` carries are the only door to the type ladder — no raw `text-xs`.
 
+**Surfaces are opaque. No translucency, no `backdrop-filter`.** Mica and Acrylic
+were tried and removed: both are designed against a *photographic* backdrop (a
+Windows wallpaper), where blur turns detail into pleasant colour. Nothing here
+has a wallpaper — the thing behind a panel is job cards, pipeline edges and
+text, so blurring it produces grey noise and pulls the panel's own text towards
+it. Elevation is carried by the **tone ladder** instead: page < chrome < card <
+floating panel (light 95.6 → 96.4 → 99.3 → 100%; dark 19 → 16.5 → 25.5 → 30%,
+where "elevated" means lighter), plus the hairline and the shadow. The one
+deliberate exception is a label sitting on top of rendered image data, where the
+background really is a picture — see the volume-preview caption in
+`JobDialog.tsx`.
+
 Type is **Geist + Geist Mono** (variable, self-hosted via `@fontsource-variable`,
 OFL-1.1). Do not swap to a UI kit's default font; the mono is what makes job
 numbers and paths read as data. New colours go through the CSS variables in

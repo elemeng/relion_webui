@@ -133,19 +133,17 @@
   --st-aborted-text: oklch(40% 0.085 75);
   --st-aborted-rail: oklch(40% 0.085 75);
 
-  /* Mica: a high-opacity flat tint over a blurred backdrop (#f7f9fcdb in the
-     reference). Chrome sits one step behind the page, cards one step in front;
-     the rim is the lit hairline against the desktop. */
-  --mica-chrome: oklch(96.4% 0.006 255 / 86%);
-  --mica-card: oklch(99.3% 0.004 95 / 86%);
+  /* Surface ladder, opaque. Against a page at 95.6%:
+       chrome 96.4%  - the dock, a hair above the page
+       card   99.3%  - paper, the brightest thing on screen
+       panel  100%   - menus/dialogs, must out-rank a card when overlapping
+     The rim is the lit hairline; it is the only "material" cue left, so it
+     stays crisp. */
+  --mica-chrome: oklch(96.4% 0.006 255);
+  --mica-card: oklch(99.3% 0.004 95);
   --mica-solid: oklch(99.3% 0.004 95);
   --mica-rim: oklch(100% 0 0 / 80%);
-
-  /* Acrylic: the reference light tint is #F7F7F7CC (80%); kept at the palette's
-     cool hue rather than neutral grey so it sits in this UI's family. The grain
-     is daisyUI's fractal-noise texture. */
-  --acrylic-panel: oklch(97.6% 0.004 255 / 80%);
-  --acrylic-noise: var(--fx-noise);
+  --acrylic-panel: oklch(100% 0 0);
 
   /* Card sizes step by viewport; 21" 1920x1080 is the reference at 17rem.
      rem (px/16) so the 120% root scales cards with their type. */
@@ -219,16 +217,18 @@
   --st-aborted-text: oklch(82% 0.10 73);
   --st-aborted-rail: oklch(80% 0.115 73);
 
-  /* Mica at night: the reference dark surface is #232734db (~86%); the rim
-     dims so it reads as an edge rather than a bright stripe. */
-  --mica-chrome: oklch(17.5% 0.014 264 / 86%);
-  --mica-card: oklch(25.5% 0.014 262 / 86%);
+  /* Dark ladder, opaque, mirroring the light one against a page at 19%:
+       chrome 16.5%  - the dock, sunk below the page
+       card   25.5%  - paper, lifted off the canvas
+       panel  30%    - menus/dialogs, one step above a card so overlap reads
+     At night "elevated" means lighter, so the ladder runs the other way from
+     the light theme - which is what makes elevation legible without any
+     translucency. */
+  --mica-chrome: oklch(16.5% 0.014 264);
+  --mica-card: oklch(25.5% 0.014 262);
   --mica-solid: oklch(25.5% 0.014 262);
   --mica-rim: oklch(70% 0.02 262 / 22%);
-
-  /* Reference dark acrylic is #181818a8 (66%) - dramatically more see-through
-     than Mica's 86%, which is the point: menus float above the work. */
-  --acrylic-panel: oklch(20.9% 0.008 264 / 66%);
+  --acrylic-panel: oklch(30% 0.016 262);
 }
 
 /* ---- responsive card sizes ----------------------------------------------
@@ -399,52 +399,35 @@
     image-rendering: pixelated;
   }
 
-  /* ---- mica ---------------------------------------------------------------
-   * Windows 11's Mica (see docs/mica.html): the content behind is blurred
-   * through the surface, and the surface itself is a high-opacity flat tint -
-   * ~86% light, ~85% dark. It is the *quiet* member of the family: no grain,
-   * no gradient, nothing but the blur and the tint.
+  /* ---- surfaces ------------------------------------------------------------
+   * Opaque, by decision. Mica and Acrylic (docs/mica.html, docs/acrylic.html)
+   * are designed against a *photographic* backdrop - a Windows wallpaper -
+   * where blurring turns detail into pleasant colour. Nothing here has a
+   * wallpaper: the thing behind a panel is job cards, pipeline edges and
+   * text. Blurring that does not soften it, it turns it into grey noise and
+   * drags the panel's own text down towards it. So no alpha, no backdrop
+   * filter: a surface here is fully opaque and earns its height from
+   * *elevation* - the tint steps, the hairline and the shadow - not from
+   * what leaks through.
    *
-   * Acrylic is the noisier relation (docs/acrylic.html) - same blur, lower
-   * opacity, plus a noise layer. Do not give Mica a noise texture to make it
-   * "feel" more expensive; that is the other material.
-   *
-   * The tint is a flat colour with an alpha rather than a `color-mix()`
-   * expression on purpose: color-mix inside @layer utilities is rewritten by
-   * the Tailwind build into an invalid value, which is how an earlier version
-   * of this file shipped surfaces that had no effect at all.
-   *
-   * Three weights: chrome (the dock), card (job cards), solid (dense panes).
+   * Keep the tone ladder meaningful; it is the whole hierarchy now:
+   *   page (base-200)  <  chrome  <  card  <  floating panel
    * ---------------------------------------------------------------------- */
   .mica-chrome {
     background-color: var(--mica-chrome);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
   }
   .mica-card {
     background-color: var(--mica-card);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
   }
-  /* Text-dense panes sit on the plain material: opaque, no window. */
+  /* Text-dense panes: same tone as a card, kept as a name so intent is visible
+     at the call site. */
   .mica-solid {
     background-color: var(--mica-solid);
   }
-
-  /* ---- acrylic -------------------------------------------------------------
-   * The louder relation (docs/acrylic.html): same blur, lower opacity, plus a
-   * noise layer. Where Mica is the surface a window sits on for hours, Acrylic
-   * is the thing that appears over it - menus, pickers, dialogs - so more of
-   * the canvas shows through and the grain keeps it from reading as flat glass.
-   *
-   * `--fx-noise` is daisyUI's fractal-noise SVG texture (base/fx.css).
-   * ---------------------------------------------------------------------- */
+  /* Floating panels: the lightest surface in light, the lightest-but-one in
+     dark, so a menu or dialog separates from the canvas by tone alone. */
   .acrylic-panel {
     background-color: var(--acrylic-panel);
-    background-image: var(--acrylic-noise);
-    background-size: 200px 200px;
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
   }
 
   /* The window edge: the hairline and shadow a Mica surface carries against
