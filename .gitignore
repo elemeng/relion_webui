@@ -66,3 +66,6 @@ flowgram.ai/
 # vendored app dependencies
 flowgram-app/node_modules/
 flowgram-app/dist/
+
+# vitest writes its cache next to the sources when run from src/
+flowgram-app/src/node_modules/
