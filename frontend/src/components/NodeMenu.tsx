@@ -178,7 +178,7 @@ export function NodeMenu({
             }}
             className={cn(
               "fixed z-[60] w-[11.75rem] overflow-hidden rounded-box border border-rule",
-              "bg-base-100 py-1 shadow-[0_6px_20px_-6px_rgb(0_0_0/0.28),0_2px_6px_-2px_rgb(0_0_0/0.16)]",
+              "acrylic-panel py-1 shadow-[0_6px_20px_-6px_rgb(0_0_0/0.28),0_2px_6px_-2px_rgb(0_0_0/0.16)]",
             )}
             onClick={(event) => event.stopPropagation()}
           >

@@ -130,7 +130,7 @@ export function SlotPicker({
       aria-modal
       aria-label={`Files for ${label}`}
     >
-      <div className="flex max-h-[min(35rem,90vh)] w-[min(35rem,100%)] flex-col overflow-hidden rounded-box border border-rule-strong bg-base-100 shadow-[0_24px_64px_-16px_rgb(0_0_0/0.45)]">
+      <div className="acrylic-panel flex max-h-[min(35rem,90vh)] w-[min(35rem,100%)] flex-col overflow-hidden rounded-box border border-rule-strong shadow-[0_24px_64px_-16px_rgb(0_0_0/0.45)]">
         <header className="flex items-start gap-2 border-b border-rule px-3.5 py-2.5">
           <FileOutput className="mt-0.5 size-4 shrink-0 text-ink-faint" />
           <div className="min-w-0 flex-1">

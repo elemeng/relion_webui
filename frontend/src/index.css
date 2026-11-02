@@ -141,6 +141,12 @@
   --mica-solid: oklch(99.3% 0.004 95);
   --mica-rim: oklch(100% 0 0 / 80%);
 
+  /* Acrylic: the reference light tint is #F7F7F7CC (80%); kept at the palette's
+     cool hue rather than neutral grey so it sits in this UI's family. The grain
+     is daisyUI's fractal-noise texture. */
+  --acrylic-panel: oklch(97.6% 0.004 255 / 80%);
+  --acrylic-noise: var(--fx-noise);
+
   /* Card sizes step by viewport; 21" 1920x1080 is the reference at 17rem.
      rem (px/16) so the 120% root scales cards with their type. */
   --card-w: 14.5rem;
@@ -219,6 +225,10 @@
   --mica-card: oklch(25.5% 0.014 262 / 86%);
   --mica-solid: oklch(25.5% 0.014 262);
   --mica-rim: oklch(70% 0.02 262 / 22%);
+
+  /* Reference dark acrylic is #181818a8 (66%) - dramatically more see-through
+     than Mica's 86%, which is the point: menus float above the work. */
+  --acrylic-panel: oklch(20.9% 0.008 264 / 66%);
 }
 
 /* ---- responsive card sizes ----------------------------------------------
@@ -419,6 +429,22 @@
   /* Text-dense panes sit on the plain material: opaque, no window. */
   .mica-solid {
     background-color: var(--mica-solid);
+  }
+
+  /* ---- acrylic -------------------------------------------------------------
+   * The louder relation (docs/acrylic.html): same blur, lower opacity, plus a
+   * noise layer. Where Mica is the surface a window sits on for hours, Acrylic
+   * is the thing that appears over it - menus, pickers, dialogs - so more of
+   * the canvas shows through and the grain keeps it from reading as flat glass.
+   *
+   * `--fx-noise` is daisyUI's fractal-noise SVG texture (base/fx.css).
+   * ---------------------------------------------------------------------- */
+  .acrylic-panel {
+    background-color: var(--acrylic-panel);
+    background-image: var(--acrylic-noise);
+    background-size: 200px 200px;
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
   }
 
   /* The window edge: the hairline and shadow a Mica surface carries against

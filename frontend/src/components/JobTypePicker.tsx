@@ -146,7 +146,7 @@ export function JobTypePicker({
             // Above the +: opening downward would push the tail of a 34-entry
             // list off the bottom of the window on a laptop screen.
             "absolute bottom-[calc(100%+0.5rem)] left-0 flex max-h-[min(74vh,35rem)] w-[23.75rem] flex-col overflow-hidden",
-            "rounded-box border border-rule bg-base-100 shadow-[0_16px_48px_-12px_rgb(0_0_0/0.3)]",
+            "acrylic-panel rounded-box border border-rule shadow-[0_16px_48px_-12px_rgb(0_0_0/0.3)]",
           )}
           onKeyDown={(event) => {
             if (event.key === "Escape") {
