@@ -1,34 +1,56 @@
 // SPDX-FileCopyrightText: 2026 elemeng
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+  Handle,
+  Position,
+  ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
+  useStore,
+  type Edge,
+  type Node,
+  type NodeProps,
+} from "@xyflow/react";
 import { Boxes, Maximize2, Minus, Plus } from "lucide-react";
 
 import { JobCard, MiniJobCard } from "@/components/JobCard";
 import type { NodeAction } from "@/components/NodeMenu";
 import { DraftStrip, type DraftChip } from "@/components/DraftStrip";
-import { cn } from "@/lib/utils";
 import {
   MIN_READABLE_SCALE,
-  MINI_SCALE,
   MINI_HEIGHT,
+  MINI_SCALE,
   MINI_WIDTH,
   NODE_HEIGHT,
   NODE_WIDTH,
   edgeColour,
-  fitScale,
   layoutPipeline,
-  naturalFitScale,
   type LayoutNode,
 } from "@/lib/layout";
 import type { PipelineGraph, PipelineProcess } from "@/lib/types";
+
+const MIN_SCALE = 0.25;
+const MAX_SCALE = 1.6;
+
+/** Node data carried through React Flow; the card renders from this. */
+interface NodeData extends Record<string, unknown> {
+  layout: LayoutNode;
+  process: PipelineProcess;
+  selected: boolean;
+  dimmed: boolean;
+  stacked: boolean;
+  onOpen: () => void;
+  onAction?: (action: NodeAction) => void;
+}
+
+/** Edge data: the colour and emphasis are ours, not React Flow's. */
+interface EdgeData extends Record<string, unknown> {
+  colour: string;
+  active: boolean;
+  dimmed: boolean;
+}
 
 interface PipelineCanvasProps {
   graph: PipelineGraph;
@@ -50,17 +72,6 @@ interface PipelineCanvasProps {
   onNodeAction?: (process: PipelineProcess, action: NodeAction) => void;
 }
 
-interface View {
-  x: number;
-  y: number;
-  scale: number;
-}
-
-const MIN_SCALE = 0.25;
-const MAX_SCALE = 1.6;
-
-/** Short, stable per-job secondary text: the directory RELION wrote. */
-
 /**
  * The project's pipeline as a graph.
  *
@@ -69,10 +80,25 @@ const MAX_SCALE = 1.6;
  * throws that away, which is why the canvas is the default view rather than a
  * sidebar.
  *
- * Interaction: wheel zooms, drag pans, click selects, double-click or Enter
- * opens. Selection is the only state, so a click on the background deselects.
+ * React Flow owns the viewport - pan, wheel zoom, the transform, and edge
+ * routing that stays attached to its nodes at any zoom. `layout.ts` still owns
+ * where each node *is*: the DAG is laid out deterministically and nodes are not
+ * draggable, so the left-to-right reading order cannot drift.
+ *
+ * Interaction: wheel zooms, drag pans, clicking a card opens it, clicking the
+ * background deselects. Those match the app's global shortcuts, which is why
+ * React Flow's own keyboard bindings are all disabled below.
  */
-export function PipelineCanvas({
+export function PipelineCanvas(props: PipelineCanvasProps) {
+  // The viewport helpers need the provider, so the real canvas is a child.
+  return (
+    <ReactFlowProvider>
+      <PipelineCanvasInner {...props} />
+    </ReactFlowProvider>
+  );
+}
+
+function PipelineCanvasInner({
   graph,
   selected,
   onSelect,
@@ -84,246 +110,169 @@ export function PipelineCanvas({
   onNodeAction,
 }: PipelineCanvasProps) {
   const layout = useMemo(() => layoutPipeline(graph), [graph]);
-  const byName = useMemo(
-    () => new Map(graph.processes.map((process) => [process.name, process])),
-    [graph],
-  );
+  const flow = useReactFlow();
 
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const [view, setView] = useState<View>({ x: 0, y: 0, scale: 1 });
-  const [size, setSize] = useState({ width: 0, height: 0 });
-  const [panning, setPanning] = useState(false);
-  const panRef = useRef<{
-    x: number;
-    y: number;
-    originX: number;
-    originY: number;
-  } | null>(null);
-  // Set once the first layout is centred, so a streaming update does not snap
-  // the view back while the user is reading.
-  const centredRef = useRef(false);
+  // `true` until the opening view has been chosen, so a streaming graph update
+  // does not snap the viewport back while the user is reading.
+  const framedRef = useRef(false);
+  const [mini, setMini] = useState(false);
+  const [zoom, setZoom] = useState(1);
 
-  // Measure synchronously before the first paint, then keep up with resizes.
-  // Waiting only for the observer leaves the first frame at scale 1 with a
-  // too-wide graph, which reads as a layout bug rather than a settled view.
-  useLayoutEffect(() => {
-    const element = viewportRef.current;
-    if (!element) return;
-    const measure = () =>
-      setSize({ width: element.clientWidth, height: element.clientHeight });
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
-
-  const visibleWidth = Math.max(0, size.width - reservedRight);
-
-  const centreOn = useCallback(
-    (node: LayoutNode | undefined, animate = false) => {
-      if (!node) return;
-      setView({
-        scale: 1,
-        x: Math.round(visibleWidth / 2 - (node.x + node.width / 2)),
-        y: Math.round(size.height / 2 - (node.y + node.height / 2)),
-      });
-      // The transition is CSS; the values themselves are final here.
-      void animate;
-    },
-    [size.height, visibleWidth],
-  );
-
-  // First render: show the pipeline at a size that can be read.
-  //
-  // The test is whether the graph's *natural* fit is legible, not whether
-  // `fitScale` returned something above a floor: `fitScale` clamps, so once it
-  // has clamped the graph is already too wide to show whole. If the natural fit
-  // is readable, open fitted and show the entire shape; otherwise open at 100%
-  // centred on the newest job, because a field of 7px chips is not an overview
-  // of anything. Fit (F) still offers the shrunk view on request.
+  // Callbacks kept in refs. They are recreated on every render by the shell, and
+  // React Flow compares node/edge arrays by identity: if a fresh closure leaked
+  // into the `data` of every node, the arrays would be rebuilt on each render
+  // and React Flow would keep resetting its internal node store - which silently
+  // drops edges (they render only once both endpoints are measured).
+  const onOpenRef = useRef(onOpen);
+  const onActionRef = useRef(onNodeAction);
   useEffect(() => {
-    if (centredRef.current || size.width === 0 || layout.nodes.length === 0)
+    onOpenRef.current = onOpen;
+    onActionRef.current = onNodeAction;
+  });
+
+  const nodes = useMemo<Node<NodeData>[]>(() => {
+    const built: Node<NodeData>[] = [];
+    for (const node of layout.nodes) {
+      const process = graph.processes.find((p) => p.name === node.primary);
+      if (!process) continue;
+      built.push({
+        id: node.primary,
+        type: mini ? "mini" : "job",
+        position: { x: node.x, y: node.y },
+        width: mini ? MINI_WIDTH : NODE_WIDTH,
+        height: mini ? MINI_HEIGHT : NODE_HEIGHT,
+        draggable: false,
+        // `selectable` must not be false: React Flow writes pointer-events:none
+        // onto a node that is neither draggable nor selectable, which makes the
+        // card click-through. Selection here means "the card was clicked", and
+        // the visual state comes from the `selected` prop, not from React Flow.
+        selectable: true,
+        connectable: false,
+        data: {
+          layout: node,
+          process,
+          selected: selected === node.primary,
+          dimmed: hidden?.has(node.primary) ?? false,
+          stacked: node.processes.length > 1,
+          // Stable identity: read through the ref so `nodes` does not change
+          // when the shell passes new closures.
+          onOpen: () => onOpenRef.current(process),
+          onAction: (action: NodeAction) =>
+            onActionRef.current?.(process, action),
+        },
+      });
+    }
+    return built;
+  }, [graph.processes, hidden, layout.nodes, mini, selected]);
+
+  const edges = useMemo<Edge<EdgeData>[]>(() => {
+    const byName = new Map(graph.processes.map((p) => [p.name, p]));
+    return layout.edges.map((edge) => {
+      const source = byName.get(edge.from);
+      const active = selected === edge.from || selected === edge.to;
+      const dimmed =
+        (hidden?.has(edge.from) ?? false) || (hidden?.has(edge.to) ?? false);
+      return {
+        id: `${edge.from}->${edge.to}`,
+        source: edge.from,
+        target: edge.to,
+        type: "smoothstep",
+        data: {
+          colour: active ? "var(--signal)" : edgeColour(source?.type_label ?? ""),
+          active,
+          dimmed,
+        },
+        // React Flow routes it; the path is never built by hand.
+        style: {
+          stroke: active ? "var(--signal)" : edgeColour(source?.type_label ?? ""),
+          strokeWidth: active ? 1.6 : 1,
+          opacity: dimmed ? 0.25 : 1,
+        },
+        // Arrows need a marker in world units so they scale with the canvas.
+        markerEnd: {
+          type: "arrowclosed" as const,
+          width: 12,
+          height: 12,
+          color: active ? "var(--signal)" : edgeColour(source?.type_label ?? ""),
+        },
+      };
+    });
+  }, [graph.processes, hidden, layout.edges, selected]);
+
+  // The mini card is smaller than a full one, so the switchover is driven by the
+  // live zoom rather than by a re-render of the whole graph on every wheel tick.
+  const liveZoom = useStore((state) => state.transform[2]);
+  useEffect(() => {
+    const wantMini = liveZoom < MINI_SCALE;
+    setMini((current) => (current === wantMini ? current : wantMini));
+    setZoom((current) => (current === liveZoom ? current : liveZoom));
+  }, [liveZoom]);
+
+  const fit = useCallback(() => {
+    void flow.fitView({
+      minZoom: MIN_READABLE_SCALE,
+      maxZoom: 1,
+      duration: 200,
+    });
+  }, [flow]);
+
+  const centre = useCallback(() => {
+    const node = selected ? layout.nodeOf.get(selected) : undefined;
+    if (!node) {
+      fit();
       return;
-    centredRef.current = true;
-    const natural = naturalFitScale(
-      layout.width,
-      layout.height,
-      visibleWidth,
-      size.height,
+    }
+    const width = Math.max(0, window.innerWidth - reservedRight);
+    void flow.setCenter(
+      node.x + node.width / 2,
+      node.y + node.height / 2,
+      { zoom: 1, duration: 200 },
+    );
+    void width;
+  }, [fit, flow, layout.nodeOf, reservedRight, selected]);
+
+  const zoomBy = useCallback(
+    (factor: number) => {
+      const current = flow.getZoom();
+      const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, current * factor));
+      void flow.zoomTo(next, { duration: 150 });
+    },
+    [flow],
+  );
+
+  // Opening view: show the whole shape only when it would still be legible.
+  // Otherwise open at 100% on the job the user is looking at, because a field
+  // of 7px chips is not an overview of anything. Fit (F) still offers the
+  // shrunk view on request.
+  useEffect(() => {
+    if (framedRef.current || layout.nodes.length === 0) return;
+    framedRef.current = true;
+    const viewport = flow.getViewport();
+    const natural = Math.min(
+      (viewport.zoom * window.innerWidth) / Math.max(1, layout.width),
+      (viewport.zoom * window.innerHeight) / Math.max(1, layout.height),
+      1,
     );
     if (natural >= MIN_READABLE_SCALE) {
-      setView({
-        scale: natural,
-        x: Math.round((visibleWidth - layout.width * natural) / 2),
-        y: Math.round((size.height - layout.height * natural) / 2),
-      });
+      void flow.fitView({ minZoom: MIN_READABLE_SCALE, maxZoom: 1 });
       return;
     }
     const target =
       layout.nodes.find((node) => node.primary === selected) ??
       layout.nodes[layout.nodes.length - 1];
-    centreOn(target);
-  }, [
-    centreOn,
-    layout,
-    layout.nodes,
-    selected,
-    size.height,
-    size.width,
-    visibleWidth,
-  ]);
-
-  // A panel opening or closing changes how much canvas is visible, so the view
-  // is recomputed rather than nudged: otherwise `fit` is left centred on a width
-  // that no longer exists and the graph slides under the inspector.
-  //
-  // Skipped until the opening view has been decided: the first measurement is a
-  // width change from 0, and reacting to it would immediately refit the graph
-  // after the opening effect had deliberately chosen 100% on the newest job.
-  const prevVisible = useRef(visibleWidth);
-  const settledRef = useRef(false);
-  useEffect(() => {
-    if (!settledRef.current) {
-      prevVisible.current = visibleWidth;
-      settledRef.current = size.width > 0;
-      return;
+    if (target) {
+      void flow.setCenter(
+        target.x + target.width / 2,
+        target.y + target.height / 2,
+        { zoom: 1 },
+      );
     }
-    if (size.width === 0) return;
-    const changed = prevVisible.current !== visibleWidth;
-    prevVisible.current = visibleWidth;
-    if (!changed) return;
+  }, [flow, layout.height, layout.nodes, layout.width, selected]);
 
-    const node = selected ? layout.nodeOf.get(selected) : undefined;
-    setView((current) => {
-      if (!node) {
-        // Nothing selected: refit the whole graph into the new width.
-        const scale = fitScale(
-          layout.width,
-          layout.height,
-          visibleWidth,
-          size.height,
-        );
-        return {
-          scale,
-          x: Math.round((visibleWidth - layout.width * scale) / 2),
-          y: Math.round((size.height - layout.height * scale) / 2),
-        };
-      }
-      // Keep the selected node where it is, but inside the visible region.
-      const left = current.x + node.x * current.scale;
-      const right = left + node.width * current.scale;
-      const margin = 24;
-      if (left >= margin && right <= visibleWidth - margin) return current;
-      return {
-        ...current,
-        x: Math.round(
-          visibleWidth / 2 - (node.x + node.width / 2) * current.scale,
-        ),
-      };
-    });
-  }, [
-    layout.height,
-    layout.nodeOf,
-    layout.width,
-    selected,
-    size.height,
-    size.width,
-    visibleWidth,
-  ]);
-
-  const fit = useCallback(() => {
-    if (size.width === 0) return;
-    const scale = fitScale(
-      layout.width,
-      layout.height,
-      visibleWidth,
-      size.height,
-    );
-    setView({
-      scale,
-      x: Math.round((visibleWidth - layout.width * scale) / 2),
-      y: Math.round((size.height - layout.height * scale) / 2),
-    });
-  }, [layout.height, layout.width, size.height, size.width, visibleWidth]);
-
-  const zoomBy = useCallback(
-    (factor: number) => {
-      setView((current) => {
-        const next = Math.min(
-          MAX_SCALE,
-          Math.max(MIN_SCALE, current.scale * factor),
-        );
-        // Zoom about the centre of the visible region.
-        const cx = visibleWidth / 2;
-        const cy = size.height / 2;
-        return {
-          scale: next,
-          x: cx - ((cx - current.x) / current.scale) * next,
-          y: cy - ((cy - current.y) / current.scale) * next,
-        };
-      });
-    },
-    [size.height, visibleWidth],
+  const nodeTypes = useMemo(
+    () => ({ job: JobNode, mini: MiniNode }),
+    [],
   );
-
-  // Wheel zooms; with ctrl/cmd it is the same, which also prevents the browser
-  // page zoom from firing inside the canvas.
-  useEffect(() => {
-    const element = viewportRef.current;
-    if (!element) return;
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      const rect = element.getBoundingClientRect();
-      const cursorX = event.clientX - rect.left;
-      const cursorY = event.clientY - rect.top;
-      setView((current) => {
-        const factor = Math.exp(-event.deltaY * 0.0016);
-        const next = Math.min(
-          MAX_SCALE,
-          Math.max(MIN_SCALE, current.scale * factor),
-        );
-        return {
-          scale: next,
-          x: cursorX - ((cursorX - current.x) / current.scale) * next,
-          y: cursorY - ((cursorY - current.y) / current.scale) * next,
-        };
-      });
-    };
-    element.addEventListener("wheel", onWheel, { passive: false });
-    return () => element.removeEventListener("wheel", onWheel);
-  }, []);
-
-  const onPointerDown = (event: React.PointerEvent) => {
-    if (event.button !== 0) return;
-    // Only the background pans; a node handles its own click.
-    if ((event.target as HTMLElement).closest("[data-node]")) return;
-    panRef.current = {
-      x: event.clientX,
-      y: event.clientY,
-      originX: view.x,
-      originY: view.y,
-    };
-    setPanning(true);
-    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-    onSelect(null);
-  };
-
-  const onPointerMove = (event: React.PointerEvent) => {
-    const pan = panRef.current;
-    if (!pan) return;
-    setView((current) => ({
-      ...current,
-      x: pan.originX + (event.clientX - pan.x),
-      y: pan.originY + (event.clientY - pan.y),
-    }));
-  };
-
-  const endPan = () => {
-    panRef.current = null;
-    setPanning(false);
-  };
-
-  const mini = view.scale < MINI_SCALE;
 
   if (graph.processes.length === 0) {
     return (
@@ -354,88 +303,42 @@ export function PipelineCanvas({
         </div>
       )}
 
-      <div
-        ref={viewportRef}
-        className={cn(
-          "canvas-grid absolute inset-0",
-          panning ? "cursor-grabbing" : "cursor-grab",
-        )}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endPan}
-        onPointerCancel={endPan}
-        role="application"
-        aria-label="Pipeline graph"
-      >
-        <div
-          className="absolute top-0 left-0 origin-top-left"
-          style={{
-            width: layout.width,
-            height: layout.height,
-            transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
-            transition: panning ? "none" : "transform 200ms ease-out",
-          }}
-        >
-          {/* Sized in world units via `style`, not the width/height attributes.
-              The attributes are CSS pixels, so the browser would clip this
-              layer to layout.width x layout.height *screen* pixels - smaller
-              than the world once the canvas is zoomed in - and the right/bottom
-              edges would be cut off, reading as detached from their nodes.
-              `overflow-visible` does not help: the clip is on the element box.
-              As a style the SVG rides the parent's scale transform with the
-              cards, so edges and nodes stay locked together at any zoom. */}
-          <svg
-            className="pointer-events-none absolute top-0 left-0 overflow-visible"
-            style={{ width: layout.width, height: layout.height }}
-            aria-hidden
-          >
-            {layout.edges.map((edge) => {
-              const source = byName.get(edge.from);
-              const active = selected === edge.from || selected === edge.to;
-              const hiddenEdge =
-                (hidden?.has(edge.from) ?? false) ||
-                (hidden?.has(edge.to) ?? false);
-              return (
-                <path
-                  key={`${edge.from}->${edge.to}`}
-                  d={edge.path}
-                  fill="none"
-                  stroke={
-                    active
-                      ? "var(--signal)"
-                      : edgeColour(source?.type_label ?? "")
-                  }
-                  strokeWidth={active ? 1.6 : 1}
-                  opacity={hiddenEdge ? 0.25 : 1}
-                />
-              );
-            })}
-          </svg>
-
-          {layout.nodes.map((node) => {
-            const process = byName.get(node.primary);
-            if (!process) return null;
-            const isSelected = selected === node.primary;
-            const dimmed = hidden?.has(node.primary) ?? false;
-            return (
-              <CanvasNode
-                key={node.primary}
-                node={node}
-                process={process}
-                selected={isSelected}
-                dimmed={dimmed}
-                mini={mini}
-                stacked={node.processes.length > 1}
-                onOpen={() => onOpen(process)}
-                onAction={
-                  onNodeAction
-                    ? (action) => onNodeAction(process, action)
-                    : undefined
-                }
-              />
-            );
-          })}
-        </div>
+      {/* The dot grid stays on this wrapper and does not pan with the world, so
+          React Flow's own background stays off. */}
+      <div className="canvas-grid absolute inset-0">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          minZoom={MIN_SCALE}
+          maxZoom={MAX_SCALE}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          // Must stay true: React Flow writes `pointer-events: none` onto a node
+          // when it is neither selectable nor draggable, and the card inside
+          // becomes click-through - clicks land on the pane instead. Our cards
+          // handle their own click, so this only re-enables hit-testing.
+          elementsSelectable
+          // Nothing here is a React Flow selection; the app's `selected` prop
+          // drives the card styling.
+          selectionOnDrag={false}
+          selectNodesOnDrag={false}
+          // The app owns these keys globally (App.tsx); React Flow must not
+          // steal Space, Delete, arrows or Escape.
+          deleteKeyCode={null}
+          selectionKeyCode={null}
+          multiSelectionKeyCode={null}
+          panActivationKeyCode={null}
+          zoomActivationKeyCode={null}
+          // Performances/QoL: no double-click zoom, no help lines for a graph
+          // nobody connects by hand.
+          zoomOnDoubleClick={false}
+          edgesFocusable={false}
+          nodesFocusable={false}
+          proOptions={{ hideAttribution: false }}
+          onPaneClick={() => onSelect(null)}
+          className="[&_.react-flow__pane]:cursor-grab [&_.react-flow__pane.dragging]:cursor-grabbing"
+        />
       </div>
 
       {addControl && (
@@ -443,83 +346,56 @@ export function PipelineCanvas({
       )}
 
       <CanvasControls
-        scale={view.scale}
+        scale={zoom}
         onZoomIn={() => zoomBy(1.25)}
         onZoomOut={() => zoomBy(0.8)}
         onFit={fit}
-        onCentre={() => {
-          const node = selected ? layout.nodeOf.get(selected) : undefined;
-          if (node) centreOn(node);
-          else fit();
-        }}
+        onCentre={centre}
       />
     </div>
   );
 }
 
-function CanvasNode({
-  node,
-  process,
-  selected,
-  dimmed,
-  mini,
-  stacked,
-  onOpen,
-  onAction,
-}: {
-  node: LayoutNode;
-  process: PipelineProcess;
-  selected: boolean;
-  dimmed: boolean;
-  mini: boolean;
-  stacked: boolean;
-  onOpen: () => void;
-  onAction?: (action: NodeAction) => void;
-}) {
-  // The card is shared with the grid view, so the two cannot drift apart; only
-  // the positioning differs.
-  //
-  // `height` is pinned to the layout constant, not left to the content. Edge
-  // paths are computed from `node.height` (layout.ts derives every endpoint
-  // from y + height/2), so a card that renders shorter than that constant puts
-  // every arrow endpoint below the card's real centre - the gap grows with the
-  // zoom factor, which is why it only reads as detached once zoomed in. Pinning
-  // it makes the geometry true by construction rather than by coincidence; the
-  // grid view keeps its natural height.
-  const position = {
-    left: node.x,
-    top: node.y,
-    width: mini ? MINI_WIDTH : NODE_WIDTH,
-    height: mini ? MINI_HEIGHT : NODE_HEIGHT,
-  };
+/** A full job card as a React Flow node. The card itself is unchanged. */
+function JobNode({ data }: NodeProps<Node<NodeData>>) {
+  const { layout, process, selected, dimmed, stacked, onOpen, onAction } = data;
+  return (
+    <>
+      {/* Handles are where edges attach. They are invisible (the CSS in
+          index.css zeroes and hides them): nothing here connects by hand, but
+          React Flow still needs both ends to route an edge. */}
+      <Handle type="target" position={Position.Left} isConnectable={false} />
+      <JobCard
+        process={process}
+        selected={selected}
+        dimmed={dimmed}
+        stackedCount={stacked ? layout.processes.length - 1 : 0}
+        onOpen={onOpen}
+        onAction={onAction}
+        // Dragging a card onto an input field fills that field from this job's
+        // outputs. It is the graph equivalent of RELION's "input to this job"
+        // browser, done in the direction people expect in a canvas.
+        draggable
+      />
+      <Handle type="source" position={Position.Right} isConnectable={false} />
+    </>
+  );
+}
 
-  if (mini) {
-    return (
+/** The glyph-only card used when zoomed out past reading size. */
+function MiniNode({ data }: NodeProps<Node<NodeData>>) {
+  const { process, selected, dimmed, onOpen } = data;
+  return (
+    <>
+      <Handle type="target" position={Position.Left} isConnectable={false} />
       <MiniJobCard
         process={process}
         selected={selected}
         dimmed={dimmed}
         onOpen={onOpen}
-        className="absolute"
-        style={position}
       />
-    );
-  }
-  return (
-    <JobCard
-      process={process}
-      selected={selected}
-      dimmed={dimmed}
-      stackedCount={stacked ? node.processes.length - 1 : 0}
-      onOpen={onOpen}
-      onAction={onAction}
-      className="absolute"
-      style={position}
-      // Dragging a card onto an input field fills that field from this job's
-      // outputs. It is the graph equivalent of RELION's "input to this job"
-      // browser, done in the direction people expect in a canvas.
-      draggable
-    />
+      <Handle type="source" position={Position.Right} isConnectable={false} />
+    </>
   );
 }
 

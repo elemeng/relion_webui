@@ -1,3 +1,11 @@
+/* React Flow's stylesheet, before Tailwind so ours come later in the cascade.
+   It ships *unlayered* rules, and unlayered always beats any `@layer` - which
+   is why the overrides below cannot live in `@layer components`: a layered
+   `.react-flow__node { pointer-events: all }` loses to React Flow's unlayered
+   `.react-flow__nodes { pointer-events: none }`, and every node silently
+   becomes click-through. They are written unlayered instead, after Tailwind,
+   so source order settles it. */
+@import "@xyflow/react/dist/style.css";
 @import "tailwindcss";
 /* Geist and Geist Mono, variable, self-hosted. `wght.css` declares only the
    latin + latin-ext subsets with unicode-range, so a browser fetches the file
@@ -519,3 +527,112 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---- React Flow ---------------------------------------------------------
+ * The engine draws the graph; the look is ours. Everything here exists to stop
+ * React Flow's stock chrome (white minimap, blue handles, grey edges) from
+ * showing through, and to let our tokens drive it instead.
+ *
+ * Unlayered, not in `@layer components`: React Flow's own rules are unlayered
+ * and would beat any layered rule regardless of specificity. See the note at
+ * the top of this file.
+ * ------------------------------------------------------------------------ */
+/* The dot grid stays on our wrapper and does not pan with the world, which is
+     the existing behaviour: cards slide over a static field. So React Flow's
+     own background must be transparent (we never mount <Background/>). */
+  .react-flow__background {
+    background: transparent;
+  }
+
+  /* Attribution is required by React Flow's licence for the free version, but
+     it must not fight our chrome. */
+  .react-flow__attribution {
+    background: color-mix(in srgb, var(--canvas) 80%, transparent);
+    color: var(--ink-faint);
+    font-size: 0.625rem;
+  }
+  .react-flow__attribution a {
+    color: var(--ink-faint);
+  }
+
+  /* Nodes are our own cards, so React Flow must draw nothing around them: no
+     default border, no selected outline, no focus ring. Selection styling is
+     the card's job (see JobCard).
+     `pointer-events: all` is deliberate: the handle rules below set
+     `pointer-events: none`, and without restoring it here the whole node box
+     becomes click-through and the pane swallows every click. */
+  .react-flow__node {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    border-radius: 0;
+    cursor: pointer;
+    pointer-events: all;
+  }
+  .react-flow__node:focus,
+  .react-flow__node:focus-visible {
+    outline: none;
+  }
+  /* Handles only exist so edges have a route anchor; nothing connects by hand.
+     They are invisible and inert, but must still be positioned on the node's
+     edge - React Flow reads their box to place the path. */
+  .react-flow__handle {
+    width: 1px;
+    height: 1px;
+    min-width: 0;
+    min-height: 0;
+    border: none;
+    background: transparent;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Edges carry their own stroke colour from `edgeColour()`; these are the
+     fallbacks and the shared geometry. */
+  .react-flow__edge-path {
+    stroke: var(--rule-strong);
+    stroke-width: 1;
+    fill: none;
+  }
+  .react-flow__edge.selected .react-flow__edge-path,
+  .react-flow__edge:focus .react-flow__edge-path {
+    stroke: var(--signal);
+    stroke-width: 1.6;
+  }
+  .react-flow__edge:focus-visible {
+    outline: none;
+  }
+
+  /* The controls cluster is ours (CanvasControls), so the built-in one is never
+     mounted; kept themed in case it is used later. */
+  .react-flow__controls {
+    box-shadow: none;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-field);
+    overflow: hidden;
+    background: var(--mica-card);
+  }
+  .react-flow__controls-button {
+    background: var(--mica-card);
+    border-bottom: 1px solid var(--rule-soft);
+    color: var(--ink-muted);
+    fill: currentColor;
+  }
+  .react-flow__controls-button:hover {
+    background: var(--color-base-200);
+    color: var(--base-content);
+  }
+
+  /* The minimap is optional; themed so it does not appear as a white rectangle
+     if it is ever switched on. */
+  .react-flow__minimap {
+    background: var(--mica-card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-field);
+  }
+  .react-flow__minimap-mask {
+    fill: var(--canvas);
+    fill-opacity: 0.75;
+  }
+
