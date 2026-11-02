@@ -181,7 +181,7 @@ export function NewJobDialog({
       aria-modal
       aria-label={`New ${schema?.title ?? draft.jobType}`}
     >
-      <div className="glass-card glass-edge flex w-[min(32.5rem,100%)] flex-col overflow-hidden rounded-box border border-rule-strong shadow-[0_24px_64px_-16px_rgb(0_0_0/0.45)]">
+      <div className="mica-card mica-edge flex w-[min(32.5rem,100%)] flex-col overflow-hidden rounded-box border border-rule-strong shadow-[0_24px_64px_-16px_rgb(0_0_0/0.45)]">
         <div className="flex items-center gap-2 border-b border-rule px-4 py-2.5">
           <span className="rounded-selector border border-dashed border-rule-strong px-1.5 py-px font-mono t-meta text-ink-muted">
             draft

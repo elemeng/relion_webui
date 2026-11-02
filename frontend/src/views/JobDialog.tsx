@@ -159,7 +159,7 @@ export function JobDialog({
       aria-modal
       aria-label={`Job ${process.name}`}
     >
-      <div className="glass-card glass-edge flex min-w-0 flex-1 flex-col overflow-hidden rounded-box border border-rule shadow-2xl">
+      <div className="mica-card mica-edge flex min-w-0 flex-1 flex-col overflow-hidden rounded-box border border-rule shadow-2xl">
         <div className="flex items-center gap-2.5 border-b border-rule px-4 py-2.5">
           <StatusDot status={process.status} className="size-2" />
           <span className="shrink-0 rounded-selector bg-base-200 px-1.5 py-0.5 font-mono t-meta text-ink-muted">

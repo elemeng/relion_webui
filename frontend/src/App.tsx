@@ -1158,7 +1158,7 @@ function Dock({
 
   return (
     <nav
-      className="glass-chrome glass-edge flex items-center gap-1 border-b border-frame-rule px-2 py-1"
+      className="mica-chrome mica-edge flex items-center gap-1 border-b border-frame-rule px-2 py-1"
       aria-label="Sections and actions"
     >
       {/* The location capsule: collapsed it names where you are; hovering
