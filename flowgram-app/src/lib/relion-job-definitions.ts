@@ -94,9 +94,9 @@ export const RELION_OTHER_GROUP = RELION_NODE_GROUP.Other;
  * a second declaration here would silently drift from the one the form
  * renderer switches on.
  */
-export type { FieldDefinition, NodeDefinition } from '../src/components/node-inspector/definitions';
-import type { FieldDefinition, NodeDefinition } from '../src/components/node-inspector/definitions';
-import { tx } from '../src/lib/i18n';
+export type { FieldDefinition, NodeDefinition } from '../components/node-inspector/definitions';
+import type { FieldDefinition, NodeDefinition } from '../components/node-inspector/definitions';
+import { tx } from './i18n';
 
 /** RELION labels carry a trailing colon; FlowGram's form adds its own. */
 function cleanLabel(label: string): string {

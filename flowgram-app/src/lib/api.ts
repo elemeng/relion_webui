@@ -4,16 +4,21 @@
  */
 
 import type { RuntimeEvent } from './types';
-let endpoint = '';
+/**
+ * Where FlowGram's API lives.
+ *
+ * The agent serves the canvas at `/fg`: its own `/api` namespace belongs to the
+ * main web UI and to MCP, and FlowGram's vocabulary (workflows, runs, events)
+ * is a different one. A same-origin prefix keeps the build static - no proxy,
+ * no second process - and `VITE_FLOWGRAM_BASE` exists only for split
+ * deployments.
+ */
+let endpoint = (import.meta.env.VITE_FLOWGRAM_BASE as string | undefined) || '/fg';
 let token = '';
 export async function connectDesktop() {
-  // Browser build: there is no Tauri shell, and no backend of our own. Every
-  // call goes to the same origin and the RELION agent answers it, so the
-  // endpoint stays empty (relative URLs) and no token is needed.
-  //
-  // In the Tauri build this read the shell's spawned backend; that path is
-  // gone, so `connectDesktop` is now a no-op that exists to keep the call site
-  // in app.tsx unchanged.
+  // No Tauri shell: requests are relative to the page (or to the configured
+  // base), and the agent answers them. Kept as a call site so app.tsx's boot
+  // sequence reads the same as upstream's.
 }
 export async function api<T>(
   path: string,

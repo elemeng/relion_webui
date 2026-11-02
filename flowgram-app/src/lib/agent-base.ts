@@ -6,10 +6,11 @@
 /**
  * Where the RELION agent listens.
  *
- * The bridge answers every `/api` call on the same origin, so the browser has no
- * notion of an agent host; an external harness needs a concrete URL. `VITE_AGENT_BASE`
- * wins when set (a split deployment), otherwise the page's own origin is the
- * agent - which is true in development, where Vite proxies `/api` and `/mcp`.
+ * The page can call `/fg/api` relatively, so the browser has no notion of an
+ * agent host; an external harness needs a concrete URL for MCP. In production
+ * the agent serves this build, so its own origin is the answer; in development
+ * Vite proxies `/mcp`, which amounts to the same thing. `VITE_AGENT_BASE` wins
+ * when set, for a split deployment.
  */
 export function getAgentBase(): string {
   const configured = import.meta.env.VITE_AGENT_BASE as string | undefined;

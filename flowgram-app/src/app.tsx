@@ -25,7 +25,7 @@ import type { ModelSettings, Project, Snapshot, Workflow } from './lib/types';
 import { ProjectScope } from './lib/project-context';
 import { errorText, getSystemLocale, t, tx, useLocale } from './lib/i18n';
 import { api, connectDesktop, subscribeEvents } from './lib/api';
-import { registerRelionJobs } from '../bridge/register';
+import { registerRelionJobs } from './lib/register-relion';
 import { WorkspaceHeader } from './components/workspace-header';
 import { WorkflowPanel, type WorkflowPanelHandle } from './components/workflow-panel';
 import { Presence, useContentTransition } from './components/ui/presence';

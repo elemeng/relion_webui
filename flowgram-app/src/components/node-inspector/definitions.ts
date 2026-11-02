@@ -306,7 +306,7 @@ export const nodeDefinitions: Record<string, NodeDefinition> = localized({
  * Definitions contributed from outside this file.
  *
  * The table above covers FlowGram's own node types. RELION's job types are
- * generated at runtime from `/api/job-schema` (see `bridge/jobs.ts`) and
+ * generated at runtime from `/fg/api/job-schema` (see `lib/register-relion.ts`) and
  * registered here, so the stock inspector renders their forms without this
  * module knowing what a RELION job is.
  *

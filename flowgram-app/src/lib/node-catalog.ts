@@ -48,7 +48,7 @@ export interface NodeCatalogEntry {
  * The static catalog above is FlowGram's data-flow vocabulary; a cryo-ET
  * pipeline is built from RELION's job types instead, so the palette's main
  * body comes from the agent's job schema. `registerRelionCatalogEntries` is
- * called from `bridge/register.ts` once `/api/job-schema` has loaded - the
+ * called from `lib/register-relion.ts` once `/fg/api/job-schema` has loaded - the
  * bundle ships with an empty table, and a pipeline that renders before the
  * schema arrives still resolves through `nodeSpec`'s fallback.
  *
@@ -294,8 +294,9 @@ function relionNodeData(spec: NodeCatalogEntry): Record<string, unknown> {
 export function createNode(type: string, index: number): WorkflowNode {
   const spec = nodeSpec(type);
   // Draft ids are namespaced: a node that has not been queued has no pipeline
-  // process yet, and the prefix is what the bridge uses to tell the two apart
-  // (see bridge/workspaces.ts). When the queue promotes it, the id becomes the
+  // process yet, and the prefix is what the agent uses to tell the two apart
+  // (see backend/relion_webui/flowgram/workspaces.py). When the queue promotes
+  // it, the id becomes the
   // reserved process name.
   const id = `draft:${type.replace(/[^a-zA-Z0-9_-]/g, "_")}_${crypto.randomUUID().slice(0, 8)}`;
   const node: WorkflowNode = {

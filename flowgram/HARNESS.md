@@ -21,8 +21,14 @@ FlowGram desktop 自带一整套会话、模型 provider、发布与部署表面
 ## 怎么用
 
 ```bash
-./scripts/dev_flowgram.sh -p /path/to/project   # agent :8765（含 /mcp）+ UI :1420
+./scripts/dev_flowgram.sh -p /path/to/project   # 开发：agent :8765 + Vite :1420
+./scripts/dev_flowgram.sh --build -p /path       # 部署：一个 Python 进程
 ```
+
+生产形态下 **agent 自己托管画布**：`uvicorn` 起来后
+`http://<host>:8765/fg/` 就是 UI，`/fg/api/*` 是它的数据接口，`/mcp` 是助手
+入口。构建产物在 `backend/relion_webui/flowgram_static/`，随包分发，所以部署
+一个 Python 进程即可，没有 Node、没有反向代理、没有第二个服务。
 
 画布工具栏 **外部 agent** 按钮给出三样东西（都可一键复制）：
 
@@ -37,11 +43,29 @@ FlowGram desktop 自带一整套会话、模型 provider、发布与部署表面
 - 只读场景用 `--mcp-read-only`：只发布读工具，任何客户端都无法改动项目。
 - 写工具在 harness 侧审批；agent 侧的 `allow_writes` 仍然是最后一道闸。
 
+## 架构
+
+```
+浏览器 ── /fg/api/* ──► backend/relion_webui/flowgram/   (FastAPI, 同进程)
+                        ├── translate    pipeline → FlowGram workflow
+                        ├── layout       画布坐标（与主分支同一算法）
+                        ├── workspaces   ~/.relion_web/.flowgram-workspaces
+                        ├── journal      queue 状态 → 运行时事件（SSE）
+                        └── routes       /fg 路由 + 静态托管
+             /mcp   ──► mcp_server（外部 harness）
+             /api/* ──► 主分支 UI 与 REST（原有，未改）
+```
+
+journal 直接调用 `queue.snapshot()` 和 `manager.read_log_chunk()`，不再 HTTP
+自调——这比原 TypeScript 桥少一次每 2 秒的往返。
+
 ## 已验证
 
 - `opencode mcp list` 显示 `relion ✓ connected`；
-- MCP 握手（`initialize`）直连 8765 与经 Vite 代理的 1420 均成功；
-- 浏览器侧栏不再有会话入口，handoff 对话框正确带出项目与 workspace 上下文。
+- 单进程：`/fg/` 返回画布，`/fg/api/bootstrap` 200，17 节点 7 列正确布局；
+- 完整入队链路：draft → `q0009` → `run_started` / `node_waiting` /
+  `node_started` / `log_appended` / `node_finished` / `run_finished`；
+- 后端 779 测试通过（含 10 个新增的画布/投影/workspace 测试）。
 
 ## 本分支删掉的界面
 

@@ -1,48 +1,29 @@
 /**
  * Standalone web build of the FlowGram desktop UI, vendored for RELION.
  *
- * Differences from upstream (see VENDOR.md):
- *  - no Tauri shell; the browser talks to the RELION agent directly
- *  - FlowGram's own API endpoints are answered by `bridge/middleware.ts` from
- *    the RELION agent, so neither side has to learn the other's vocabulary
+ * The app is pure static files: every API call goes to the RELION agent under
+ * `/fg`, which serves this build itself in production (see
+ * `backend/relion_webui/flowgram/`). In development Vite proxies `/fg` to the
+ * agent so hot reload works without a build step.
  */
-
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig } from 'vite';
 import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
-import { bridge } from './bridge/middleware';
-
-// Where the RELION agent runs. scripts/dev_flowgram.sh sets this when it
-// starts the agent on a non-default port.
+// Where the RELION agent runs during development.
 const AGENT = process.env.RELION_WEB_API ?? 'http://127.0.0.1:8765';
 
-/**
- * FlowGram's endpoints, answered from the RELION agent.
- *
- * Registered before the proxy below: `use` middleware runs first, so a request
- * the bridge recognises never reaches the agent's own (differently shaped)
- * routes, and everything it does not recognise falls through to the proxy.
- */
-function relionBridge(): Plugin {
-  return {
-    name: 'relion-bridge',
-    configureServer(server) {
-      server.middlewares.use(bridge());
-    },
-  };
-}
-
 export default defineConfig({
-  plugins: [react(), tailwindcss(), relionBridge()],
+  // Assets are served from /fg/, so the bundle must not assume it owns the root.
+  base: '/fg/',
+  plugins: [react(), tailwindcss()],
   resolve: {
     dedupe: ['react', 'react-dom'],
     alias: {
-      // The bridge imports this repository's own layout engine rather than
-      // copying it, so both UIs place the pipeline identically. The main app
-      // resolves `@/` to its own src; this alias makes the same specifier work
-      // from here.
+      // The main branch's layout engine is not imported any more - the agent
+      // projects the pipeline and lays it out in Python. Kept out on purpose:
+      // one implementation, not two that can drift.
       '@': fileURLToPath(new URL('../frontend/src', import.meta.url)),
     },
   },
@@ -51,14 +32,13 @@ export default defineConfig({
     port: 1420,
     strictPort: true,
     proxy: {
-      '/api': { target: AGENT, changeOrigin: false },
-      // The MCP endpoint the handoff dialog points an external harness at.
-      // Streaming responses need no buffering, so the proxy stays pass-through.
-      '/mcp': { target: AGENT, changeOrigin: false },
-      '/ws': { target: AGENT.replace(/^http/, 'ws'), ws: true },
+      '/fg': { target: AGENT, changeOrigin: false },
     },
   },
   build: {
+    // Straight into the agent's package, so `uvicorn` alone serves the canvas.
+    outDir: '../backend/relion_webui/flowgram_static',
+    emptyOutDir: true,
     target: 'es2022',
     chunkSizeWarningLimit: 1200,
     rollupOptions: {

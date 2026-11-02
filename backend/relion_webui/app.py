@@ -25,6 +25,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import api_assistant
+from . import flowgram
 from . import assistant as assistant_module
 from . import browse, job_actions, job_artifacts
 from . import hosts as hosts_module
@@ -497,14 +498,18 @@ def create_app(
         if session_manager is not None:
             async with session_manager.run():
                 await queue.start()
+                app.state.flowgram_journal.start()
                 yield
+                await app.state.flowgram_journal.stop()
                 await queue.stop()
                 await manager.shutdown()
             return
         await queue.start()
+        app.state.flowgram_journal.start()
         try:
             yield
         finally:
+            await app.state.flowgram_journal.stop()
             await queue.stop()
             await manager.shutdown()
 
@@ -524,6 +529,9 @@ def create_app(
     app.state.poll_interval = float(poll_interval)
     app.state.auth = auth
     app.state.projects = projects
+    # The FlowGram canvas: its API vocabulary and, when a build is present, its
+    # static files. Installed after the state above because it reads those.
+    flowgram.install(app)
 
     def current_session(request: Request):
         """The logged-in session, or None when auth is disabled."""
