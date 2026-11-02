@@ -52,6 +52,9 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': { target: AGENT, changeOrigin: false },
+      // The MCP endpoint the handoff dialog points an external harness at.
+      // Streaming responses need no buffering, so the proxy stays pass-through.
+      '/mcp': { target: AGENT, changeOrigin: false },
       '/ws': { target: AGENT.replace(/^http/, 'ws'), ws: true },
     },
   },

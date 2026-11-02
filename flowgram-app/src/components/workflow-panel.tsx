@@ -19,14 +19,13 @@ import {
 import {
   Check,
   Focus,
-  MessageCircle,
   MoreHorizontal,
   PanelRightClose,
   PanelBottom,
   Play,
   Plus,
   Save,
-  Send,
+  Terminal,
   X,
 } from 'lucide-react';
 
@@ -65,6 +64,7 @@ const WorkflowCanvas = lazy(() =>
   }))
 );
 import { WorkspaceHeader } from './workspace-header';
+import { HandoffDialog } from './handoff-dialog';
 import type { CanvasHandle } from './workflow-canvas';
 import { MenuButton } from './ui/menu-button';
 import { Dialog } from './ui/dialog';
@@ -98,8 +98,6 @@ export function WorkflowPanel({
   onClose,
   onRun,
   onInspectRun,
-  onAssist,
-  onPublish,
   onCollapse,
   headerLeading,
   documentTabs,
@@ -120,8 +118,6 @@ export function WorkflowPanel({
   onClose: () => void;
   onRun: (run: Run) => void;
   onInspectRun: (id: string) => void;
-  onAssist: () => void;
-  onPublish: (workflow: Workflow) => void;
   onCollapse?: () => void;
   headerLeading?: ReactNode;
   documentTabs?: ReactNode;
@@ -195,6 +191,7 @@ export function WorkflowPanel({
   const [jsonText, setJsonText] = useState('');
   const [jsonOpen, setJsonOpen] = useState(false);
   const [runOpen, setRunOpen] = useState(false);
+  const [handoffOpen, setHandoffOpen] = useState(false);
   const [debugOrigin, setDebugOrigin] = useState<DebugOrigin | null>(null);
   const [resultsVisible, setResultsVisible] = useState(
     () => localStorage.getItem('flowgram.layout.results.visible') !== 'false'
@@ -860,12 +857,12 @@ export function WorkflowPanel({
           <Button
             size="sm"
             variant="ghost"
-            aria-label={tx('让助手修改')}
-            title={tx('让助手修改')}
-            onClick={onAssist}
+            aria-label={tx('用外部 agent 接手')}
+            title={tx('用外部 agent 接手')}
+            onClick={() => setHandoffOpen(true)}
           >
-            <MessageCircle />
-            <span className="workflow-toolbar-label">{tx('让助手修改')}</span>
+            <Terminal />
+            <span className="workflow-toolbar-label">{tx('外部 agent')}</span>
           </Button>
           <Button
             size="sm"
@@ -877,19 +874,6 @@ export function WorkflowPanel({
           >
             <Save />
             <span className="workflow-toolbar-label">{saving ? t('saving') : t('save')}</span>
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={saving}
-            onClick={() =>
-              void save()
-                .then(onPublish)
-                .catch((cause) => error(cause.message))
-            }
-          >
-            <Send />
-            <span className="workflow-toolbar-label">{tx('发布')}</span>
           </Button>
           <Button
             size="sm"
@@ -1325,6 +1309,14 @@ export function WorkflowPanel({
           </Button>
         </div>
       </Dialog>
+      <HandoffDialog
+        open={handoffOpen}
+        onOpenChange={setHandoffOpen}
+        projectId={workflow.projectId}
+        workspaceId={workflow.id}
+        workspaceName={workflow.name}
+        selectedNode={inspector ?? undefined}
+      />
       <Dialog open={runOpen} onOpenChange={setRunOpen} title={t('run')}>
         {debugOrigin && (
           <p className="mb-4 text-xs text-muted-foreground">

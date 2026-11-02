@@ -28,7 +28,6 @@ import type { ModelSettings, Project, Snapshot, Workflow } from './lib/types';
 import { ProjectScope } from './lib/project-context';
 import { workflowTemplates } from './lib/node-catalog';
 import { errorText, getSystemLocale, t, tx, useLocale } from './lib/i18n';
-import type { PublishIntent } from './lib/deployment';
 import { api, connectDesktop, subscribeEvents } from './lib/api';
 import { registerRelionJobs } from '../bridge/register';
 import { WorkspaceHeader } from './components/workspace-header';
@@ -38,14 +37,13 @@ import { Select } from './components/ui/select';
 import { Presence, useContentTransition } from './components/ui/presence';
 import { Input } from './components/ui/input';
 import { Dialog } from './components/ui/dialog';
+import { PathBrowser } from './components/form/path-browser';
 import { Button } from './components/ui/button';
 import { SettingsPage } from './components/settings-page';
-import { SessionPanel } from './components/session-panel';
 import { RunPage } from './components/run-page';
 import { RunList } from './components/run-inspector/run-list';
 import { ResourcesPage } from './components/resources-page';
 import { ResizablePanel } from './components/resizable-panel';
-import { ProjectTransfer } from './components/project-transfer';
 import { ProjectMenu, ProjectSidebar, type ProjectAction } from './components/project-navigation';
 import { ProjectManagement, type ProjectManagementAction } from './components/project-management';
 
@@ -92,7 +90,6 @@ export function App() {
     action: ProjectManagementAction;
     project: Project;
   } | null>(null);
-  const [transfer, setTransfer] = useState<'import' | 'export' | null>(null);
   const editors = useRef(new Map<string, WorkflowPanelHandle>());
   const archiving = useRef(new Set<string>());
   const [createKind, setCreateKind] = useState<'project' | 'workflow' | 'open' | null>(null);
@@ -100,24 +97,17 @@ export function App() {
   const [directory, setDirectory] = useState('');
   const [createError, setCreateError] = useState('');
   const [creating, setCreating] = useState(false);
-  const [assist, setAssist] = useState<{ workflowId: string; projectId: string } | null>(null);
-  const [assistSession, setAssistSession] = useState('new');
   const project = projects.find((item) => item.id === projectId);
   const data = snapshots[projectId] || empty;
   const bench = workbenches[projectId] || emptyWorkbench();
-  const [publishIntent, setPublishIntent] = useState<PublishIntent | null>(null);
-  const handlePublishIntent = useCallback(() => setPublishIntent(null), []);
   const view = bench.view;
   const destinationSurface = useRef<HTMLDivElement>(null);
   useContentTransition(destinationSurface, view.kind);
   const workspace = sessionWorkspace(bench);
-  const showSession = !!project && view.kind === 'session';
-  const paired = showSession && workspace.open;
-  const document: WorkspaceDocument | null = showSession
-    ? workspace.open
-      ? workspace.active
-      : null
-    : view.kind === 'workflow' || view.kind === 'run'
+  // No in-app conversation surface: the assistant lives in an external harness
+  // that connects over MCP (see components/handoff-dialog.tsx), so every
+  // document opens in the main workbench area.
+  const document: WorkspaceDocument | null = view.kind === 'workflow' || view.kind === 'run'
     ? view
     : null;
   const report = (message: string, scope: string | null = projectId || null) =>
@@ -329,20 +319,11 @@ export function App() {
     if (action === 'details' || action === 'rename' || action === 'delete') {
       const target = projects.find((item) => item.id === targetId);
       if (target) setProjectManagement({ action, project: target });
-    } else if (action === 'import' || action === 'export') setTransfer(action);
-    else openCreate(action);
+    } else openCreate(action);
   }
-  async function chooseDirectory() {
-    try {
-      // No native picker in the browser: the field stays editable by hand.
-      const picker = await import('./tauri-stub/dialog').catch(() => null);
-      if (!picker) return;
-      const value = await picker.open({ directory: true, multiple: false });
-      if (typeof value === 'string') setDirectory(value);
-    } catch (cause) {
-      setCreateError((cause as Error).message);
-    }
-  }
+  // The agent's filesystem, not the browser's: the directory a project lives
+  // on is the machine RELION runs on (see form/path-browser.tsx).
+  const [browsingDirectory, setBrowsingDirectory] = useState(false);
   async function create() {
     const scope = projectId;
     if (creating) return;
@@ -359,14 +340,28 @@ export function App() {
         );
         await refresh(scope);
         dispatch({ type: 'workflow', id: created.id }, scope);
+      } else if (createKind === 'open') {
+        // Registering an existing directory: the agent writes
+        // default_pipeline.star if the folder is empty and unclaimed.
+        const created = await api<{ path: string }>('/api/projects', 'POST', {
+          path: directory.trim(),
+        });
+        await refresh(created.path);
+        setProjectId(created.path);
+        setNotice(null);
       } else {
-        const created = await api<Project>(
-          createKind === 'open' ? '/api/projects/open' : '/api/projects',
-          'POST',
-          createKind === 'open' ? { directory } : { name, directory: directory || undefined }
-        );
-        await refresh(created.id);
-        setProjectId(created.id);
+        // A brand-new project: /api/projects/create writes the empty pipeline,
+        // then registration adds it to the list. Two calls because creating
+        // and listing are separate steps in the agent.
+        await api<{ path: string }>('/api/projects/create', 'POST', {
+          path: directory.trim(),
+          name: name.trim() || undefined,
+        });
+        const created = await api<{ path: string }>('/api/projects', 'POST', {
+          path: directory.trim(),
+        });
+        await refresh(created.path);
+        setProjectId(created.path);
         setNotice(null);
       }
       setCreateKind(null);
@@ -485,9 +480,7 @@ export function App() {
             onProjectAction={projectAction}
             onCollapse={() => setSidebar(false)}
             onSearch={() => setSearchOpen(true)}
-            onNewSession={() => dispatch({ type: 'session', id: null })}
             onNewWorkflow={() => openCreate('workflow')}
-            onSession={(id) => dispatch({ type: 'session', id })}
             onWorkflow={(id) => dispatch({ type: 'workflow', id })}
             onRuns={() => dispatch({ type: 'view', view: { kind: 'runs' } })}
             onResources={() => dispatch({ type: 'view', view: { kind: 'resources' } })}
@@ -520,105 +513,11 @@ export function App() {
             </div>
           ) : (
             <>
-              <ResizablePanel
-                storageKey="flowgram.layout.conversation"
-                label={tx('会话面板宽度')}
-                initial={420}
-                min={320}
-                max={640}
-                reserve={320}
-                hidden={!showSession}
-                fill={!paired}
-                className={paired ? 'border-r border-border' : undefined}
-              >
-                <div className="relative min-h-0 flex-1">
-                  {Object.entries(workbenches)
-                    .filter(([, state]) => state.sessionInitialized)
-                    .map(([scope, state]) => {
-                      const owner = projects.find((item) => item.id === scope);
-                      if (!owner) return null;
-                      const snapshot = snapshots[scope] || empty;
-                      const visible = scope === projectId && showSession;
-                      return (
-                        <div
-                          key={scope}
-                          className="workspace-document absolute inset-0"
-                          data-active={visible}
-                          inert={!visible || undefined}
-                        >
-                          <ProjectScope projectId={scope}>
-                            <SessionPanel
-                              project={owner}
-                              sessionId={state.sessionId}
-                              sessionEpoch={state.sessionEpoch}
-                              sessions={snapshot.sessions}
-                              workflows={snapshot.workflows}
-                              runs={snapshot.runs}
-                              model={model}
-                              online={online}
-                              ready={ready && scope === projectId}
-                              referenceIntent={state.referenceIntent}
-                              headerLeading={visible ? headerLeading() : undefined}
-                              workbenchOpen={sessionWorkspace(state).open}
-                              onToggleWorkbench={(turnId) =>
-                                dispatch({ type: 'toggle-workbench', turnId }, scope)
-                              }
-                              onNewSession={() => dispatch({ type: 'session', id: null }, scope)}
-                              onArchive={() => {
-                                if (state.sessionId)
-                                  void archiveObject('session', state.sessionId, scope);
-                              }}
-                              onCreated={(id, previous) => {
-                                dispatch(
-                                  {
-                                    type: 'session-created',
-                                    id,
-                                    previous,
-                                    epoch: state.sessionEpoch,
-                                  },
-                                  scope
-                                );
-                                void refresh(scope).catch((cause) => report(cause.message, scope));
-                              }}
-                              onChanged={() => {
-                                void refresh(scope).catch((cause) => report(cause.message, scope));
-                              }}
-                              onOpenWorkflow={(id) =>
-                                sessionDocument({ kind: 'workflow', id }, scope)
-                              }
-                              onOpenRun={(run) =>
-                                sessionDocument({ kind: 'run', id: run.id }, scope)
-                              }
-                              onSettings={() => setSettings(true)}
-                              onActivity={(activity) => {
-                                dispatch({ type: 'workflow-activity', ...activity }, scope);
-                                if (
-                                  !snapshot.workflows.some(
-                                    (item) => item.id === activity.workflowId
-                                  )
-                                )
-                                  void refresh(scope).catch((cause) =>
-                                    report(cause.message, scope)
-                                  );
-                              }}
-                              onTurn={(turnId) =>
-                                dispatch(
-                                  { type: 'turn', sessionId: state.sessionId, turnId },
-                                  scope
-                                )
-                              }
-                            />
-                          </ProjectScope>
-                        </div>
-                      );
-                    })}
-                </div>
-              </ResizablePanel>
               <div
                 ref={destinationSurface}
                 className="workspace-workbench relative min-h-0 min-w-0 flex-1"
-                data-active={!showSession || paired}
-                inert={(showSession && !paired) || undefined}
+                data-active
+                inert={undefined}
               >
                 {Object.entries(workbenches).flatMap(([scope, state]) =>
                   state.openedWorkflowIds.map((id) => {
@@ -627,7 +526,7 @@ export function App() {
                     if (!workflow) return null;
                     const visible =
                       scope === projectId && document?.kind === 'workflow' && document.id === id;
-                    const isPaired = visible && paired;
+                    const isPaired = false;
                     return (
                       <div
                         key={`${scope}:${id}`}
@@ -649,10 +548,6 @@ export function App() {
                             runs={snapshot.runs}
                             selectedRunId={null}
                             onSaved={saved}
-                            onPublish={(workflow) => {
-                              setPublishIntent({ projectId: scope, workflowId: workflow.id });
-                              setSettings(true);
-                            }}
                             onClose={() =>
                               dispatch(
                                 { type: 'close-document', document: { kind: 'workflow', id } },
@@ -664,7 +559,7 @@ export function App() {
                                 ? () => dispatch({ type: 'toggle-workbench' }, scope)
                                 : undefined
                             }
-                            headerLeading={visible && !paired ? headerLeading() : undefined}
+                            headerLeading={visible ? headerLeading() : undefined}
                             documentTabs={
                               isPaired ? tabsFor(scope, state, { kind: 'workflow', id }) : undefined
                             }
@@ -679,10 +574,6 @@ export function App() {
                             onRun={() => {
                               void refresh(scope).catch((cause) => report(cause.message, scope));
                             }}
-                            onAssist={() => {
-                              setAssistSession('new');
-                              setAssist({ workflowId: id, projectId: scope });
-                            }}
                             error={(message) => report(message, scope)}
                           />
                         </ProjectScope>
@@ -695,7 +586,7 @@ export function App() {
                     <div className="flex h-full flex-col">
                       <WorkspaceHeader
                         title={tx('工作流')}
-                        leading={!paired ? headerLeading() : undefined}
+                        leading={headerLeading()}
                       />
                       <p className="p-6 text-sm text-muted-foreground">
                         <Loader2 className="mr-2 inline animate-spin" size={14} />
@@ -710,23 +601,17 @@ export function App() {
                       id={document.id}
                       onDebugPrepared={async (workflow) => {
                         await refresh(projectId);
-                        if (paired)
-                          dispatch({
-                            type: 'session-document',
-                            document: { kind: 'workflow', id: workflow.id },
-                          });
-                        else dispatch({ type: 'workflow', id: workflow.id });
+                        dispatch({ type: 'workflow', id: workflow.id });
                       }}
                       workflows={data.workflows}
                       sessions={data.sessions}
-                      headerLeading={!paired ? headerLeading() : undefined}
-                      documentTabs={paired ? tabsFor(projectId, bench, document) : undefined}
+                      headerLeading={headerLeading()}
+                      
                       onClose={() => dispatch({ type: 'close-document', document })}
-                      onCollapse={paired ? () => dispatch({ type: 'toggle-workbench' }) : undefined}
+                      
                       onWorkflow={(id) => {
                         if (!data.workflows.some((item) => item.id === id))
                           report(tx('此工作流已归档或删除，请先在设置中恢复。'));
-                        else if (paired) sessionDocument({ kind: 'workflow', id });
                         else dispatch({ type: 'workflow', id });
                       }}
                       onSession={(id) => {
@@ -736,134 +621,6 @@ export function App() {
                       }}
                     />
                   </ProjectScope>
-                )}
-                {showSession && paired && !document && (
-                  <div className="flex h-full flex-col">
-                    <WorkspaceHeader title={tx('工作流工作台')}>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={tx('收起工作台')}
-                        onClick={() => dispatch({ type: 'toggle-workbench' })}
-                      >
-                        <PanelRightClose />
-                      </Button>
-                    </WorkspaceHeader>
-                    <div className="m-auto max-w-sm p-6">
-                      <WorkflowIcon size={24} className="mb-4 text-muted-foreground" />
-                      <h2 className="text-base font-medium">{tx('选择要查看的工作流')}</h2>
-                      <p className="mb-5 mt-2 text-sm leading-6 text-muted-foreground">
-                        {tx('会话操作到具体工作流时，会自动在这里打开。')}
-                      </p>
-                      {data.workflows.map((item) => (
-                        <button
-                          key={item.id}
-                          className="sidebar-row"
-                          onClick={() => sessionDocument({ kind: 'workflow', id: item.id })}
-                        >
-                          <WorkflowIcon size={15} />
-                          {item.name}
-                        </button>
-                      ))}
-                      {!data.workflows.length && (
-                        <p className="text-xs text-muted-foreground">{t('emptyWorkflows')}</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {view.kind === 'workflows' && (
-                  <div className="flex h-full flex-col">
-                    <WorkspaceHeader title={tx('主页')} leading={headerLeading()}>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => dispatch({ type: 'session', id: null })}
-                      >
-                        <MessageCircle />
-                        {tx('让助手搭建')}
-                      </Button>
-                      <Button size="sm" onClick={() => openCreate('workflow')}>
-                        <Plus />
-                        {t('newWorkflow')}
-                      </Button>
-                    </WorkspaceHeader>
-                    <div className="min-h-0 flex-1 overflow-auto p-7">
-                      <h1 className="text-xl font-medium">{project.name}</h1>
-                      <p className="mb-7 mt-2 text-sm text-muted-foreground">
-                        {tx('查看项目工作流，或从模板开始搭建。')}
-                      </p>
-                      <h2 className="mb-2 text-xs font-medium text-muted-foreground">
-                        {tx('工作流')}
-                      </h2>
-                      {data.workflows.map((item) => (
-                        <button
-                          key={item.id}
-                          className="flex w-full items-center gap-4 border-b border-border py-4 text-left hover:bg-secondary/40"
-                          onClick={() => dispatch({ type: 'workflow', id: item.id })}
-                        >
-                          <WorkflowIcon size={18} />
-                          <span className="flex-1 text-sm">{item.name}</span>
-                          <span className="text-xs text-muted-foreground">v{item.revision}</span>
-                        </button>
-                      ))}
-                      {!data.workflows.length && (
-                        <p className="py-10 text-center text-sm text-muted-foreground">
-                          {t('emptyWorkflows')}
-                        </p>
-                      )}
-                      <h2 className="mb-3 mt-8 text-xs text-muted-foreground">
-                        {tx('从模板创建')}
-                      </h2>
-                      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                        {workflowTemplates.map((template) => (
-                          <button
-                            className="template-card"
-                            key={template.id}
-                            onClick={() => {
-                              const scope = projectId;
-                              void api<Workflow>(
-                                '/api/workflows',
-                                'POST',
-                                { projectId: scope, name: template.name, schema: template.schema },
-                                undefined,
-                                scope
-                              )
-                                .then(async (created) => {
-                                  await refresh(scope);
-                                  dispatch({ type: 'workflow', id: created.id }, scope);
-                                })
-                                .catch((cause) => report(cause.message, scope));
-                            }}
-                          >
-                            <span className="text-sm font-medium">{template.name}</span>
-                            <span className="mt-2 block text-xs text-muted-foreground">
-                              {template.description}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {view.kind === 'runs' && (
-                  <div className="flex h-full flex-col">
-                    <WorkspaceHeader title={tx('运行记录')} leading={headerLeading()} />
-                    <ProjectScope projectId={projectId}>
-                      <RunList
-                        onOpen={(id) => dispatch({ type: 'view', view: { kind: 'run', id } })}
-                      />
-                    </ProjectScope>
-                  </div>
-                )}
-                {view.kind === 'resources' && (
-                  <div className="flex h-full flex-col">
-                    <WorkspaceHeader title={tx('项目资源')} leading={headerLeading()} />
-                    <div className="min-h-0 flex-1">
-                      <ProjectScope projectId={projectId}>
-                        <ResourcesPage key={projectId} />
-                      </ProjectScope>
-                    </div>
-                  </div>
                 )}
               </div>
             </>
@@ -929,16 +686,14 @@ export function App() {
                       : tx('留空使用应用管理的位置')
                   }
                 />
-                {'__TAURI_INTERNALS__' in window && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    aria-label={tx('选择目录')}
-                    onClick={() => void chooseDirectory()}
-                  >
-                    <FolderOpen />
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  aria-label={tx('选择目录')}
+                  onClick={() => setBrowsingDirectory(true)}
+                >
+                  <FolderOpen />
+                </Button>
               </div>
             </label>
           )}
@@ -969,6 +724,14 @@ export function App() {
             </Button>
           </div>
         </form>
+        <PathBrowser
+          open={browsingDirectory}
+          onOpenChange={setBrowsingDirectory}
+          onPick={(picked) => setDirectory(picked)}
+          value={directory}
+          filter="directory"
+          title={tx('选择项目目录')}
+        />
       </Dialog>
       <Dialog open={searchOpen} onOpenChange={setSearchOpen} title={tx('搜索项目内容')}>
         <Input
@@ -1010,132 +773,6 @@ export function App() {
             ))}
         </div>
       </Dialog>
-      <Dialog
-        open={!!assist}
-        onOpenChange={(value) => {
-          if (!value) setAssist(null);
-        }}
-        title={tx('让助手修改')}
-      >
-        <p className="mb-4 text-sm text-muted-foreground">
-          {tx('工作流会在右侧保留，并作为本次输入的显式引用。')}
-        </p>
-        <label className="grid gap-2 text-xs">
-          {tx('选择会话')}
-          <Select
-            value={assistSession}
-            onValueChange={setAssistSession}
-            options={[
-              { value: 'new', label: t('newSession') },
-              ...(snapshots[assist?.projectId || '']?.sessions || []).map((item) => ({
-                value: item.id,
-                label: item.title,
-              })),
-            ]}
-          />
-        </label>
-        <div className="mt-5 flex justify-end gap-2">
-          <Button variant="ghost" onClick={() => setAssist(null)}>
-            {t('cancel')}
-          </Button>
-          <Button
-            onClick={() => {
-              if (!assist) return;
-              dispatch(
-                {
-                  type: 'assist',
-                  workflowId: assist.workflowId,
-                  sessionId: assistSession === 'new' ? undefined : assistSession,
-                },
-                assist.projectId
-              );
-              setAssist(null);
-            }}
-          >
-            {tx('开始协作')}
-          </Button>
-        </div>
-      </Dialog>
-      {transfer && (
-        <ProjectTransfer
-          mode={transfer}
-          project={project}
-          close={() => setTransfer(null)}
-          imported={async (created) => {
-            setProjects((current) => [
-              created,
-              ...current.filter((item) => item.id !== created.id),
-            ]);
-            setProjectId(created.id);
-            dispatch({ type: 'view', view: { kind: 'workflows' } }, created.id);
-            setNotice(null);
-            void refresh(created.id).catch((cause) => report(cause.message, created.id));
-          }}
-        />
-      )}
-      {projectManagement && (
-        <ProjectManagement
-          key={`${projectManagement.action}:${projectManagement.project.id}`}
-          action={projectManagement.action}
-          project={projectManagement.project}
-          close={() => setProjectManagement(null)}
-          renamed={(updated) => {
-            setProjects((current) =>
-              current.map((item) => (item.id === updated.id ? updated : item))
-            );
-          }}
-          deleted={async (id) => {
-            setSnapshots((current) => {
-              const next = { ...current };
-              delete next[id];
-              return next;
-            });
-            setWorkbenches((current) => {
-              const next = { ...current };
-              delete next[id];
-              return next;
-            });
-            forgetProjectDrafts(id);
-            const next = await refresh('');
-            setProjectId((current) =>
-              current === id || !next.projects.some((item) => item.id === current)
-                ? next.projects[0]?.id || ''
-                : current
-            );
-            setNotice(null);
-          }}
-        />
-      )}
-      {ready && (
-        <Presence open={settings} keepMounted className="settings-presence fixed inset-0 z-40">
-          <SettingsPage
-            onArchiveChanged={(scope, kind, id, deleted) => {
-              if (deleted) {
-                forgetDeletedDraft(scope, kind, id);
-                dispatch({ type: 'remove-object', kind, id }, scope);
-              }
-              void refresh(scope).catch((cause) => report(cause.message, scope));
-            }}
-            visible={settings}
-            close={() => setSettings(false)}
-            model={model}
-            saved={setModel}
-            online={online}
-            deploymentIntent={publishIntent}
-            onDeploymentHandled={handlePublishIntent}
-            openDeploymentWorkflow={(scope, id) => {
-              setProjectId(scope);
-              dispatch({ type: 'workflow', id }, scope);
-              setSettings(false);
-            }}
-            openDeploymentRun={(scope, id) => {
-              setProjectId(scope);
-              dispatch({ type: 'view', view: { kind: 'run', id } }, scope);
-              setSettings(false);
-            }}
-          />
-        </Presence>
-      )}
     </>
   );
 }

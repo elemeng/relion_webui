@@ -4,8 +4,6 @@
  */
 import { useEffect, useSyncExternalStore } from 'react';
 
-import { api } from './api';
-import type { DeploymentCredential } from './deployment';
 
 export type ModelProtocol = 'responses' | 'chat-completions' | 'anthropic';
 export interface ModelParameters {
@@ -65,7 +63,12 @@ export interface ModelVerification {
 export interface ModelInventory {
   connections: ModelConnection[];
   models: ModelEntry[];
-  credentials: DeploymentCredential[];
+  credentials: Array<{
+    id: string;
+    name: string;
+    environment?: string;
+    projectIds?: string[] | null;
+  }>;
   defaults: { chat: string | null; workflow: string | null; revision: number };
   verifications: Record<string, ModelVerification>;
 }
@@ -76,7 +79,10 @@ let pending: Promise<ModelInventory> | null = null;
 const listeners = new Set<() => void>();
 export function refreshModels(fresh = false): Promise<ModelInventory> {
   if (pending) return fresh ? pending.catch(() => undefined).then(() => refreshModels()) : pending;
-  pending = api<ModelInventory>('/api/settings/models').then((next) => {
+  // This branch has no in-app assistant, so no model inventory endpoint is
+  // bridged. The canvas still asks (it renders LLM nodes if a project contains
+  // one), so an empty inventory is the honest answer rather than a retry storm.
+  pending = Promise.resolve(empty).then((next) => {
     snapshot = next;
     loaded = true;
     listeners.forEach((listener) => listener());
@@ -94,7 +100,7 @@ export function modelUnavailable(catalog: ModelInventory, model: ModelEntry, pro
   if (!model.enabled || !connection?.enabled) return '已停用';
   const credential = connection.credentialId && catalog.credentials.find((c) => c.id === connection.credentialId);
   if (connection.credentialId && !credential) return '缺少凭证';
-  if (project && credential && credential.projectIds !== null && !credential.projectIds.includes(project)) return '凭证未授权此项目';
+  if (project && credential && credential.projectIds != null && !credential.projectIds.includes(project)) return '凭证未授权此项目';
   if (tools && model.capabilities.tools !== true) return '需要工具调用能力';
   if (streaming && model.capabilities.streaming !== true) return '需要流式输出能力';
   return '';

@@ -31,7 +31,6 @@ import {
   setLanguagePreference,
   isLanguagePreference,
 } from '../lib/i18n';
-import type { PublishIntent } from '../lib/deployment';
 import { api } from '../lib/api';
 import logo from '../assets/flowgram-logo.svg';
 import copyIcon from '../assets/claude/copy.svg';
@@ -40,70 +39,31 @@ import { Button } from './ui/button';
 import { AssetIcon } from './ui/asset-icon';
 import { ThemeSettings } from './theme-settings';
 import { ResizablePanel } from './resizable-panel';
-import { ModelSettingsPage } from './model-settings';
-const DeploymentPage = lazy(() =>
-  import('./deployment-page').then((module) => ({ default: module.DeploymentPage }))
-);
-const ArchiveSettings = lazy(() =>
-  import('./archive-settings').then((module) => ({ default: module.ArchiveSettings }))
-);
 const ClusterPage = lazy(() =>
   import('./cluster-page').then((module) => ({ default: module.ClusterPage }))
 );
 const sections = localized([
   { id: 'general', title: '通用', icon: Settings2 },
-  { id: 'model', title: '模型', icon: Plug },
   { id: 'appearance', title: '外观与动效', icon: Palette },
   { id: 'tools', title: '工具与 MCP', icon: Wrench },
-  { id: 'deployment', title: '部署', icon: Rocket },
   { id: 'cluster', title: '集群与队列', icon: Server },
-  { id: 'archive', title: '归档', icon: Archive },
   { id: 'keyboard', title: '快捷键', icon: Keyboard },
   { id: 'about', title: '关于', icon: Info },
 ] as const);
 export function SettingsPage({
   visible,
   close,
-  saved,
   online,
-  deploymentIntent,
-  onDeploymentHandled,
-  openDeploymentWorkflow,
-  openDeploymentRun,
-  onArchiveChanged,
 }: {
   visible: boolean;
   close: () => void;
   model: ModelSettings | null;
   saved: (value: ModelSettings) => void;
   online: boolean;
-  deploymentIntent: PublishIntent | null;
-  onDeploymentHandled: () => void;
-  openDeploymentWorkflow: (project: string, id: string) => void;
-  openDeploymentRun: (project: string, id: string) => void;
-  onArchiveChanged: (
-    project: string,
-    kind: 'session' | 'workflow',
-    id: string,
-    deleted: boolean
-  ) => void;
 }) {
-  const [section, setSection] = useState<string>(
-    deploymentIntent
-      ? 'deployment'
-      : sessionStorage.getItem('flowgram.settings.intent') === 'model'
-      ? 'model'
-      : 'general'
-  );
+  const [section, setSection] = useState<string>('general');
   const content = useRef<HTMLDivElement>(null);
   useContentTransition(content, section);
-  useEffect(() => {
-    if (deploymentIntent) setSection('deployment');
-  }, [deploymentIntent]);
-  const [deploymentVisited, setDeploymentVisited] = useState(!!deploymentIntent);
-  useEffect(() => {
-    if (section === 'deployment') setDeploymentVisited(true);
-  }, [section]);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [tools, setTools] = useState<Array<{ name: string; description: string }>>([]);
@@ -219,26 +179,6 @@ export function SettingsPage({
               <ClusterPage active={visible && section === 'cluster'} />
             </Suspense>
           </div>
-          <div hidden={section !== 'deployment'}>
-            {deploymentVisited && (
-              <Suspense
-                fallback={<p className="text-sm text-muted-foreground">{tx('正在加载')}</p>}
-              >
-                <DeploymentPage
-                  active={visible && section === 'deployment'}
-                  intent={deploymentIntent}
-                  onHandled={onDeploymentHandled}
-                  openWorkflow={openDeploymentWorkflow}
-                  openRun={openDeploymentRun}
-                />
-              </Suspense>
-            )}
-          </div>
-          {section === 'archive' && (
-            <Suspense fallback={<p className="text-sm text-muted-foreground">{tx('正在加载')}</p>}>
-              <ArchiveSettings active={visible} onChanged={onArchiveChanged} />
-            </Suspense>
-          )}
           {section === 'general' && (
             <div className="settings-group">
               <div className="settings-row">
@@ -309,15 +249,6 @@ export function SettingsPage({
                 </div>
               </div>
             </div>
-          )}
-          {section === 'model' && (
-            <ModelSettingsPage
-              changed={() => {
-                void api<ModelSettings>('/api/settings/model')
-                  .then(saved)
-                  .catch((e) => setError(e.message));
-              }}
-            />
           )}
           {section === 'appearance' && (
             <div className="settings-group">

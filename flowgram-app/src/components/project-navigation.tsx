@@ -28,8 +28,6 @@ export type ProjectAction =
   | 'project'
   | 'open'
   | 'details'
-  | 'import'
-  | 'export'
   | 'rename'
   | 'delete';
 
@@ -65,8 +63,6 @@ export function ProjectMenu({
       commands={[
         { id: 'project', label: t('newProject') },
         { id: 'open', label: tx('打开项目') },
-        { id: 'import', label: tx('导入项目') },
-        ...(projectId ? [{ id: 'export', label: tx('导出项目') }] : []),
       ]}
     />
   );
@@ -80,9 +76,7 @@ export function ProjectSidebar({
   onProjectAction,
   onCollapse,
   onSearch,
-  onNewSession,
   onNewWorkflow,
-  onSession,
   onWorkflow,
   onRuns,
   onResources,
@@ -97,9 +91,7 @@ export function ProjectSidebar({
   onProjectAction: (action: ProjectAction, projectId?: string) => void;
   onCollapse: () => void;
   onSearch: () => void;
-  onNewSession: () => void;
   onNewWorkflow: () => void;
-  onSession: (id: string) => void;
   onWorkflow: (id: string) => void;
   onRuns: () => void;
   onResources: () => void;
@@ -144,7 +136,6 @@ export function ProjectSidebar({
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
         <nav className="mb-5 mt-3" aria-label={tx('项目操作')}>
           {[
-            { label: t('newSession'), icon: MessageCircle, action: onNewSession },
             { label: tx('搜索'), icon: Search, action: onSearch },
             {
               label: tx('项目资源'),
@@ -222,67 +213,6 @@ export function ProjectSidebar({
               {!snapshot.workflows.length && (
                 <p className="py-2 pl-[35px] pr-2 text-xs text-muted-foreground">
                   {t('emptyWorkflows')}
-                </p>
-              )}
-            </section>
-            <section aria-label={tx('会话')}>
-              <div className="mb-1 flex h-8 items-center justify-between pl-2.5">
-                <h2 className="flex items-center gap-2.5 text-xs font-medium text-muted-foreground">
-                  <MessageCircle size={15} strokeWidth={1.6} aria-hidden="true" />
-                  {tx('会话')}
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={t('newSession')}
-                  title={t('newSession')}
-                  onClick={onNewSession}
-                >
-                  <Plus size={14} />
-                </Button>
-              </div>
-              {snapshot.sessions.map((session) => {
-                const selected = bench.view.kind === 'session' && bench.sessionId === session.id;
-                return (
-                  <div className="sidebar-object group relative" key={session.id}>
-                    <button
-                      title={session.title}
-                      className={cn(
-                        'sidebar-row sidebar-object-row pr-9',
-                        selected && 'sidebar-selected'
-                      )}
-                      aria-current={selected ? 'page' : undefined}
-                      onClick={() => onSession(session.id)}
-                    >
-                      <span className="truncate">{session.title}</span>
-                      {session.status === 'running' && (
-                        <Loader2 size={12} className="ml-auto shrink-0 animate-spin" />
-                      )}
-                    </button>
-                    <div className="sidebar-object-menu absolute right-0 top-0">
-                      <MenuButton
-                        label={tx('会话操作：{0}', [session.title])}
-                        commands={[
-                          {
-                            id: 'archive',
-                            label: tx('归档会话'),
-                            disabled:
-                              session.status === 'running'
-                                ? tx('请先停止正在进行的执行')
-                                : undefined,
-                          },
-                        ]}
-                        onCommand={() => onArchive('session', session.id)}
-                      >
-                        <MoreHorizontal size={14} />
-                      </MenuButton>
-                    </div>
-                  </div>
-                );
-              })}
-              {!snapshot.sessions.length && (
-                <p className="py-2 pl-[35px] pr-2 text-xs text-muted-foreground">
-                  {tx('还没有会话')}
                 </p>
               )}
             </section>
