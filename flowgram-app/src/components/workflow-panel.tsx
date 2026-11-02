@@ -794,7 +794,7 @@ export function WorkflowPanel({
           <div className="flex min-w-0 items-center gap-3">
             {documentTabs || <span className="truncate">{workflow.name}</span>}
             <span
-              className="shrink-0 text-[11px] font-normal text-muted-foreground"
+              className="shrink-0 text-2xs font-normal text-muted-foreground"
               role="status"
               title={`v${workflow.revision}`}
             >

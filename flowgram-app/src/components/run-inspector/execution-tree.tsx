@@ -86,7 +86,7 @@ function IterationGroup({
     >
       <summary
         style={{ paddingLeft: depth * 12 + 14 }}
-        className="flex cursor-pointer items-center gap-2 px-3 py-2 text-[10px] text-muted-foreground"
+        className="flex cursor-pointer items-center gap-2 px-3 py-2 text-3xs text-muted-foreground"
       >
         <ChevronRight size={12} className={open ? 'rotate-90' : ''} />
         <StatusIcon status={status} size={11} />
@@ -179,11 +179,11 @@ export function ExecutionTree({
                   {Internal && <Internal size={11} className="shrink-0 text-muted-foreground" />}
                   <span className="truncate">{name(entry)}</span>
                   {entry.children > 0 && (
-                    <span className="text-[10px] text-muted-foreground">{entry.children}</span>
+                    <span className="text-3xs text-muted-foreground">{entry.children}</span>
                   )}
                 </span>
                 {path && !parent && (
-                  <small className="mt-0.5 block truncate text-[10px] text-muted-foreground">
+                  <small className="mt-0.5 block truncate text-3xs text-muted-foreground">
                     {path}
                   </small>
                 )}
@@ -203,7 +203,7 @@ export function ExecutionTree({
                   />
                 </span>
               </span>
-              <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+              <span className="shrink-0 text-3xs tabular-nums text-muted-foreground">
                 {duration(entry.durationMs)}
               </span>
             </button>

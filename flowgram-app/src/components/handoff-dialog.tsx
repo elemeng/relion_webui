@@ -117,16 +117,16 @@ export function HandoffDialog({
                 {copied === row.label ? tx('已复制') : tx('复制')}
               </Button>
             </div>
-            <pre className="select-all whitespace-pre-wrap break-words rounded-lg border border-border bg-secondary/40 p-3 text-[11px] leading-relaxed">
+            <pre className="select-all whitespace-pre-wrap break-words rounded-lg border border-border bg-secondary/40 p-3 text-2xs leading-relaxed">
               {row.value}
             </pre>
             {row.note && (
-              <p className="mt-1 text-[10px] text-muted-foreground">{row.note}</p>
+              <p className="mt-1 text-3xs text-muted-foreground">{row.note}</p>
             )}
           </section>
         ))}
       </div>
-      <div className="mt-5 flex items-center gap-2 text-[11px] text-muted-foreground">
+      <div className="mt-5 flex items-center gap-2 text-2xs text-muted-foreground">
         <Terminal size={13} />
         {tx('在终端里运行 harness 时，选择本项目目录作为工作目录即可。')}
       </div>

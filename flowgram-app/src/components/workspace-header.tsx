@@ -18,7 +18,7 @@ export function WorkspaceHeader({
     <header className="workspace-header" data-tauri-drag-region>
       <div className="flex min-w-0 flex-1 items-center gap-2">
         {leading}
-        <div className="min-w-0 truncate text-[13px] font-medium">{title}</div>
+        <div className="min-w-0 truncate text-sm font-medium">{title}</div>
       </div>
       {children && <div className="flex shrink-0 items-center gap-1">{children}</div>}
     </header>

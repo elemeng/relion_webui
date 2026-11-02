@@ -232,7 +232,7 @@ export function RunList({
       )}
       <div className="min-h-0 flex-1 overflow-auto" aria-busy={busy}>
         <table className="w-full min-w-[640px] border-collapse text-left text-xs">
-          <thead className="sticky top-0 z-10 bg-background text-[10px] text-muted-foreground">
+          <thead className="sticky top-0 z-10 bg-background text-3xs text-muted-foreground">
             <tr>
               {['工作流', '状态', '来源 / 环境', '版本', '耗时', '开始时间'].map((label) => (
                 <th className="border-b border-border px-4 py-3 font-normal" key={label}>
@@ -257,14 +257,14 @@ export function RunList({
                       {run.workflowName || run.workflowId.slice(0, 8)}
                     </span>
                     <span
-                      className="mt-1 block truncate text-[10px] text-muted-foreground"
+                      className="mt-1 block truncate text-3xs text-muted-foreground"
                       title={run.id}
                     >
                       {run.businessId || run.requestId || run.id.slice(0, 8)}
                     </span>
                     {run.error && (
                       <span
-                        className="mt-1 block max-w-64 truncate text-[10px] text-destructive"
+                        className="mt-1 block max-w-64 truncate text-3xs text-destructive"
                         title={errorText(run.error)}
                       >
                         {errorText(run.error)}
@@ -279,7 +279,7 @@ export function RunList({
                   </span>
                   {run.callbackStatus && (
                     <span
-                      className="mt-1 block text-[10px] text-muted-foreground"
+                      className="mt-1 block text-3xs text-muted-foreground"
                       title={run.callbackError ? errorText(run.callbackError) : undefined}
                     >
                       {tx('回调')} ·{' '}
@@ -317,7 +317,7 @@ export function RunList({
             {tx('没有符合条件的运行记录')}
           </p>
         )}
-        <div className="flex items-center justify-between p-4 text-[10px] text-muted-foreground">
+        <div className="flex items-center justify-between p-4 text-3xs text-muted-foreground">
           <span>
             {page ? tx('已显示 {0} / {1} 次运行', [page.runs.length, page.total]) : tx('加载中…')}
           </span>

@@ -374,7 +374,7 @@ export function RunInspector({
                 </span>
               )}
               {width >= 1150 && (
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-3xs text-muted-foreground">
                   {sourceLabel(detail.trace.source)}
                 </span>
               )}
@@ -384,7 +384,7 @@ export function RunInspector({
                 </span>
               )}
               {width >= 1000 && (
-                <span className="truncate text-[10px] text-muted-foreground" title={id}>
+                <span className="truncate text-3xs text-muted-foreground" title={id}>
                   {detail.trace.publication
                     ? `${detail.trace.publication.environment} · ${detail.trace.publication.version}`
                     : `v${detail.run.revision}`}{' '}
@@ -542,7 +542,7 @@ export function RunInspector({
                     className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--surface-canvas)]"
                     aria-label={view === 'canvas' ? tx('历史画布') : tx('时间线')}
                   >
-                    <div className="flex min-h-9 shrink-0 items-center gap-2 border-b border-border px-3 py-1 text-[10px] text-muted-foreground">
+                    <div className="flex min-h-9 shrink-0 items-center gap-2 border-b border-border px-3 py-1 text-3xs text-muted-foreground">
                       {snapshot?.id !== detail.run.workflowId && (
                         <Button
                           variant="ghost"
@@ -604,7 +604,7 @@ export function RunInspector({
                       </div>
                       {view === 'timeline' && (
                         <div className="absolute inset-0 overflow-auto bg-background p-4">
-                          <div className="mb-3 flex justify-between text-[10px] tabular-nums text-muted-foreground">
+                          <div className="mb-3 flex justify-between text-3xs tabular-nums text-muted-foreground">
                             <span>0 s</span>
                             <span>{duration(span)}</span>
                           </div>
@@ -645,18 +645,18 @@ export function RunInspector({
                                   }}
                                 />
                               </span>
-                              <span className="text-right text-[10px] tabular-nums text-muted-foreground">
+                              <span className="text-right text-3xs tabular-nums text-muted-foreground">
                                 {duration(entry.durationMs)}
                               </span>
                             </button>
                           ))}
-                          <p className="mt-4 text-[10px] text-muted-foreground">
+                          <p className="mt-4 text-3xs text-muted-foreground">
                             {tx('时间线显示已展开的步骤，展开执行树可查看内部调用。')}
                           </p>
                         </div>
                       )}
                     </div>
-                    <div className="flex min-h-10 shrink-0 items-center gap-3 border-t border-border bg-background px-3 text-[10px] text-muted-foreground">
+                    <div className="flex min-h-10 shrink-0 items-center gap-3 border-t border-border bg-background px-3 text-3xs text-muted-foreground">
                       <span className="shrink-0">
                         {detail.trace.at == null
                           ? tx('完整运行')

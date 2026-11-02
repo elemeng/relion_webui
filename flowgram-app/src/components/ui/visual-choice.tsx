@@ -49,7 +49,7 @@ export function VisualChoice<T extends string>({
                 />
               </span>
               {option.description && (
-                <span className="mt-1 block px-1 text-[11px] leading-4 text-muted-foreground">
+                <span className="mt-1 block px-1 text-2xs leading-4 text-muted-foreground">
                   {option.description}
                 </span>
               )}

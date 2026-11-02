@@ -92,7 +92,7 @@ export function ExecutionDetail({
     return (
       <section className="flex h-full min-h-0 flex-col" aria-label={tx('步骤详情')}>
         <div className="flex shrink-0 items-center gap-2 border-b border-border px-3">
-          <span className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground" title={name}>
+          <span className="min-w-0 flex-1 truncate text-3xs text-muted-foreground" title={name}>
             {name}
           </span>
           <div
@@ -147,10 +147,10 @@ export function ExecutionDetail({
           <h3 className="min-w-0 flex-1 truncate text-sm font-medium" title={name}>
             {name}
           </h3>
-          <span className="shrink-0 text-[10px] text-muted-foreground">{statusLabel(status)}</span>
+          <span className="shrink-0 text-3xs text-muted-foreground">{statusLabel(status)}</span>
         </div>
         {entry && (
-          <p className="mt-1.5 break-words text-[10px] text-muted-foreground">
+          <p className="mt-1.5 break-words text-3xs text-muted-foreground">
             {executionPath(entry) || tx('工作流主路径')} · {duration(entry.durationMs)}
           </p>
         )}
@@ -204,7 +204,7 @@ export function ExecutionDetail({
                 >
                   <summary className="cursor-pointer break-all">
                     {event.kind}
-                    <time className="mt-1 block text-[10px] text-muted-foreground">
+                    <time className="mt-1 block text-3xs text-muted-foreground">
                       #{event.sequence} · {new Date(event.createdAt).toLocaleTimeString()}
                     </time>
                   </summary>
@@ -334,7 +334,7 @@ export function ExecutionDetail({
                     >
                       <span className="min-w-0 break-all">
                         {field}
-                        <span className="mt-1 block text-[10px] text-muted-foreground">
+                        <span className="mt-1 block text-3xs text-muted-foreground">
                           {Array.isArray(value.content)
                             ? value.content.join('.')
                             : String(value.content)}
@@ -366,7 +366,7 @@ export function ExecutionDetail({
                 />
               </section>
             )}
-            <details className="text-[10px] text-muted-foreground">
+            <details className="text-3xs text-muted-foreground">
               <summary className="cursor-pointer">{tx('技术信息')}</summary>
               <dl className="mt-2">
                 <Fact label="Run ID" value={detail.run.id} />

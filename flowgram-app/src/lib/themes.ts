@@ -22,6 +22,26 @@ interface ThemeColors {
   line: string;
   destructive: string;
 }
+/**
+ * The colour contract, measured rather than assumed.
+ *
+ * WCAG 2.1 AA wants 4.5:1 for body text. These are the ratios of the weakest
+ * pairing each mode actually renders - `muted` on the lightest surface it can
+ * sit on, and `destructive` likewise - computed from the values below:
+ *
+ *   light   muted #6b6863 on secondary #f0eee6   4.78:1
+ *           muted #6b6863 on sidebar   #f5f5f3   5.08:1
+ *           destructive #b84040 on surface #fff  5.46:1
+ *
+ *   dark    muted #a4a19b on secondary #292927   5.66:1
+ *           muted #a4a19b on surface   #242522   5.98:1
+ *           destructive #ef9090 on surface       6.65:1
+ *
+ * Every theme below overrides only hues, and its `muted`/`destructive` stay
+ * within the same lightness band as these, so the ratios hold for all eight.
+ * Changing a value here means recomputing its pair - a theme that dips below
+ * 4.5:1 is a bug, not a taste.
+ */
 const base: Record<ColorMode, ThemeColors> = {
   light: {
     background: '#fcfcfb',

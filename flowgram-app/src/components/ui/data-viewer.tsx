@@ -43,7 +43,7 @@ function ValueTree({ value, depth = 0 }: { value: unknown; depth?: number }) {
               <details open={depth < 1}>
                 <summary className="cursor-pointer break-words text-muted-foreground">
                   <span className="text-foreground">{key}</span>{' '}
-                  <span className="ml-1 text-[10px]">
+                  <span className="ml-1 text-3xs">
                     {Array.isArray(entry) ? `[${entry.length}]` : `{${Object.keys(entry).length}}`}
                   </span>
                 </summary>
@@ -124,7 +124,7 @@ export function DataViewer({
             { value: 'json', label: 'JSON' },
           ]}
         />
-        <span className="ml-auto text-[10px] text-muted-foreground">
+        <span className="ml-auto text-3xs text-muted-foreground">
           {new TextEncoder().encode(text).length.toLocaleString()} B
         </span>
         <Button
