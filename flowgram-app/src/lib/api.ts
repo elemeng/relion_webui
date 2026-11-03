@@ -56,7 +56,16 @@ export async function api<T>(
   }
   if (!response.ok) {
     const data = await response.json().catch(() => null);
-    throw new Error(data?.error?.message || `HTTP ${response.status}`);
+    // Two error shapes meet here: FlowGram's `{error: {message}}` and the
+    // agent's `{error: "text"}`. Reading only the first turned every rejected
+    // login into a bare "HTTP 401" - or, when the body was not JSON, nothing at
+    // all.
+    const message =
+      (typeof data?.error === 'string' && data.error) ||
+      data?.error?.message ||
+      data?.detail ||
+      `HTTP ${response.status}`;
+    throw new Error(typeof message === 'string' ? message : String(message));
   }
   return response.json();
 }
