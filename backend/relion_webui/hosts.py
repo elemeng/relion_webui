@@ -321,6 +321,32 @@ _SSH_OPTIONS = (
 )
 
 
+def default_key_path() -> Path:
+    """The agent's own SSH key.
+
+    Beside the project list, not in ``~/.ssh``: this key belongs to the *agent*,
+    not to the operator's interactive logins, and keeping it separate means
+    revoking one does not disturb the other. ``RELION_WEB_HOME`` moves it with
+    the rest of the agent's state.
+    """
+    import os
+
+    home = os.environ.get('RELION_WEB_HOME')
+    root = Path(home).expanduser() if home else Path.home() / '.relion_web'
+    return root / 'id_ed25519'
+
+
+def _identity_option() -> List[str]:
+    """``-i`` pointing at the agent key, when it exists.
+
+    Nodes are provisioned with this key, so it has to be offered explicitly:
+    ssh only tries keys it knows about, and an operator's own ``~/.ssh/id_*``
+    is a different key.
+    """
+    path = default_key_path()
+    return ['-o', 'IdentitiesOnly=yes', '-i', str(path)] if path.is_file() else []
+
+
 def _strictness_option() -> str:
     import os
 
@@ -341,6 +367,7 @@ def ssh_argv(host: ExecutionHost, remote_command: str) -> List[str]:
     argv = ['ssh']
     for option in (*_SSH_OPTIONS, _strictness_option()):
         argv += ['-o', option]
+    argv += _identity_option()
     if host.port and host.port != 22:
         argv += ['-p', str(host.port)]
     argv += [host.ssh_target(), remote_command]

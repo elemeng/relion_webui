@@ -415,3 +415,77 @@ def test_forms_put_the_advanced_flag_list_on_other_args():
     assert 'does a thing' in field['tip']
     assert '--covered' not in field['tip']
     assert '--hidden' not in field['tip']
+
+
+# -------------------------------------------------------------- provisioning
+
+
+def test_parse_addresses_accepts_paste_formats():
+    from relion_webui.flowgram import provision
+
+    # Newlines, commas and spaces all arrive from inventories and spreadsheets.
+    assert provision.parse_addresses('10.0.0.1\n10.0.0.2') == ['10.0.0.1', '10.0.0.2']
+    assert provision.parse_addresses('10.0.0.1, 10.0.0.2') == ['10.0.0.1', '10.0.0.2']
+    assert provision.parse_addresses('10.0.0.1  10.0.0.2') == ['10.0.0.1', '10.0.0.2']
+    # A duplicate is a typo, not a request for two nodes.
+    assert provision.parse_addresses('a\nb\na') == ['a', 'b']
+
+
+def test_node_name_comes_from_the_first_label():
+    from relion_webui.flowgram import provision
+
+    assert provision._name_for('gpu3.lab.example') == 'gpu3'
+    assert provision._name_for('10.0.0.11') == '10'
+
+
+def test_installed_key_is_restricted_to_the_agent_command():
+    """The key copied to a node must not be a general login credential."""
+    from relion_webui.flowgram import provision
+
+    line = provision._restricted_key('ssh-ed25519 AAAA test')
+    assert line.startswith('command="')
+    assert 'no-pty' in line
+    assert 'no-port-forwarding' in line
+    assert line.endswith('ssh-ed25519 AAAA test')
+
+
+def test_provision_reports_where_it_stopped(monkeypatch):
+    """A failure before the key lands must not add the host."""
+    from relion_webui import hosts
+    from relion_webui.flowgram import provision
+
+    registry = hosts.HostRegistry(config_directory=None)
+    registry._save = lambda: None  # noqa: SLF001 - keep the test off disk
+
+    def refuse(*_args, **_kwargs):
+        raise provision.ProvisionError('cannot reach 10.0.0.99: timed out')
+
+    monkeypatch.setattr(provision, 'install_key', refuse)
+    result = provision.provision('10.0.0.99', password='x', registry=registry)
+
+    assert result.ok is False
+    assert '10.0.0.99' in (result.error or '')
+    assert result.steps == []
+    assert all(host.name != '10' for host in registry.list())
+
+
+def test_provision_many_stops_on_bad_credentials(monkeypatch):
+    """The same password works for every node or none; do not deepen a lockout."""
+    from relion_webui import hosts
+    from relion_webui.flowgram import provision
+
+    calls = []
+
+    def refuse(address, **_kwargs):
+        calls.append(address)
+        raise provision.ProvisionError(f'invalid credentials for root@{address}')
+
+    monkeypatch.setattr(provision, 'install_key', refuse)
+    results = provision.provision_many(
+        ['10.0.0.1', '10.0.0.2', '10.0.0.3'],
+        password='wrong',
+        registry=hosts.HostRegistry(config_directory=None),
+    )
+
+    assert len(calls) == 1
+    assert [result.ok for result in results] == [False]

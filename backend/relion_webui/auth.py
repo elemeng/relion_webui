@@ -21,7 +21,7 @@ otherwise anyone with any account could drive this user's jobs.
 
 import secrets
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
 DEFAULT_SESSION_LIFETIME = 12 * 3600  # seconds
@@ -41,6 +41,12 @@ class Session:
     created_at: float
     expires_at: float
     remote: str = ''
+    # Kept only so `POST /api/hosts/provision` can copy the agent's key to a GPU
+    # node the user names. It is not part of `as_dict`, never logged, and
+    # cleared the moment a provisioning request uses it - a login that only
+    # browses never leaves a password in memory at all, and one that provisions
+    # holds it for the length of that request.
+    provision_secret: Optional[str] = field(default=None, repr=False)
 
     @property
     def expired(self) -> bool:
@@ -173,9 +179,27 @@ class AuthManager:
             expires_at=time.time() + self.session_lifetime,
             remote=remote,
         )
+        # Held for one purpose only: `POST /api/hosts/provision` uses it to copy
+        # the agent's key to a node the user names. It is never written to disk,
+        # never in `as_dict`, and consumed on use (see `take_provision_secret`).
+        session.provision_secret = password
         self._sessions[session.token] = session
         self._prune()
         return session
+
+    def take_provision_secret(self, token: Optional[str]) -> Optional[str]:
+        """The password this session may use once, or None.
+
+        Taking rather than reading: the secret exists for one key copy, so the
+        first call consumes it. A second provisioning request in the same login
+        is refused rather than replaying a password that nothing needs to keep.
+        """
+        session = self.get_session(token)
+        if session is None or session.provision_secret is None:
+            return None
+        secret = session.provision_secret
+        session.provision_secret = None
+        return secret
 
     # --------------------------------------------------------------- sessions
     def get_session(self, token: Optional[str]) -> Optional[Session]:

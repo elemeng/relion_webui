@@ -15,7 +15,7 @@
  * part of the settings surface rather than a bolted-on dashboard.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { Cpu, HardDrive, MonitorPlay, RefreshCw, Server, Trash2 } from 'lucide-react';
+import { Cpu, HardDrive, Loader2, MonitorPlay, RefreshCw, Server, Trash2 } from 'lucide-react';
 
 import { api } from '../lib/api';
 import { tx } from '../lib/i18n';
@@ -115,7 +115,13 @@ export function ClusterPage({ active }: { active: boolean }) {
   const [queue, setQueue] = useState<QueueSnapshot | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [addSpec, setAddSpec] = useState('');
+  // Addresses, one per line: a deployment is a set of identical machines, and
+  // the agent provisions each one from the login it already has.
+  const [addresses, setAddresses] = useState('');
+  const [provisioning, setProvisioning] = useState(false);
+  const [progress, setProgress] = useState<
+    Array<{ host: string; name: string; ok: boolean; steps: string[]; error?: string | null }>
+  >([]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -165,14 +171,32 @@ export function ClusterPage({ active }: { active: boolean }) {
     }
   }
 
-  async function addHost() {
-    if (!addSpec.trim()) return;
+  async function addHosts() {
+    if (!addresses.trim() || provisioning) return;
+    setProvisioning(true);
+    setProgress([]);
+    setError(null);
     try {
-      await api('/api/hosts', 'POST', { spec: addSpec.trim(), note: '' });
-      setAddSpec('');
+      const result = await api<{
+        results: Array<{
+          host: string;
+          name: string;
+          ok: boolean;
+          steps: string[];
+          error?: string | null;
+        }>;
+        added: number;
+        failed: number;
+      }>('/api/hosts/provision', 'POST', { addresses });
+      setProgress(result.results);
+      // Only clear the field on a clean run: a partial failure leaves the text
+      // so the operator can fix one address and retry, rather than retyping.
+      if (!result.failed) setAddresses('');
       await refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setProvisioning(false);
     }
   }
 
@@ -354,31 +378,61 @@ export function ClusterPage({ active }: { active: boolean }) {
       {/* --------------------------------------------------------- add host */}
       <section>
         <h2 className="border-b border-border pb-2 text-sm font-medium">
-          {tx('Add host')}
+          {tx('添加 GPU 节点')}
         </h2>
-        <div className="mt-4 flex max-w-[520px] items-center gap-2">
-          <input
-            className="input h-8 w-full text-sm"
-            aria-label={tx('Add host')}
-            placeholder="gpu1=gpu1.lab  or  gpu2=alice@gpu2.lab:2222"
-            value={addSpec}
-            onChange={(event) => setAddSpec(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') void addHost();
-            }}
+        <div className="mt-4 max-w-[560px] space-y-2">
+          <textarea
+            className="input min-h-20 w-full py-2 text-sm"
+            aria-label={tx('节点地址')}
+            placeholder={'10.0.0.11\n10.0.0.12\n10.0.0.13'}
+            value={addresses}
+            onChange={(event) => setAddresses(event.target.value)}
+            disabled={provisioning}
           />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void addHost()}
-            disabled={!addSpec.trim()}
-          >
-            {tx('添加')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void addHosts()}
+              disabled={!addresses.trim() || provisioning}
+            >
+              {provisioning ? <Loader2 className="animate-spin" /> : <Server />}
+              {provisioning ? tx('正在配置…') : tx('添加并配置')}
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              {tx('每行一个地址，也接受逗号或空格分隔。')}
+            </span>
+          </div>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          {tx('name=hostname[:port]，可选 user@。需要从 agent 账号免密 ssh 到该节点。')}
+        <p className="mt-2 max-w-[560px] text-xs leading-relaxed text-muted-foreground">
+          {tx('使用当前登录的账户和密码，为每个节点安装 agent 专属密钥（限定为只能执行作业命令），然后验证免密访问。密码只用于这一次操作。')}
         </p>
+        {progress.length > 0 && (
+          <ul className="mt-3 max-w-[560px] space-y-1 text-xs">
+            {progress.map((item) => (
+              <li key={item.host} className="flex items-start gap-2">
+                <span
+                  className={
+                    item.ok ? 'text-muted-foreground' : 'text-destructive'
+                  }
+                  aria-hidden="true"
+                >
+                  {item.ok ? '✓' : '✕'}
+                </span>
+                <span className="min-w-0">
+                  <span className="font-mono">{item.host}</span>
+                  {item.ok ? (
+                    <span className="ml-2 text-muted-foreground">
+                      {tx('已就绪（{0}）', [item.steps.length])}
+                    </span>
+                  ) : (
+                    <span className="ml-2 text-destructive">{item.error}</span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );

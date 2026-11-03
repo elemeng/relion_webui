@@ -1692,6 +1692,65 @@ def create_app(
             'default': hosts_module.LOCAL_NAME,
         }
 
+    @app.post('/api/hosts/provision')
+    async def provision_hosts(request: Request) -> dict:
+        """Add GPU nodes from their addresses, end to end.
+
+        One field, because a deployment is a set of identical machines: the
+        operator pastes the addresses and the agent copies its key to each,
+        registers it and proves it can reach it. The password comes from the
+        login just performed (`take_provision_secret`), so it is typed once and
+        never sent again.
+
+        With `--no-auth` there is no login to borrow from, so a `password` field
+        on the request is accepted instead; it is used for the duration of this
+        call and not stored.
+        """
+        from .flowgram import provision as provision_module
+
+        body = await request.json()
+        addresses = provision_module.parse_addresses(str(body.get('addresses') or ''))
+        if not addresses:
+            raise HTTPException(400, detail='give at least one address')
+
+        auth_manager: Optional[AuthManager] = app.state.auth
+        username: Optional[str] = None
+        password: Optional[str] = None
+        if auth_manager is not None:
+            session = auth_manager.get_session(request.cookies.get(SESSION_COOKIE))
+            if session is None:
+                raise HTTPException(401, detail='login required')
+            username = session.username
+            password = auth_manager.take_provision_secret(
+                request.cookies.get(SESSION_COOKIE)
+            )
+        else:
+            username = body.get('username')
+            password = body.get('password')
+
+        if password is None:
+            raise HTTPException(
+                400,
+                detail=(
+                    'no password available for provisioning; log in again and '
+                    'add the node in the same session'
+                ),
+            )
+
+        results = await asyncio.to_thread(
+            provision_module.provision_many,
+            addresses,
+            username=username,
+            password=password,
+            registry=manager.hosts,
+        )
+        added = [result for result in results if result.ok]
+        return {
+            'results': [result.as_dict() for result in results],
+            'added': len(added),
+            'failed': len(results) - len(added),
+        }
+
     @app.post('/api/hosts', status_code=201)
     async def add_host(body: HostRequest, request: Request) -> dict:
         """Define a node. `name=hostname[:port]` or explicit fields."""
