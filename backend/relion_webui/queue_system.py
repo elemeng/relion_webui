@@ -1398,7 +1398,15 @@ class JobQueue:
         for field in schema.get('fields', []):
             if field.get('kind') not in ('path', 'input_node'):
                 continue
-            value = entry.arguments.get(field['variable'])
+            # Not every path option is data. `qsubscript`, `qsub` and the
+            # `fn_*_exe` overrides name *programs and templates*; waiting for
+            # one to appear blocks the job forever when the file simply lives on
+            # another machine or is not installed at all. Only an option whose
+            # absence would starve the job belongs here.
+            variable = field['variable']
+            if field.get('shared') or variable.startswith('fn_') or 'qsub' in variable:
+                continue
+            value = entry.arguments.get(variable)
             if not _present(value):
                 continue
             text = str(value).strip()
@@ -1422,7 +1430,7 @@ class JobQueue:
                 # Reserved by a queued job: the path is real, the file is not
                 # written yet.
                 continue
-            missing[field['variable']] = text
+            missing[variable] = text
         return missing
 
     def _producer_matches(
