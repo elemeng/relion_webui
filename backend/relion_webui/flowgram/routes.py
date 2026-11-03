@@ -735,6 +735,36 @@ async def events(request: Request) -> StreamingResponse:
     )
 
 
+@router.get('/api/job-schema/definitions')
+async def job_definitions(request: Request) -> Dict[str, Any]:
+    """The job schema plus each job type's *node definition*.
+
+    The inspector needs more than the raw option table: which FlowGram editor
+    renders each field, which section it belongs in, and the hover tip. That
+    mapping is RELION-specific and lives in `forms.py`; the agent's own
+    `/api/job-schema` stays as it is, because the main REST surface and MCP do
+    not need an editor name.
+
+    `definitions` is keyed by node type (`relion.tomo_import_serialem`), which
+    is what `definitionFor(node)` looks up.
+    """
+    from .. import job_commands
+
+    from . import forms
+
+    schemas = []
+    for job_type in job_commands.selectable_job_types():
+        try:
+            schemas.append(job_commands.form_schema(job_type))
+        except KeyError:
+            continue
+    return {
+        'jobs': schemas,
+        'categories': job_commands.job_categories(),
+        'definitions': forms.definitions_for(schemas),
+    }
+
+
 @router.get('/api/settings/model')
 async def model_settings() -> Dict[str, Any]:
     """No model connection: the assistant is an external harness."""

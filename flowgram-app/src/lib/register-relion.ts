@@ -67,7 +67,7 @@ export async function registerRelionJobs(): Promise<void> {
   registered = true;
 
   try {
-    const schema = await api<JobSchemaResponse>('/api/job-schema');
+    const schema = await api<JobSchemaResponse>('/api/job-schema/definitions');
     if (schema.definitions) {
       // The agent sends the data half of a node definition; `output` is a
       // function and cannot cross JSON. A RELION job's outputs are pipeline
