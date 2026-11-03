@@ -125,9 +125,12 @@ class Journal:
     ``stop`` cancels it. Both are idempotent.
     """
 
-    def __init__(self, queue=None, manager=None) -> None:
+    def __init__(self, queue=None, manager=None, workspaces=None) -> None:
         self.queue = queue
         self.manager = manager
+        # The workspace store, so a run started outside the canvas can name the
+        # project's default workspace instead of a projection id nothing matches.
+        self.workspaces = workspaces
         self._runs: Dict[str, _Journal] = {}
         self._sequence = 0
         self._task: Optional[asyncio.Task] = None
@@ -223,7 +226,7 @@ class Journal:
             if entry.get('state') in TERMINAL_STATES:
                 continue
             entry['state'] = 'cancelled'
-            event = self._state_event({**entry, 'state': 'cancelled'})
+            event = self._state_event({**entry, 'state': 'cancelled'}, journal.run.workflowId)
             if event is not None:
                 kind, data = event
                 self._append(run_id, self._event(kind, run_id, data))
@@ -232,12 +235,18 @@ class Journal:
 
     # -- sampling --------------------------------------------------------
     def _state_event(
-        self, entry: Mapping[str, Any]
+        self, entry: Mapping[str, Any], workflow_id: str
     ) -> Optional[Tuple[str, Dict[str, Any]]]:
+        """The FlowGram event for one queue state.
+
+        ``workflow_id`` is the *workspace* the run belongs to, not a projection
+        id: the canvas matches node events by `workflowId`, so anything else
+        leaves every badge blank.
+        """
         common = {
             'nodeId': entry.get('process_name') or entry['id'],
             'executionId': entry['id'],
-            'workflowId': f'pipeline:{entry.get("project", "")}',
+            'workflowId': workflow_id,
         }
         state = entry.get('state')
         if state == 'pending':
@@ -287,7 +296,16 @@ class Journal:
             run_id = f'relion-project:{entry.get("project", "")}'
             journal = self._runs.get(run_id)
             if journal is None:
-                self.open_run(run_id, str(entry.get('project', '')), {})
+                # A job queued outside this canvas (the desktop GUI enqueues too).
+                # Its events have to name the project's default workspace, or the
+                # canvas cannot match them to a node and shows no state at all.
+                project = str(entry.get('project', ''))
+                self.open_run(
+                    run_id,
+                    project,
+                    {},
+                    workflow_id=self._default_workspace_for(project),
+                )
                 journal = self._runs[run_id]
             await self._apply(journal, entry)
 
@@ -334,12 +352,12 @@ class Journal:
             if entry.get('state') == 'pending' and list(
                 previous.get('blocked_by') or []
             ) != list(entry.get('blocked_by') or []):
-                event = self._state_event(entry)
+                event = self._state_event(entry, journal.run.workflowId)
                 if event is not None:
                     self._append(journal.run.id, self._event(event[0], journal.run.id, event[1]))
             return
 
-        event = self._state_event(entry)
+        event = self._state_event(entry, journal.run.workflowId)
         if event is not None:
             self._append(journal.run.id, self._event(event[0], journal.run.id, event[1]))
         journal.seen_states[str(entry['id'])] = str(entry.get('state'))
@@ -366,7 +384,7 @@ class Journal:
                 {
                     'nodeId': entry.get('process_name') or entry['id'],
                     'executionId': entry['id'],
-                    'workflowId': f'pipeline:{entry.get("project", "")}',
+                    'workflowId': journal.run.workflowId,
                     'chunk': chunk[-LOG_CHUNK_MAX:],
                     'truncated': truncated,
                 },
@@ -384,6 +402,20 @@ class Journal:
         finished.sort(key=lambda pair: pair[1].run.createdAt)
         for run_id, _ in finished[: len(self._runs) - MAX_RUNS]:
             self._runs.pop(run_id, None)
+
+    def _default_workspace_for(self, project_path: str) -> str:
+        """The workspace a project's unattributed jobs belong to.
+
+        Set by `install()` once the store exists; the projection id is the
+        fallback so a journal without one still works.
+        """
+        store = self.workspaces
+        if store is not None:
+            try:
+                return store.ensure_default(project_path)['id']
+            except Exception:  # noqa: BLE001 - a missing store is not a crash
+                pass
+        return f'pipeline:{project_path}'
 
     # -- reads -----------------------------------------------------------
     def run(self, run_id: str) -> Optional[_Journal]:

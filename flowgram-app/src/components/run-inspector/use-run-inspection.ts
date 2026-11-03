@@ -41,7 +41,11 @@ export function useRunInspection(id: string, at?: number) {
   const nodeRequest = useRef(0);
   const session = useRef(0);
   const stamp = at === undefined ? '' : `&at=${at}`;
-  const root = `/api/runs/${encodeURIComponent(id)}`;
+  // The run id is opaque but may contain characters a path segment treats
+  // specially. `encodeURIComponent` encodes `/` as `%2F`, which FastAPI's
+  // `{run_id:path}` decodes before matching - so the route never fires. Each
+  // segment is encoded, slashes stay: the id travels as a path.
+  const root = `/api/runs/${id.split('/').map(encodeURIComponent).join('/')}`;
   useEffect(() => {
     session.current++;
     initialized.current = false;

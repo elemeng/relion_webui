@@ -925,7 +925,9 @@ def install(app, *, static_directory=None) -> None:
     from fastapi.staticfiles import StaticFiles
 
     app.state.flowgram_workspaces = workspaces_module.WorkspaceStore()
-    app.state.flowgram_journal = journal_module.Journal(app.state.queue, app.state.jobs)
+    app.state.flowgram_journal = journal_module.Journal(
+        app.state.queue, app.state.jobs, app.state.flowgram_workspaces
+    )
     app.state.flowgram_guard = getattr(app.state, 'guard', None)
     app.include_router(router)
 

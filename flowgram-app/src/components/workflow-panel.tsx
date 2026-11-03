@@ -313,15 +313,18 @@ export function WorkflowPanel({
   useEffect(() => {
     setRun((current) => {
       const target = selectedRunId || current?.id;
-      return (
-        (target
-          ? runs.find(
-              (item) => item.id === target && item.workflowId === workflow.id && !item.testNodeId
-            )
-          : runs.find((item) => item.workflowId === workflow.id && !item.testNodeId)) || current
-      );
+      // A run may name the workspace it was started from (`ws-2`) or fall back
+      // to the project projection id (`pipeline:/path`), which is what the
+      // journal uses for jobs it watched but did not submit. Both belong to
+      // this canvas, so both select it.
+      const mine = (item: Run) =>
+        !item.testNodeId &&
+        (item.workflowId === workflow.id ||
+          item.workflowId === `pipeline:${workflow.projectId}` ||
+          (item as Run & { projectId?: string }).projectId === workflow.projectId);
+      return (target ? runs.find((item) => item.id === target && mine(item)) : runs.find(mine)) || current;
     });
-  }, [runs, workflow.id, selectedRunId]);
+  }, [runs, workflow.id, workflow.projectId, selectedRunId]);
   useEffect(() => {
     if (!run) return;
     let disposed = false;

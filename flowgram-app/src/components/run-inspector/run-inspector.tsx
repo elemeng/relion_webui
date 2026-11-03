@@ -535,7 +535,38 @@ export function RunInspector({
                 )
               )}
               {compact ? (
-                <div className="min-h-0 min-w-0 flex-1">{inspect}</div>
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                  {/* The docked panel has no room for the full summary bar, but
+                      it still needs a way back to the full view and a way to
+                      close - otherwise the compact form is a dead end. */}
+                  <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-1 text-xs">
+                    <StatusIcon status={runStatus} />
+                    <span className="truncate">{statusLabel(runStatus)}</span>
+                    <span className="ml-auto" />
+                    {onExpand && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={tx('展开运行详情')}
+                        onClick={onExpand}
+                      >
+                        {tx('展开运行详情')}
+                        <ArrowUpRight />
+                      </Button>
+                    )}
+                    {onHide && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={tx('隐藏运行结果')}
+                        onClick={onHide}
+                      >
+                        <X />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="min-h-0 min-w-0 flex-1">{inspect}</div>
+                </div>
               ) : (
                 <>
                   <main
