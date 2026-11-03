@@ -188,18 +188,74 @@ def _processes_for(intent: Mapping[str, Any], processes: Sequence[Mapping[str, A
     `all` is the whole pipeline in layout order - the order matters, because the
     queue admits entries in submission order when several are ready at once.
     """
-    runnable = [
-        process
-        for process in processes
-        if process.get('status') not in ('Succeeded', 'Running')
-    ]
     scope = intent.get('scope', 'all')
     selected = intent.get('selectedNodeId')
     if scope in ('job', 'selected'):
         if not selected:
             return []
-        return [process['name'] for process in runnable if process['name'] == selected]
+        # A single named job is allowed to be finished: that is what re-running
+        # is. A batch never includes one, because "run everything" must not
+        # silently repeat work that already succeeded.
+        return [process['name'] for process in processes if process['name'] == selected]
+    runnable = [
+        process
+        for process in processes
+        if process.get('status') not in ('Succeeded', 'Running')
+    ]
     return [process['name'] for process in runnable]
+
+
+def _parameters_from_job_star(request: Request, project_path: str, process_name: str) -> Dict[str, Any]:
+    """A finished job's options, as the queue wants them.
+
+    A RELION job records what it ran with in ``job.star`` and nowhere else, so a
+    re-run has to start from that file. Only the options the job's form owns are
+    kept: the file also carries the shared run settings and the output directory,
+    and letting those through would re-submit a job pointing at its own old
+    directory.
+    """
+    from .. import job_artifacts
+    from .. import job_commands
+    from .. import pipeline as pipeline_module
+
+    guard = _guard(request)
+    project = guard.resolve_existing(project_path, kind='directory')
+    try:
+        pipeline = pipeline_module.read_pipeline(project)
+    except (FileNotFoundError, ValueError):
+        return {}
+    process = pipeline.find_process(process_name)
+    if process is None:
+        return {}
+    try:
+        directory = guard.resolve_existing(str(project / process_name), kind='directory')
+    except Exception:  # noqa: BLE001 - a missing directory is an empty form
+        return {}
+    options = job_artifacts.read_job_star(directory) or {}
+    label = job_artifacts.read_job_type_label(directory) or process.type_label
+    job_type = SCHEMA.job_type_for_label(label)
+    if not job_type:
+        return {}
+    schema = job_commands.form_schema(job_type)
+    wanted = {field['variable'] for field in schema.get('fields', [])}
+    arguments = {
+        key: value
+        for key, value in options.items()
+        if key in wanted and value not in (None, '')
+    }
+    # RELION records the input under `fn_in` for several jobs while the form
+    # calls it `input_star_mics` and leaves that field empty. `fn_in` is not a
+    # form field, so it was filtered out above - read it from the raw table,
+    # or a re-run fails as "missing required options" with the path sitting in
+    # job.star the whole time.
+    for field in schema.get('fields', []):
+        variable = field['variable']
+        if field.get('kind') != 'input_node' or variable in arguments:
+            continue
+        fallback = options.get('fn_in') or arguments.get('fn_in')
+        if fallback:
+            arguments[variable] = fallback
+    return arguments
 
 
 def _devices_for(intent: Mapping[str, Any]) -> List[int]:
@@ -288,6 +344,7 @@ async def _start_run(
     from .. import pipeline as pipeline_module
     from .. import queue_system
 
+    await _schema_loaded(request)
     wanted_graph = _graph(request, project_path)
     store = _store(request)
     workspace = store.get(workspace_id) if workspace_id else None
@@ -341,7 +398,12 @@ async def _start_run(
             failures.append(f'{item["name"]}: no job type for {item["typeLabel"]}')
             continue
         try:
-            arguments = _resolve_arguments(parameters.get(item['name']) or {}, parameters)
+            supplied = parameters.get(item['name']) or {}
+            if not supplied and not item['draft']:
+                # Re-running a finished job: its options exist only in its
+                # job.star, so read them back rather than queueing an empty form.
+                supplied = _parameters_from_job_star(request, project_path, item['name'])
+            arguments = _resolve_arguments(supplied, parameters)
             entry = queue.add(
                 project_path,
                 job_type,
@@ -762,6 +824,54 @@ async def job_definitions(request: Request) -> Dict[str, Any]:
         'jobs': schemas,
         'categories': job_commands.job_categories(),
         'definitions': forms.definitions_for(schemas),
+    }
+
+
+@router.get('/api/projects/processes/{process_name:path}/rerun-parameters')
+async def rerun_parameters(process_name: str, request: Request, project_directory: str) -> Dict[str, Any]:  # noqa: N803
+    """The parameters a finished job ran with, ready to queue again.
+
+    A RELION job's options exist only in its ``job.star`` once it has run, and
+    re-running it means feeding those same options back through the queue. This
+    reads them in the shape the queue accepts, so the canvas does not have to
+    know how a job directory is laid out.
+
+    Only the options the job's own form exposes are returned: ``job.star``
+    carries the whole GUI table including shared run settings, and queueing a
+    third-party template path or another job's directory would be wrong.
+    """
+    from .. import job_artifacts
+    from .. import job_commands
+    from .. import pipeline as pipeline_module
+
+    await _schema_loaded(request)
+    guard = _guard(request)
+    project = guard.resolve_existing(project_directory, kind='directory')
+    try:
+        pipeline = pipeline_module.read_pipeline(project)
+    except (FileNotFoundError, ValueError) as cause:
+        raise HTTPException(404, detail=str(cause)) from cause
+    process = pipeline.find_process(process_name)
+    if process is None:
+        raise HTTPException(404, detail=f'{process_name} is not in this project')
+
+    directory = guard.resolve_existing(str(project / process_name), kind='directory')
+    options = job_artifacts.read_job_star(directory) or {}
+    label = job_artifacts.read_job_type_label(directory) or ''
+    job_type = SCHEMA.job_type_for_label(label)
+    if not job_type:
+        raise HTTPException(
+            400, detail=f'no job type for {label or "an unknown label"}'
+        )
+
+    # One implementation of "what a job's options look like as queue arguments",
+    # shared with the re-run path so the preview and the submission cannot
+    # disagree about `fn_in` or about which fields the form owns.
+    return {
+        'process_name': process_name,
+        'job_type': job_type,
+        'type_label': label,
+        'arguments': _parameters_from_job_star(request, project_directory, process_name),
     }
 
 

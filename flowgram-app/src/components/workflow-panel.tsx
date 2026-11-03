@@ -1353,6 +1353,25 @@ export function WorkflowPanel({
             {tx('输入来自历史运行 {0}，请确认配置与输入后运行。', [debugOrigin.runId.slice(0, 8)])}
           </p>
         )}
+        {(() => {
+          // Say what "Run" means for the current selection. A finished job is
+          // re-queued from its job.star, which is a different operation from
+          // starting a new one, and the dialog is the only place that is
+          // visible before the click.
+          const selected = selectedIds.length === 1 ? findNode(schema.nodes, selectedIds[0]) : null;
+          if (!selected) return null;
+          const status = String(selected.data?.pipelineStatus || '');
+          if (status === 'Succeeded' || status === 'Failed' || status === 'Aborted')
+            return (
+              <p className="mb-4 rounded-lg border border-border bg-secondary/40 p-3 text-xs leading-relaxed">
+                {tx(
+                  '{0} 已完成（{1}）。选择 Single job 运行会用它的 job.star 参数重新入队一个新作业。',
+                  [String(selected.data?.title || selected.id), status]
+                )}
+              </p>
+            );
+          return null;
+        })()}
         <RunInputForm schema={schema} value={input} onChange={setInput} />
         <details className="mt-5 text-xs text-muted-foreground">
           <summary>{tx('高级输入 JSON')}</summary>

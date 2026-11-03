@@ -489,3 +489,73 @@ def test_provision_many_stops_on_bad_credentials(monkeypatch):
 
     assert len(calls) == 1
     assert [result.ok for result in results] == [False]
+
+
+def test_job_star_arguments_map_fn_in_to_the_form_field(monkeypatch):
+    """`fn_in` is where RELION records the input; the form calls it otherwise.
+
+    Without the mapping a re-run reports "missing required options" while the
+    path sits in job.star the whole time - which is exactly what happened.
+    """
+    from pathlib import Path
+
+    from relion_webui import job_artifacts, job_commands
+    from relion_webui import pipeline as pipeline_module
+    from relion_webui.flowgram import routes
+
+    schema = {
+        'job_type': 'ctffind',
+        'fields': [
+            {'variable': 'input_star_mics', 'kind': 'input_node'},
+            {'variable': 'nr_mpi', 'kind': 'slider'},
+            {'variable': 'qsubscript', 'kind': 'path'},
+        ],
+    }
+
+    class Process:
+        type_label = 'relion.ctffind'
+
+    class Pipeline:
+        @staticmethod
+        def find_process(_name):
+            return Process()
+
+    class Guard:
+        @staticmethod
+        def resolve_existing(path, kind=None):  # noqa: ARG004
+            return Path(path)
+
+    # `monkeypatch` restores every attribute at the end of this test, so the
+    # real pipeline reader is back for every test that follows. Setting these
+    # by hand once leaked a stub into the rest of the suite.
+    monkeypatch.setattr(routes, 'SCHEMA', type('Cache', (), {
+        'job_type_for_label': lambda self, _label: 'ctffind',
+    })())
+    monkeypatch.setattr(routes, '_guard', lambda _request: Guard())
+    monkeypatch.setattr(pipeline_module, 'read_pipeline', lambda _project: Pipeline())
+    monkeypatch.setattr(job_commands, 'form_schema', lambda _job_type: schema)
+    monkeypatch.setattr(job_artifacts, 'read_job_star', lambda _directory: {
+        'fn_in': '/data/tilt_series.star',
+        'input_star_mics': '',
+        'nr_mpi': '4',
+        # A form field (the Run tab) - so it is kept, because a re-run should
+        # reproduce the submission the user chose.
+        'qsubscript': '/some/template.csh',
+        # Not a form field: the agent owns the output directory.
+        'output_directory': '/data/CtfFind/job003/',
+    })
+    monkeypatch.setattr(
+        job_artifacts, 'read_job_type_label', lambda _directory: 'relion.ctffind'
+    )
+
+    arguments = routes._parameters_from_job_star(
+        type('Request', (), {})(), '/tmp/p', 'CtfFind/job003'
+    )
+
+    # The input the form asks for, recovered from the field RELION actually wrote.
+    assert arguments['input_star_mics'] == '/data/tilt_series.star'
+    assert arguments['nr_mpi'] == '4'
+    # A form field survives: reproducing the run means reproducing its choices.
+    assert arguments['qsubscript'] == '/some/template.csh'
+    # A non-form field does not: the queue decides where the output goes.
+    assert 'output_directory' not in arguments
