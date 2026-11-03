@@ -502,6 +502,36 @@ export function WorkflowPanel({
         return;
       }
       if (command === 'delete') {
+        // Two very different operations share the word "delete":
+        //
+        // - a draft node exists only on this canvas, so removing it is a local
+        //   edit;
+        // - a pipeline node is a RELION process with a directory on disk. Taking
+        //   it off the canvas would look like a deletion while leaving the job
+        //   there, and it would reappear on the next read. Those go through the
+        //   agent's process endpoint, which moves the directory to Trash.
+        const pipeline = ids.filter((id) => !id.startsWith('draft:'));
+        if (pipeline.length) {
+          const confirmed = window.confirm(
+            tx('删除 {0} 个 RELION 作业？目录会移到回收站，可从那里恢复。', [pipeline.length])
+          );
+          if (!confirmed) return;
+          for (const id of pipeline) {
+            // The process name contains a slash (`Tomograms/job005`), and the
+            // agent takes it with `:path`, so it must NOT be encoded - the
+            // slash is the path.
+            await api(
+              `/api/projects/processes/${id}?project_directory=${encodeURIComponent(workflow.projectId)}`,
+              'DELETE'
+            );
+          }
+          // Re-read the project so the canvas shows what RELION now has, rather
+          // than a locally edited copy of a node that no longer exists.
+          onRun(undefined as never);
+          canvas.current?.select([]);
+          change(removeNodes(draft.current, ids.filter((id) => id.startsWith('draft:'))));
+          return;
+        }
         change(removeNodes(draft.current, ids));
         canvas.current?.select([]);
         return;
