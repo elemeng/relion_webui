@@ -26,6 +26,7 @@ import { ProjectScope } from './lib/project-context';
 import { errorText, getSystemLocale, t, tx, useLocale } from './lib/i18n';
 import { api, connectDesktop, subscribeEvents } from './lib/api';
 import { registerRelionJobs } from './lib/register-relion';
+import { LoginGate } from './components/login-gate';
 import { WorkspaceHeader } from './components/workspace-header';
 import { WorkflowPanel, type WorkflowPanelHandle } from './components/workflow-panel';
 import { Presence, useContentTransition } from './components/ui/presence';
@@ -421,6 +422,7 @@ export function App() {
     );
   }
   return (
+    <LoginGate>
     <>
       <div
         className="flex h-dvh min-h-0 overflow-hidden bg-background text-foreground"
@@ -741,6 +743,7 @@ export function App() {
         </div>
       </Dialog>
     </>
+    </LoginGate>
   );
 }
 function documentIsModal() {

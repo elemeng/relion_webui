@@ -868,3 +868,86 @@ button:focus-visible,
 
 @keyframes dialog-exit { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(4px); } }
 
+
+/* --------------------------------------------------------------- login */
+/* The gate before the canvas. One card, centred, on the canvas surface: the
+   same vocabulary as the app, because this is the first thing it shows. */
+.login-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 24px;
+  background: var(--surface-canvas);
+  color: var(--foreground);
+}
+.login-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(380px, 100%);
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-dialog);
+  background: var(--surface-panel);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 8%);
+}
+.login-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.login-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-control);
+  background: var(--secondary);
+  color: var(--muted-foreground);
+}
+.login-heading h1 {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.login-heading p {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.login-field input {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.875rem;
+}
+.login-field input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.login-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--destructive);
+}
+.login-note {
+  font-size: 0.6875rem;
+  color: var(--muted-foreground);
+  text-align: center;
+}
