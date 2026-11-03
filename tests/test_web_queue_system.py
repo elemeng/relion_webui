@@ -1350,3 +1350,33 @@ def test_a_big_enough_card_is_accepted(project, host_registry, nodes, tmp_path):
     asyncio.run(queue.tick())
 
     assert entry.state == 'running'
+
+
+def test_a_program_path_is_not_treated_as_a_waiting_input(
+    project, host_registry, tmp_path
+):
+    """`qsubscript` names a template, not data; waiting for it never ends.
+
+    A job.star copied from another machine carries
+    ``qsubscript=/public/EM/RELION/.../relion_qsub.csh``. That file is not an
+    input - it lives on the cluster, and on a node without RELION it never
+    appears. Treating it as a dependency left the job pending forever with a
+    reason that named the wrong problem.
+    """
+    queue = make_queue(StubManager(host_registry), tmp_path)
+    entry = queue.add(
+        project,
+        'ctffind',
+        {
+            'input_star_mics': str(project / 'tilt_series.star'),
+            'qsubscript': '/public/EM/RELION/relion/bin/relion_qsub.csh',
+            'nr_mpi': 1,
+            'nr_threads': 1,
+        },
+        host='gpu1',
+    )
+    (project / 'tilt_series.star').write_text('data_\n\nloop_\n')
+
+    reasons = queue._missing_inputs(entry)  # noqa: SLF001 - the gate under test
+
+    assert reasons == {}
