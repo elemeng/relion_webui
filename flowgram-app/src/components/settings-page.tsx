@@ -36,6 +36,7 @@ import { Button } from './ui/button';
 import { AssetIcon } from './ui/asset-icon';
 import { ThemeSettings } from './theme-settings';
 import { ResizablePanel } from './resizable-panel';
+import { LogoutButton } from './login-gate';
 const ClusterPage = lazy(() =>
   import('./cluster-page').then((module) => ({ default: module.ClusterPage }))
 );
@@ -363,6 +364,9 @@ export function SettingsPage({
                 {tx('FlowGram 文档')}
                 <AssetIcon src={arrowOut} />
               </a>
+              {/* Only meaningful when the agent enforces a login; with
+                  `--no-auth` there is no session to end. */}
+              {online && <div className="mt-8 border-t border-border pt-6"><LogoutButton /></div>}
             </div>
           )}
         </div>
