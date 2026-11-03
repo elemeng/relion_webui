@@ -17,12 +17,7 @@
     "resolveJsonModule": true,
     "types": [
       "vite/client"
-    ],
-    "paths": {
-      "@/*": [
-        "../frontend/src/*"
-      ]
-    }
+    ]
   },
   "include": [
     "src",

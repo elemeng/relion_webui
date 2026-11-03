@@ -1,13 +1,12 @@
 /**
  * Standalone web build of the FlowGram desktop UI, vendored for RELION.
  *
- * The app is pure static files: every API call goes to the RELION agent under
- * `/fg`, which serves this build itself in production (see
- * `backend/relion_webui/flowgram/`). In development Vite proxies `/fg` to the
- * agent so hot reload works without a build step.
+ * The app is pure static files: every API call goes to the RELION agent's own
+ * `/api`, and the agent serves this build itself (see
+ * `backend/relion_webui/flowgram/`). In development Vite proxies `/api` and
+ * `/mcp` so hot reload works without a build step.
  */
 import { defineConfig } from 'vite';
-import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
@@ -15,29 +14,24 @@ import tailwindcss from '@tailwindcss/vite';
 const AGENT = process.env.RELION_WEB_API ?? 'http://127.0.0.1:8765';
 
 export default defineConfig({
-  // Assets are served from /fg/, so the bundle must not assume it owns the root.
-  base: '/fg/',
+  // The agent serves this build at its root.
+  base: '/',
   plugins: [react(), tailwindcss()],
   resolve: {
     dedupe: ['react', 'react-dom'],
-    alias: {
-      // The main branch's layout engine is not imported any more - the agent
-      // projects the pipeline and lays it out in Python. Kept out on purpose:
-      // one implementation, not two that can drift.
-      '@': fileURLToPath(new URL('../frontend/src', import.meta.url)),
-    },
   },
   server: {
     host: '127.0.0.1',
     port: 1420,
     strictPort: true,
     proxy: {
-      '/fg': { target: AGENT, changeOrigin: false },
+      '/api': { target: AGENT, changeOrigin: false },
+      '/mcp': { target: AGENT, changeOrigin: false },
     },
   },
   build: {
     // Straight into the agent's package, so `uvicorn` alone serves the canvas.
-    outDir: '../backend/relion_webui/flowgram_static',
+    outDir: '../backend/relion_webui/static',
     emptyOutDir: true,
     target: 'es2022',
     chunkSizeWarningLimit: 1200,

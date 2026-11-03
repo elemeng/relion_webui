@@ -1,21 +1,23 @@
 # SPDX-FileCopyrightText: 2026 elemeng
 # SPDX-License-Identifier: GPL-2.0-or-later
-"""FlowGram-shaped API, served from inside the RELION agent.
+"""The canvas: FlowGram's workflow UI, driven by this agent.
 
-The FlowGram canvas is a separate front end with its own vocabulary - projects,
-workflows, runs, events. This package translates between it and RELION's -
-pipelines, jobs, queue entries - so the canvas can be served by the same
-FastAPI process as everything else.
+The vendored FlowGram app is a static bundle served at `/`, and its API is the
+agent's own `/api` namespace plus a handful of canvas-only routes this package
+adds (`/api/workflows`, `/api/runs`, `/api/events`, `/api/bootstrap`). There is
+one set of routes, not two: anything the agent already answers - projects,
+hosts, queue, job schema, browse - is used directly.
 
 Modules:
 
-``layout``      pipeline -> canvas geometry (a port of the main UI's layout)
+``layout``      pipeline -> canvas geometry
 ``translate``   pipeline -> FlowGram workflow document
+``forms``       RELION job fields -> FlowGram editor definitions
 ``workspaces``  draft overlays, stored in the config directory
 ``journal``     queue states -> FlowGram runtime events
-``routes``      the ``/fg`` router and its static mount
+``routes``      the canvas-only routes and the static mount
 """
 
-from .routes import PREFIX, install
+from .routes import install, mount_static
 
-__all__ = ['PREFIX', 'install']
+__all__ = ['install', 'mount_static']

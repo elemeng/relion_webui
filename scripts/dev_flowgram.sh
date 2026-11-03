@@ -2,14 +2,15 @@
 #
 # Development startup for the FlowGram canvas.
 #
-#   scripts/dev_flowgram.sh                 # agent :8765 (+ /fg and /mcp), Vite :1420
+#   scripts/dev_flowgram.sh                 # agent :8765, Vite :1420 (hot reload)
 #   scripts/dev_flowgram.sh -p /path/proj   # open a project on startup
 #   scripts/dev_flowgram.sh --build         # production-style: agent only, no Vite
 #
-# The agent serves the canvas at http://127.0.0.1:8765/fg/ from a built bundle
-# (backend/relion_webui/flowgram_static). Vite in development proxies /fg to it
-# so edits hot-reload, but nothing about the app needs Vite: one Python process
-# is a complete deployment.
+# The agent serves the canvas at http://127.0.0.1:8765/ from a built bundle
+# (backend/relion_webui/static) and answers its API on the same `/api` it uses
+# for everything else. Vite in development proxies /api and /mcp so edits
+# hot-reload, but nothing about the app needs Vite: one Python process is a
+# complete deployment.
 
 set -euo pipefail
 readonly ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -35,7 +36,7 @@ cleanup() { kill 0 2>/dev/null || true; }
 trap cleanup EXIT INT TERM
 
 if [[ "$DEV" -eq 0 ]]; then
-  echo "building the canvas into backend/relion_webui/flowgram_static ..."
+  echo "building the canvas into backend/relion_webui/static ..."
   (cd "$ROOT/flowgram-app" && bun run build)
 fi
 
@@ -52,7 +53,7 @@ for _ in $(seq 1 60); do
 done
 
 if [[ "$DEV" -eq 0 ]]; then
-  echo "canvas: http://127.0.0.1:${API_PORT}/fg/"
+  echo "canvas: http://127.0.0.1:${API_PORT}/"
   echo "MCP:    http://127.0.0.1:${API_PORT}/mcp"
   wait
 else

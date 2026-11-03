@@ -26,8 +26,8 @@ FlowGram desktop 自带一整套会话、模型 provider、发布与部署表面
 ```
 
 生产形态下 **agent 自己托管画布**：`uvicorn` 起来后
-`http://<host>:8765/fg/` 就是 UI，`/fg/api/*` 是它的数据接口，`/mcp` 是助手
-入口。构建产物在 `backend/relion_webui/flowgram_static/`，随包分发，所以部署
+`http://<host>:8765/` 就是 UI，`/api/*` 是它的数据接口（与 MCP、REST 同一套），`/mcp` 是助手
+入口。构建产物在 `backend/relion_webui/static/`，随包分发，所以部署
 一个 Python 进程即可，没有 Node、没有反向代理、没有第二个服务。
 
 画布工具栏 **外部 agent** 按钮给出三样东西（都可一键复制）：
@@ -46,14 +46,17 @@ FlowGram desktop 自带一整套会话、模型 provider、发布与部署表面
 ## 架构
 
 ```
-浏览器 ── /fg/api/* ──► backend/relion_webui/flowgram/   (FastAPI, 同进程)
-                        ├── translate    pipeline → FlowGram workflow
-                        ├── layout       画布坐标（与主分支同一算法）
-                        ├── workspaces   ~/.relion_web/.flowgram-workspaces
-                        ├── journal      queue 状态 → 运行时事件（SSE）
-                        └── routes       /fg 路由 + 静态托管
-             /mcp   ──► mcp_server（外部 harness）
-             /api/* ──► 主分支 UI 与 REST（原有，未改）
+浏览器 ── /api/workflows|runs|events|bootstrap ──► flowgram/routes.py
+         ── /api/{projects,hosts,queue,job-schema,browse,…} ──► agent 原有路由
+         ── /                ──► static/（画布构建产物）
+         ── /mcp             ──► mcp_server（外部 harness）
+
+flowgram 包只新增画布独有的 15 条路由，其余全部复用 agent 已有实现：
+            translate    pipeline → FlowGram workflow
+            layout       画布坐标
+            workspaces   ~/.relion_web/.flowgram-workspaces
+            journal      queue 状态 → 运行时事件（SSE）
+            routes       /api 独有路由 + 静态挂载
 ```
 
 journal 直接调用 `queue.snapshot()` 和 `manager.read_log_chunk()`，不再 HTTP
@@ -62,7 +65,7 @@ journal 直接调用 `queue.snapshot()` 和 `manager.read_log_chunk()`，不再 
 ## 已验证
 
 - `opencode mcp list` 显示 `relion ✓ connected`；
-- 单进程：`/fg/` 返回画布，`/fg/api/bootstrap` 200，17 节点 7 列正确布局；
+- 单进程：`/` 返回画布，`/api/bootstrap` 200，17 节点 7 列正确布局；
 - 完整入队链路：draft → `q0009` → `run_started` / `node_waiting` /
   `node_started` / `log_appended` / `node_finished` / `run_finished`；
 - 后端 779 测试通过（含 10 个新增的画布/投影/workspace 测试）。

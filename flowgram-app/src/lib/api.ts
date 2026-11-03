@@ -13,7 +13,13 @@ import type { RuntimeEvent } from './types';
  * no second process - and `VITE_FLOWGRAM_BASE` exists only for split
  * deployments.
  */
-let endpoint = (import.meta.env.VITE_FLOWGRAM_BASE as string | undefined) || '/fg';
+/**
+ * Empty: every call is relative to the page.
+ *
+ * The agent serves this bundle itself, so `/api` is the agent's own namespace -
+ * the same one its REST and MCP surfaces use. One prefix, one set of routes.
+ */
+let endpoint = (import.meta.env.VITE_API_BASE as string | undefined) || '';
 let token = '';
 export async function connectDesktop() {
   // No Tauri shell: requests are relative to the page (or to the configured

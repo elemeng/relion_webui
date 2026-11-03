@@ -2,11 +2,8 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Lay a RELION pipeline out as the FlowGram canvas draws it.
 
-A direct port of ``frontend/src/lib/layout.ts``, which the main branch's canvas
-uses. It is duplicated rather than shared because the two UIs are separate
-apps with separate build pipelines, and the algorithm is pure geometry with no
-dependencies - the risk of drift is a comment in both files, not a silent
-behaviour change.
+Ported from the React canvas this branch replaced; it is the only layout
+implementation now. The algorithm is pure geometry with no dependencies.
 
 RELION's pipeline is a DAG *except* for refinement, which loops
 (``Refine -> CTF refine -> Refine``). Longest-path ranking diverges on a cycle -

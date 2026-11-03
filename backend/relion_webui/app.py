@@ -1982,25 +1982,9 @@ def create_app(
             sender.cancel()
 
     # ------------------------------------------------------------------- UI
-    @app.get('/', response_class=HTMLResponse)
-    async def index() -> HTMLResponse:
-        """Serve the single-page app.
-
-        The page itself decides whether to show the login form: the API answers
-        401 until a session exists, and the client renders the form in that
-        case. Serving one HTML document for both states keeps the build to a
-        single bundle.
-        """
-        index_file = STATIC_DIRECTORY / 'index.html'
-        if not index_file.is_file():
-            return HTMLResponse(
-                '<h1>RELION cryo-ET web interface</h1>'
-                '<p>Front-end assets are missing. Build them with '
-                '<code>cd frontend &amp;&amp; bun install &amp;&amp; bun run build</code>; '
-                'the API is served under <code>/api</code>.</p>',
-                status_code=503,
-            )
-        return HTMLResponse(index_file.read_text(encoding='utf-8'))
+    #
+    # The FlowGram canvas is the only front end. `flowgram.install` mounts its
+    # built bundle at `/`, so there is no separate index route to serve.
 
     @app.exception_handler(hosts_module.HostError)
     async def _host_error(
@@ -2049,5 +2033,10 @@ def create_app(
         )
         # /mcp is a public path only when MCP is off the request was never
         # mounted; when it is on, the middleware above already gated it.
+
+    # The canvas is mounted last, for the same reason the MCP mount is: a
+    # Mount on '/' matches every route registered after it, so doing this any
+    # earlier would 404 the API.
+    flowgram.mount_static(app)
 
     return app

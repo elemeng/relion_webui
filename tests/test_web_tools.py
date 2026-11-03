@@ -735,7 +735,10 @@ def test_mcp_is_off_by_default():
     app = create_app(roots=['/tmp'])
     with TestClient(app) as client:
         response = client.post('/mcp', json={'jsonrpc': '2.0', 'id': 1, 'method': 'initialize'})
-        assert response.status_code == 404
+        # With MCP off, `/mcp` is not mounted. The static canvas sits at `/`, so
+        # the path now reaches it and is refused as a method - not a route at
+        # all - which is the same "nothing is listening" answer.
+        assert response.status_code in (404, 405)
 
 
 def test_settings_returns_the_same_shape_as_config():

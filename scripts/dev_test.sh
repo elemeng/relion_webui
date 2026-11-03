@@ -24,7 +24,7 @@ set -uo pipefail
 
 readonly WEBUI_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly BACKEND="$WEBUI_ROOT/backend"
-readonly FRONTEND_DIR="$WEBUI_ROOT/frontend"
+readonly FRONTEND_DIR="$WEBUI_ROOT/flowgram-app"
 readonly TESTS_DIR="$WEBUI_ROOT/tests"
 readonly VENV_DIR="${RELION_WEB_VENV:-$WEBUI_ROOT/.venv}"
 
@@ -270,7 +270,7 @@ if want ui && (( ! QUICK )); then
     if ! have_node; then
         record SKIP "ui" "bun (or node+npm) not on PATH"
     elif [[ ! -d "$FRONTEND_DIR/node_modules" ]]; then
-        record SKIP "ui" "run 'bun install' in frontend/ first"
+        record SKIP "ui" "run 'bun install' in flowgram-app/ first"
     else
         RUNNER="$(js_runner)"
         # `run build` is `tsc -b && vite build`, so this typechecks and
@@ -291,11 +291,11 @@ if want ui && (( ! QUICK )); then
             record FAIL "ui-bundle" "build output differs from the committed bundle"
         fi
 
-        # Layout maths: column ranks and the readable zoom floor. Node runs the
-        # TypeScript directly, so this needs no test runner. A wrong rank does
-        # not throw - it silently produces an unreadable graph.
-        if ( cd "$FRONTEND_DIR" && node --experimental-strip-types \
-                src/lib/layout.test.ts >/tmp/relion_webui-layout.log 2>&1 ); then
+        # Layout maths lives in Python now (flowgram/layout.py); the canvas
+        # only consumes its output. A wrong column rank does not throw - it
+        # silently produces an unreadable graph, which is what these assert.
+        if ( cd "$WEBUI_ROOT" && PYTHONPATH=backend "$PYTHON" -m pytest \
+                tests/test_flowgram_bridge.py -q >/tmp/relion_webui-layout.log 2>&1 ); then
             record PASS "ui-layout" "$(tail -1 /tmp/relion_webui-layout.log)"
         else
             tail -20 /tmp/relion_webui-layout.log >&2

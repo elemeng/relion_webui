@@ -30,9 +30,7 @@ from . import translate as translate_module
 from . import workspaces as workspaces_module
 from .translate import FLOWGRAM_STATE, SCHEMA, TERMINAL_STATES
 
-PREFIX = '/fg'
-
-router = APIRouter(prefix=PREFIX)
+router = APIRouter()
 
 
 # --------------------------------------------------------------------- helpers
@@ -367,19 +365,24 @@ async def _start_run(
 # ------------------------------------------------------------------- routes
 
 
-@router.get('/api/projects')
-async def list_projects(request: Request) -> List[Dict[str, Any]]:
-    projects = request.app.state.projects.summarize()
+def _projects(request: Request) -> List[Dict[str, Any]]:
+    """The project list in FlowGram's shape.
+
+    The agent answers `/api/projects` for everything else; this is only the
+    projection the canvas needs (`{id, name, createdAt, directory}`), so it is a
+    local helper rather than a second route.
+    """
+    listing = request.app.state.projects.summarize()
     return [
         translate_module.project_from_relion(entry)
-        for entry in projects
+        for entry in listing
         if entry.get('readable') is not False
     ]
 
 
 async def _bootstrap(request: Request) -> Dict[str, Any]:
     await _schema_loaded(request)
-    projects = await list_projects(request)
+    projects = _projects(request)
     store = _store(request)
     workflows: List[Dict[str, Any]] = []
     for project in projects:
@@ -773,9 +776,9 @@ async def tools() -> Dict[str, Any]:
 def install(app, *, static_directory=None) -> None:
     """Attach the FlowGram router (and its built UI) to the agent.
 
-    Called once from ``create_app``. The router answers ``/fg/api/...``; the
-    static mount serves the built canvas at ``/fg`` when a build is present, so
-    a deployment is the agent alone rather than the agent plus a Node process.
+    Called once from ``create_app``. The router adds the canvas-only routes to
+    the agent's `/api`; the static mount serves the built canvas at `/`. One
+    process, one namespace, one front end.
     """
     from pathlib import Path
 
@@ -786,353 +789,27 @@ def install(app, *, static_directory=None) -> None:
     app.state.flowgram_guard = getattr(app.state, 'guard', None)
     app.include_router(router)
 
+    # The static mount is deliberately NOT done here.
+    #
+    # A mount on '/' swallows every route registered after it, and the agent
+    # registers most of its API below `create_app`'s state setup. `create_app`
+    # calls `mount_static(app)` at the very end instead.
+
+
+def mount_static(app, static_directory=None) -> None:
+    """Serve the built canvas at `/`.
+
+    Must run after every route is registered: a `/` mount matches everything
+    that follows it, so doing this any earlier would 404 the agent's own API.
+    """
+    from pathlib import Path
+
+    from fastapi.staticfiles import StaticFiles
+
     if static_directory is None:
-        static_directory = Path(__file__).resolve().parent.parent / 'flowgram_static'
+        static_directory = Path(__file__).resolve().parent.parent / 'static'
     static_directory = Path(static_directory)
     if static_directory.is_dir():
-        # Mounted last, so /fg/api keeps winning the prefix match.
-        app.mount('/fg', StaticFiles(directory=str(static_directory), html=True), name='flowgram')
+        app.mount('/', StaticFiles(directory=str(static_directory), html=True), name='canvas')
 
 
-@router.get('/api/browse')
-async def browse(request: Request, path: Optional[str] = None, filter: str = 'all', hidden: bool = False) -> Dict[str, Any]:  # noqa: A002, N803 - the agent's own query names
-    """The agent's filesystem, for the path picker.
-
-    Same listing the main UI's picker uses; re-exported under /fg so the canvas
-    needs one prefix rather than two.
-    """
-    from .. import browse as browse_module
-
-    try:
-        return browse_module.list_directory(
-            path, filter_kind=filter, show_hidden=hidden
-        ).as_dict()
-    except ValueError as cause:
-        raise HTTPException(400, detail=str(cause)) from cause
-
-
-@router.get('/api/browse/locations')
-async def browse_locations() -> Dict[str, Any]:
-    from .. import browse as browse_module
-
-    return {'locations': browse_module.quick_locations()}
-
-
-@router.get('/api/job-schema')
-async def job_schema(request: Request, job_type: Optional[str] = None) -> Dict[str, Any]:  # noqa: N803
-    """RELION's job options, already shaped for the node inspector.
-
-    The inspector renders a form from a data table; that table is built here
-    (see ``forms.py``) rather than in the browser, so the mapping from RELION's
-    option kinds to FlowGram's editors exists once.
-    """
-    from .. import job_commands
-    from . import forms
-
-    await _schema_loaded(request)
-    if job_type is not None:
-        try:
-            schema = job_commands.form_schema(job_type)
-        except KeyError as cause:
-            raise HTTPException(404, detail=str(cause)) from cause
-        return {**schema, 'definition': forms.node_definition(schema)}
-
-    schemas = [
-        job_commands.form_schema(name)
-        for name in job_commands.selectable_job_types()
-    ]
-    return {
-        'jobs': schemas,
-        'definitions': forms.definitions_for(schemas),
-        'categories': job_commands.job_categories(),
-    }
-
-
-@router.get('/api/project/job-types')
-async def project_job_types() -> Dict[str, Any]:
-    from .. import job_specs
-
-    return {
-        'job_types': [
-            {
-                'id': spec.job_type,
-                'title': spec.tab_title,
-                'executable': spec.executable,
-                'process_type_label': spec.process_type_label,
-                'directory': spec.directory_name,
-                'inputs': spec.input_variable,
-                'outputs': [node.filename for node in spec.output_nodes],
-                'base_job_type': spec.base_job_type,
-            }
-            for spec in job_specs.JOB_SPECS.values()
-        ]
-    }
-
-
-@router.get('/api/project/input-candidates')
-async def input_candidates(request: Request, job_type: str, variable: str, project_directory: str) -> Dict[str, Any]:  # noqa: N803
-    """The files a node-typed option may be filled with.
-
-    RELION's own rule: the desktop GUI's picker lists
-    ``.Nodes/<first type component>/``, so this lists the same directory. A
-    queued job's output appears here because the queue reserves its node entry
-    at enqueue time.
-    """
-    from .. import job_artifacts
-    from .. import job_commands
-    from .. import pipeline as pipeline_module
-
-    project = _guard(request).resolve_existing(project_directory, kind='directory')
-    try:
-        schema = job_commands.form_schema(job_type)
-    except KeyError as cause:
-        raise HTTPException(400, detail=f'unknown job type {job_type!r}') from cause
-    field = next(
-        (item for item in schema.get('fields', []) if item['variable'] == variable),
-        None,
-    )
-    if field is None:
-        raise HTTPException(400, detail=f'{job_type} has no option {variable!r}')
-    if field.get('kind') != 'input_node':
-        raise HTTPException(
-            400,
-            detail=f'{variable!r} is a {field.get("kind")!r} option, not a pipeline node',
-        )
-
-    node_type = str(field.get('node_type') or '')
-    depth = int(field.get('node_type_depth') or 1)
-    names = job_artifacts.node_candidates(project, node_type, depth)
-
-    try:
-        graph = pipeline_module.read_pipeline(project)
-    except (FileNotFoundError, ValueError):
-        graph = pipeline_module.Pipeline()
-    producers = {node: process for process, node in graph.output_edges}
-    queue = _queue(request)
-    queued = {
-        item['process_name']: item['id']
-        for item in queue.snapshot()['entries']
-        if item.get('state') in ('pending', 'running') and item.get('process_name')
-    }
-
-    candidates = []
-    for name in names:
-        producer = producers.get(name)
-        process = graph.find_process(producer) if producer else None
-        exists = (project / name).exists()
-        filename = name.rsplit('/', 1)[-1]
-        entry_id = queued.get(producer) if producer else None
-        candidates.append(
-            {
-                'node': name,
-                'producer': producer,
-                'producer_status': process.status if process is not None else None,
-                'exists': exists,
-                'pending': not exists,
-                'queue_entry': entry_id,
-                'slot': f'{entry_id}:{filename}' if entry_id else None,
-            }
-        )
-    return {
-        'job_type': job_type,
-        'variable': variable,
-        'node_type': node_type,
-        'candidates': candidates,
-    }
-
-
-# ------------------------------------------------------------ cluster & queue
-#
-# The canvas's cluster page is the agent's own hosts/queue views under /fg, so
-# one base URL answers everything the UI asks.
-
-
-@router.get('/api/hosts')
-async def list_hosts(request: Request, check: bool = False) -> Dict[str, Any]:
-    from .. import hosts as hosts_module
-
-    manager = request.app.state.jobs
-    entries = []
-    for host in manager.hosts.list():
-        entry = host.as_dict()
-        if check and not host.is_local and host.enabled:
-            ok, message = hosts_module.check_reachable(host)
-            entry['reachable'] = ok
-            if not ok:
-                entry['problem'] = message
-        entries.append(entry)
-    return {'hosts': entries, 'default': hosts_module.LOCAL_NAME}
-
-
-@router.post('/api/hosts', status_code=201)
-async def add_host(request: Request) -> Dict[str, Any]:
-    from .. import hosts as hosts_module
-
-    body = await request.json()
-    registry = request.app.state.jobs.hosts
-    try:
-        if body.get('spec'):
-            host = hosts_module.parse_host_spec(str(body['spec']))
-        else:
-            name = str(body.get('name') or '')
-            hostname = str(body.get('hostname') or '')
-            if not name or not hostname:
-                raise ValueError('give a spec, or both a name and a hostname')
-            host = hosts_module.ExecutionHost(
-                name=name,
-                hostname=hostname,
-                port=int(body.get('port') or 22),
-                user=body.get('user'),
-                note=str(body.get('note') or ''),
-            )
-        registry.add(host)
-    except ValueError as cause:
-        raise HTTPException(400, detail=str(cause)) from cause
-    return host.as_dict()
-
-
-@router.patch('/api/hosts/{name}')
-async def update_host(name: str, request: Request) -> Dict[str, Any]:
-    body = await request.json()
-    registry = request.app.state.jobs.hosts
-    host = registry.get(name)
-    if host is None:
-        raise HTTPException(404, detail=f'no host {name!r}')
-    if body.get('enabled') is not None:
-        host.enabled = bool(body['enabled'])
-    if body.get('note') is not None:
-        host.note = str(body['note'])
-    if body.get('hostname') is not None:
-        host.hostname = str(body['hostname'])
-    registry.add(host)
-    return host.as_dict()
-
-
-@router.delete('/api/hosts/{name}')
-async def remove_host(name: str, request: Request) -> Dict[str, Any]:
-    if not request.app.state.jobs.hosts.remove(name):
-        raise HTTPException(404, detail=f'no host named {name!r}')
-    return {'removed': name}
-
-
-@router.get('/api/nodes')
-async def node_samples(request: Request, local: bool = True) -> Dict[str, Any]:
-    """Live snapshots of every enabled node.
-
-    One ssh round trip per node, run concurrently, so a slow or down node does
-    not delay the others. Collection blocks, so it runs in a worker thread -
-    on the event loop one dead node would freeze every other request.
-    """
-    import anyio
-
-    from .. import node_metrics
-
-    wanted = [
-        host
-        for host in request.app.state.jobs.hosts.list()
-        if host.enabled and (local or not host.is_local)
-    ]
-    snapshots = await anyio.to_thread.run_sync(node_metrics.collect_many, wanted)
-    return {'nodes': [snapshot.as_dict() for snapshot in snapshots], 'count': len(snapshots)}
-
-
-@router.get('/api/queue')
-async def queue_snapshot(request: Request, project_directory: Optional[str] = None) -> Dict[str, Any]:  # noqa: N803
-    queue = request.app.state.queue
-    await queue.warm_capacity()
-    return queue.snapshot(project_directory)
-
-
-@router.delete('/api/queue/{entry_id}')
-async def cancel_queue_entry(entry_id: str, request: Request) -> Dict[str, Any]:
-    from .. import queue_system
-
-    queue = request.app.state.queue
-    try:
-        entry = await queue.cancel(entry_id)
-    except queue_system.QueueError as cause:
-        raise HTTPException(400, detail=str(cause)) from cause
-    return entry.as_dict()
-
-
-# ------------------------------------------------------------------ projects
-#
-# The project management dialog reads a project's details and renames or
-# removes it from the agent's list. Removing a project never touches its files:
-# it only stops the agent serving it, which is what "delete from list" means.
-
-
-@router.post('/api/projects', status_code=201)
-async def add_project(request: Request) -> Dict[str, Any]:
-    body = await request.json()
-    path = str(body.get('path') or '').strip()
-    if not path:
-        raise HTTPException(400, detail='path is required')
-    try:
-        entry = request.app.state.projects.add(path, name=body.get('name'))
-    except ValueError as cause:
-        raise HTTPException(400, detail=str(cause)) from cause
-    return translate_module.project_from_relion(entry.as_dict())
-
-
-@router.post('/api/projects/create', status_code=201)
-async def create_project(request: Request) -> Dict[str, Any]:
-    """Create a RELION project directory.
-
-    Writes only ``default_pipeline.star``, which is all RELION needs to open a
-    directory as a project. Registering it in the list is the caller's next
-    call, so creating and listing stay independent.
-    """
-    body = await request.json()
-    path = str(body.get('path') or '').strip()
-    if not path:
-        raise HTTPException(400, detail='path is required')
-    registry = request.app.state.projects
-    try:
-        return registry.create(path, name=body.get('name'))
-    except ValueError as cause:
-        raise HTTPException(400, detail=str(cause)) from cause
-
-
-@router.get('/api/projects/{project_id:path}')
-async def get_project(project_id: str, request: Request) -> Dict[str, Any]:
-    summary = request.app.state.projects.summarize()
-    entry = next((item for item in summary if item['path'] == project_id), None)
-    if entry is None:
-        raise HTTPException(404, detail=f'project not in the list: {project_id}')
-    counts = {
-        'jobs': entry.get('job_count') or 0,
-        'archived': 0,
-        'sessions': 0,
-    }
-    return {
-        'project': translate_module.project_from_relion(entry),
-        'counts': counts,
-    }
-
-
-@router.put('/api/projects/{project_id:path}')
-async def rename_project(project_id: str, request: Request) -> Dict[str, Any]:
-    body = await request.json()
-    name = str(body.get('name') or '').strip()
-    if not name:
-        raise HTTPException(400, detail='name is required')
-    registry = request.app.state.projects
-    entry = next(
-        (item for item in registry.summarize() if item['path'] == project_id), None
-    )
-    if entry is None:
-        raise HTTPException(404, detail=f'project not in the list: {project_id}')
-    try:
-        updated = registry.add(project_id, name=name)
-    except ValueError as cause:
-        raise HTTPException(400, detail=str(cause)) from cause
-    return translate_module.project_from_relion(updated.as_dict())
-
-
-@router.delete('/api/projects/{project_id:path}')
-async def remove_project(project_id: str, request: Request) -> Dict[str, Any]:
-    """Remove a project from the list. Its directory is untouched."""
-    if not request.app.state.projects.remove(project_id):
-        raise HTTPException(404, detail=f'project not in the list: {project_id}')
-    return {'removed': project_id}
