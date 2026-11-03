@@ -36,13 +36,14 @@ becoming a cluster scheduler, or becoming a general workflow engine.
 |---|---|---|
 | Backend | Python 3.13, FastAPI, uvicorn | async, and the pydantic models double as the API schema |
 | Python toolchain | **uv** | resolves from `pyproject.toml`; a cold install of the full set is ~14 s where pip took over a minute |
-| Frontend | React 19 + TypeScript 7 | |
-| CSS | Tailwind 4 + daisyUI 5 | daisyUI owns the component layer; see *UI rules* |
-| Type | Geist + Geist Mono (self-hosted, variable) | bundled via `@fontsource-variable`; see *UI rules* |
+| Frontend | React 19 + TypeScript 5.8, vendored FlowGram desktop UI | see *UI rules* |
+| CSS | Tailwind 4 | utility layer; components are Radix wrappers |
+| Type | Geist + Geist Mono, eight palettes | one source of colour: `lib/themes.ts` |
 | Frontend toolchain | **bun** | `bun install` / `bun run build`; `bun.lock` is the lockfile |
-| Bundler | **Vite 8** | |
-| Agent surface | pydantic-ai (assistant) + `mcp` (MCP server) | one registry, two exports |
-| Testing | pytest (backend), committed layout checks (frontend) | |
+| Bundler | **Vite 6** | builds `flowgram-app/` into `backend/relion_webui/static` |
+| Agent surface | `mcp` (MCP server) + `pydantic-ai` (optional assistant) | one registry, two exports |
+| Canvas API | FastAPI router in `flowgram/routes.py` | one `/api` namespace, no second process |
+| Testing | pytest (backend + canvas), vitest (UI behaviour) | |
 
 `requires-python = ">=3.13"`. Licensed **GPL-2.0-or-later**; every source file
 carries an SPDX header, and the generated tables carry one their generator emits
@@ -51,14 +52,15 @@ is installed (see *Gated decisions*).
 
 ### Toolchain traps
 
-- **`bun build` cannot replace Vite here.** It does not process Tailwind 4 /
-  daisyUI directives (`@apply`, `@theme`, `@plugin`) and emits them verbatim:
-  32 kB of broken CSS instead of 154 kB compiled. Bun is the package manager and
+- **`bun build` cannot replace Vite here.** It does not process Tailwind 4
+  directives (`@apply`, `@theme`, `@plugin`) and emits them verbatim: 32 kB of
+  broken CSS instead of the compiled bundle. Bun is the package manager and
   script runner; Vite is the bundler.
-- **`bun test` does not run `frontend/src/lib/layout.test.ts` usefully.** That
-  file uses `node:assert` and a hand-rolled harness, so Bun's runner reports
-  "0 pass / 0 fail" while the 12 checks have in fact passed. `dev_test.sh` runs
-  it with `node --experimental-strip-types`.
+- **The canvas layout is Python, not TypeScript.** It moved into
+  `backend/relion_webui/flowgram/layout.py` when the canvas became a static
+  bundle the agent serves; `dev_test.sh`'s `ui-layout` check runs
+  `tests/test_flowgram_bridge.py`, which pins the column ranks and the
+  cycle-condensation rule.
 - **`bun install` rewrites `package.json`** to the newest in-range versions. Use
   `bun add` for a deliberate change; a bare `bun install` once silently jumped
   TypeScript 5.7→7 and Vite 6→8 and broke the build.
@@ -73,8 +75,10 @@ is installed (see *Gated decisions*).
 
 ```
 backend/relion_webui/          the package
-frontend/                React app; `npm`/`bun run build` writes into backend/relion_webui/static
-scripts/                 dev_web.sh, dev_test.sh, the three table generators
+backend/relion_webui/flowgram/ the canvas: its API, projection, journal, workspaces
+backend/relion_webui/static/   the built canvas bundle (committed, so uv run works)
+flowgram-app/            the vendored FlowGram UI source (`bun run build` writes the bundle)
+scripts/                 dev_flowgram.sh, dev_test.sh, the three table generators
 tests/                   pytest suite
 docs/                    design notes (local only, not committed)
 ```
@@ -122,7 +126,13 @@ drifted. That is the guard against editing them by hand.
 | `tools.py` | the tool registry — 24 tools, 10 of them writes |
 | `mcp_server.py` | transport only: exposes the registry over MCP at `/mcp` |
 | `assistant.py` | the same registry to pydantic-ai, with approval for writes |
-| `app.py` | FastAPI routes (64) and the WebSocket |
+| `flowgram/routes.py` | the canvas API: `/api/workflows`, `/api/runs`, `/api/events`, plus static |
+| `flowgram/translate.py` | a RELION pipeline as a FlowGram workflow document |
+| `flowgram/layout.py` | pipeline → canvas geometry, cycles condensed |
+| `flowgram/journal.py` | queue states → runtime events (the canvas's badges and camera) |
+| `flowgram/workspaces.py` | draft overlays in the config directory, never in the project |
+| `flowgram/provision.py` | add a GPU node from an address: key, registration, reachability |
+| `app.py` | FastAPI routes and the WebSocket |
 
 ---
 
@@ -219,17 +229,21 @@ null-byte rejection is kept.
 
 ## UI rules
 
-`frontend/src/components/ui/` are thin wrappers over **daisyUI** components:
-`button`→`btn`, `badge`→`badge`, `tabs`→`tabs`, `dialog`→`modal`,
-`tooltip`→`tooltip`, `spinner`→`loading`. Do not reimplement a component daisyUI
-provides. Use daisyUI colour names (`base-100`, `text-base-content/60`) rather
-than Tailwind palette colours, so both themes follow.
+The UI is the vendored FlowGram desktop app (`flowgram-app/`), restyled to this
+repository's tokens. Its `components/ui/` are shadcn-style wrappers over Radix
+(`button`, `dialog`, `select`, `popover`); do not add a second component library
+beside them.
 
-**Scaling is one number**: `html { font-size: 120% }` in `index.css`. Tailwind's
-and daisyUI's spacing/text/radius scales are rem-based, so everything rides it.
-Never re-introduce a px font size or px control dimension; if you need an
-arbitrary length, use `rem` (px/16 at the 120% root). The `t-*` type utilities
-`index.css` carries are the only door to the type ladder — no raw `text-xs`.
+**Eight palettes, defined as data.** `flowgram-app/src/lib/themes.ts` holds every
+colour and `styles.css` maps them onto `--background`, `--surface-*`,
+`--foreground`, `--muted-foreground`, `--border`, `--destructive`. New colours go
+through a theme entry, not a literal in a component. The measured contrast of
+the weakest pair per mode is recorded in that file: changing a value means
+recomputing its pair, because 4.5:1 is the floor.
+
+**No px font sizes.** Every `font-size` in the three stylesheets is `rem`, and
+the sub-`text-xs` steps are theme tokens (`--text-2xs`, `--text-3xs`) rather than
+`text-[10px]`. That is what lets browser zoom and a user's font setting work.
 
 **Surfaces are opaque. No translucency, no `backdrop-filter`.** Mica and Acrylic
 were tried and removed: both are designed against a *photographic* backdrop (a
@@ -238,27 +252,23 @@ has a wallpaper — the thing behind a panel is job cards, pipeline edges and
 text, so blurring it produces grey noise and pulls the panel's own text towards
 it. Elevation is carried by the **tone ladder** instead: page < chrome < card <
 floating panel (light 95.6 → 96.4 → 99.3 → 100%; dark 19 → 16.5 → 25.5 → 30%,
-where "elevated" means lighter), plus the hairline and the shadow. The one
-deliberate exception is a label sitting on top of rendered image data, where the
-background really is a picture — see the volume-preview caption in
-`JobDialog.tsx`.
+where "elevated" means lighter), plus the hairline and the shadow.
 
-Type is **Geist + Geist Mono** (variable, self-hosted via `@fontsource-variable`,
-OFL-1.1). Do not swap to a UI kit's default font; the mono is what makes job
-numbers and paths read as data. New colours go through the CSS variables in
-`index.css` (`--frame*`, `--rule*`, `--ink-*`, `--st-*-…`), not new literals.
+Type is **Geist + Geist Mono**. Do not swap to a UI kit's default font; the mono
+is what makes job numbers and paths read as data. New colours go through a theme
+entry in `lib/themes.ts`, never a literal in a component.
 
-Status colours are the exception to daisyUI's roles: RELION's five states are
-not daisyUI's semantic roles ("running" is not a warning), so
-`components/Status.tsx` owns them. Every fill/text pair is verified at ≥ 4.5:1
-in both themes — the measured ratios are recorded in the comments beside each
-`--st-*` block in `index.css`; re-measure when a value changes.
+Status colours are RELION's own vocabulary, not a design system's semantic roles
+("running" is not a warning): the canvas reads them from the queue's state and
+renders `.node-run-badge[data-status=...]`. Every text/surface pair is ≥ 4.5:1 in
+both modes — the measured ratios sit in `lib/themes.ts`; re-measure when a value
+changes.
 
 The **pipeline graph is the product**, not a sidebar list. A draft job exists on
-the canvas before it is queued. Canvas world geometry (`NODE_WIDTH` etc. in
-`lib/layout.ts`) is true px inside the zoom transform, so it is scaled
-deliberately (∼×1.2 to match) rather than rem-based; fit thresholds
-(`MIN_READABLE_SCALE`, `MINI_SCALE`) are tuned against it.
+the canvas before it is queued, and nothing reaches RELION until the queue
+reserves it. Geometry comes from the agent (`flowgram/layout.py`), so the canvas
+and anything else that lays out a pipeline agree; the node sizes it emits are
+plain pixel world coordinates inside the zoom transform, deliberately not rem.
 
 ---
 
@@ -268,7 +278,8 @@ deliberately (∼×1.2 to match) rather than rem-based; fit thresholds
 export PATH="$HOME/.bun/bin:$HOME/miniforge3/bin:$PATH"
 
 uv venv && uv pip install -e '.[dev,assistant]'
-./scripts/dev_web.sh          # agent :8765, UI :5173, both with reload
+./scripts/dev_flowgram.sh     # agent :8765 + Vite :1420 with hot reload
+./scripts/dev_flowgram.sh --build   # build the bundle, then agent only
 ./scripts/dev_test.sh         # every check; --quick for tests only
 ```
 
@@ -277,15 +288,17 @@ prerequisite is absent, so a standalone clone is usable without RELION:
 
 | Check | What it proves |
 |---|---|
-| `tests` | the pytest suite (766 pass) |
+| `tests` | the pytest suite (789 pass) |
 | `generated` | the three tables still match RELION's C++ |
 | `format` | RELION's own `metadata_table.cpp` reads our files, and ours reads its |
-| `ui` | typechecks and builds |
+| `ui` | typechecks and builds `flowgram-app/` |
 | `ui-bundle` | the committed bundle matches the source |
-| `ui-layout` | the graph layout maths |
+| `ui-layout` | the pipeline layout (Python now) |
 
-**If you change `frontend/`, rebuild the bundle** — `ui-bundle` fails otherwise,
-because the bundle is committed so a deployment needs no JS toolchain.
+**If you change `flowgram-app/`, rebuild the bundle** — `ui-bundle` fails
+otherwise, because the bundle is committed so a deployment needs no JS
+toolchain. `./scripts/dev_flowgram.sh --build` does it and then serves the
+canvas from the agent alone.
 
 **If you change a generated table, regenerate it with `--relion-source`** and
 commit the result; never edit it directly.
