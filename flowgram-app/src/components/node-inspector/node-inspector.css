@@ -265,3 +265,6 @@
 .nf-browser-empty{display:flex;align-items:center;gap:6px;font-size: 0.75rem;color:var(--muted-foreground);padding:14px 10px}
 .nf-browser-footer{display:flex;align-items:center;gap:8px}
 .nf-browser-target{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size: 0.6875rem;color:var(--muted-foreground)}
+
+/* A node whose options RELION would reject, while the user is still editing. */
+.nf-save-state-invalid { color: var(--destructive); }

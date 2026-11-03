@@ -77,6 +77,17 @@ class ProjectEntry:
         return payload
 
 
+def default_project_root() -> Path:
+    """Where a project without a named directory goes.
+
+    ``$HOME/.relion_web/projects`` rather than the cwd: the agent may be started
+    from anywhere, and dropping a project into whatever directory happened to be
+    current is the kind of surprise that makes people distrust a tool.
+    """
+    root = default_config_directory() / 'projects'
+    return root
+
+
 class ProjectRegistry:
     """Ordered list of project directories, persisted as JSON."""
 

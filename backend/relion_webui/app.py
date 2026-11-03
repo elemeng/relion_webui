@@ -674,6 +674,11 @@ def create_app(
             # browser must be told rather than assuming.
             'assistant_enabled': bool(getattr(app.state, 'assistant_enabled', False)),
             'mcp_enabled': bool(getattr(app.state, 'mcp_enabled', False)),
+            # Where a project created without a directory goes. The agent's own
+            # config directory is the honest answer: it is the one place this
+            # process is known to be able to write, and it is already reserved
+            # for this installation's state.
+            'default_project_root': str(projects.config_directory / 'projects'),
         }
 
     @app.get('/api/project/input-candidates')

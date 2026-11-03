@@ -136,6 +136,9 @@ export function NodeInspector({
   const [details, setDetails] = useState<Record<string, RunDetail>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [starting, setStarting] = useState<string | null>(null);
+  // RELION's own answer for this node's current parameters. Debounced: the
+  // validator is cheap but not free, and it runs on every keystroke otherwise.
+  const [problems, setProblems] = useState<string[]>([]);
   const mounted = useRef(true);
   const activeRun =
     (selectedTestId && runs.find((r) => r.id === selectedTestId && r.testNodeId === node.id)) ||
@@ -147,6 +150,49 @@ export function NodeInspector({
   useEffect(() => {
     if (tabRequest?.nodeId === node.id) setTab(tabRequest.tab);
   }, [tabRequest]);
+
+  // A RELION node's parameters either form a valid option set or they do not,
+  // and RELION already knows which. Asking it on every edit - debounced - is
+  // what turns a contradictory combination into a message while editing rather
+  // than a failed job afterwards.
+  const jobType = node.type.startsWith('relion.') ? node.type.slice('relion.'.length) : null;
+  const values = (node.data.inputsValues ?? {}) as Record<string, unknown>;
+  const serialized = JSON.stringify(values);
+  useEffect(() => {
+    if (!jobType) {
+      setProblems([]);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      const arguments_: Record<string, unknown> = {};
+      for (const [key, binding] of Object.entries(values)) {
+        const value = binding as { type?: string; content?: unknown };
+        if (value?.type === 'constant' && value.content !== '' && value.content != null)
+          arguments_[key] = value.content;
+      }
+      void api<{ problems: string[]; warnings: string[] }>(
+        '/api/job-validate',
+        'POST',
+        { job_type: jobType, arguments: arguments_ },
+        controller.signal
+      )
+        .then((result) => {
+          if (!controller.signal.aborted) setProblems(result.problems ?? []);
+        })
+        .catch(() => {
+          // A validator that cannot answer is not a validation failure.
+          if (!controller.signal.aborted) setProblems([]);
+        });
+    }, 400);
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
+    // `serialized` is the dependency that actually changes; `values` is a new
+    // object on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobType, serialized, api]);
   const nodeId = node.id;
   const content = useRef<HTMLDivElement>(null);
   useContentTransition(content, `${node.id}:${tab}`);
@@ -588,16 +634,27 @@ export function NodeInspector({
         <footer className="nf-footer">
           <button
             type="button"
-            className="nf-save-state"
+            className={`nf-save-state${problems.length ? ' nf-save-state-invalid' : ''}`}
             onClick={onSave}
-            aria-label={tx('保存工作流草稿')}
+            aria-label={
+              problems.length
+                ? tx('参数问题：{0}', [problems.join('；')])
+                : tx('保存工作流草稿')
+            }
+            title={problems.length ? problems.join('\n') : undefined}
           >
             {saveStatus === tx('正在保存') ? (
               <Loader2 className="animate-spin" size={12} />
             ) : (
               <Check size={12} />
             )}
-            <span>{invalid.length ? tx('含未完成字段') : saveStatus}</span>
+            <span>
+              {invalid.length
+                ? tx('含未完成字段')
+                : problems.length
+                ? tx('{0} 个参数问题', [problems.length])
+                : saveStatus}
+            </span>
           </button>
           <Button
             size="sm"

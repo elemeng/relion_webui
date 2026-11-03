@@ -88,6 +88,8 @@ export function App() {
   const [createKind, setCreateKind] = useState<'project' | 'workflow' | 'open' | null>(null);
   const [name, setName] = useState('');
   const [directory, setDirectory] = useState('');
+  // Where a project with no named directory goes; the agent knows its own home.
+  const [defaultProjectRoot, setDefaultProjectRoot] = useState('');
   const [createError, setCreateError] = useState('');
   const [creating, setCreating] = useState(false);
   const project = projects.find((item) => item.id === projectId);
@@ -145,8 +147,10 @@ export function App() {
           next.projects.some((item) => item.id === id) ? id : next.projects[0]?.id || ''
         );
         const configured = await api<ModelSettings>('/api/settings/model');
+        const config = await api<{ default_project_root?: string }>('/api/config');
         if (!disposed) {
           setModel(configured);
+          setDefaultProjectRoot(config.default_project_root ?? '');
           setReady(true);
           setOnline(true);
         }
@@ -335,15 +339,21 @@ export function App() {
         setProjectId(created.path);
         setNotice(null);
       } else {
-        // A brand-new project: /api/projects/create writes the empty pipeline,
-        // then registration adds it to the list. Two calls because creating
-        // and listing are separate steps in the agent.
+        // A brand-new project. An empty directory means "put it where this
+        // installation keeps its projects", which the agent told us at boot;
+        // the name becomes the directory name there.
+        const target = directory.trim()
+          ? directory.trim()
+          : `${defaultProjectRoot.replace(/\/$/, '')}/${name.trim()}`;
+        // /api/projects/create writes the empty pipeline, then registration adds
+        // it to the list - two calls because creating and listing are separate
+        // steps in the agent.
         await api<{ path: string }>('/api/projects/create', 'POST', {
-          path: directory.trim(),
+          path: target,
           name: name.trim() || undefined,
         });
         const created = await api<{ path: string }>('/api/projects', 'POST', {
-          path: directory.trim(),
+          path: target,
         });
         await refresh(created.path);
         setProjectId(created.path);
@@ -679,7 +689,12 @@ export function App() {
               {t('cancel')}
             </Button>
             <Button
-              disabled={creating || (createKind === 'open' ? !directory.trim() : !name.trim())}
+              disabled={
+                creating ||
+                (createKind === 'open'
+                  ? !directory.trim()
+                  : !name.trim() || (!directory.trim() && !defaultProjectRoot))
+              }
             >
               {creating
                 ? t('saving')
