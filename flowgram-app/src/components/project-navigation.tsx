@@ -164,10 +164,14 @@ export function ProjectSidebar({
               </div>
               {snapshot.workflows.map((workflow) => {
                 const selected = bench.view.kind === 'workflow' && bench.view.id === workflow.id;
+                // Every project's default workspace is called "Main", so a bare
+                // name is ambiguous as soon as there is more than one project.
+                // The owning project's name is the disambiguator.
+                const owner = projects.find((item) => item.id === workflow.projectId);
                 return (
                   <div className="sidebar-object group relative" key={workflow.id}>
                     <button
-                      title={workflow.name}
+                      title={`${workflow.name} · ${owner?.name ?? workflow.projectId}`}
                       className={cn(
                         'sidebar-row sidebar-object-row pr-9',
                         selected && 'sidebar-selected'
@@ -176,6 +180,11 @@ export function ProjectSidebar({
                       onClick={() => onWorkflow(workflow.id)}
                     >
                       <span className="truncate">{workflow.name}</span>
+                      {owner && (
+                        <span className="ml-auto shrink-0 truncate pl-2 text-2xs text-muted-foreground">
+                          {owner.name}
+                        </span>
+                      )}
                     </button>
                     <div className="sidebar-object-menu absolute right-0 top-0">
                       <MenuButton
